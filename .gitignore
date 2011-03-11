@@ -6,3 +6,4 @@ src_managed/
 test-output/
 distributed-collections/lib_managed
 hadoop-backend/lib_managed
+distributed-collections.iml
