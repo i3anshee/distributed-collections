@@ -1,0 +1,8 @@
+/.idea/workspace.xml
+/project/boot/
+target/
+lib_managed/
+src_managed/
+test-output/
+distributed-collections/lib_managed
+hadoop-backend/lib_managed

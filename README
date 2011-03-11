@@ -1,0 +1,41 @@
+//////////////////////////////////////////////////////////////////////////////////
+//      distributed-collections
+//////////////////////////////////////////////////////////////////////////////////
+
+
+0. Table of Contents
+==================================================================================
+
+0. Table of Contents
+1. distributed-collections Introduction
+2. Build Instructions
+
+
+
+
+1. distributed-collections Introduction
+==================================================================================
+
+2. Build Instructions
+==================================================================================
+    To build
+3. Development Information
+==================================================================================
+
+    Project distributed-collections is built by sbt and consists of 2 modules (sub-projects):
+        - distriubted-collections
+        - hadoop-backend
+
+
+    Project is being developed by IntelliJ IDEA 10.x and following parts of the project tree are for IDEA convenience purposes only:
+        .idea - project folder
+
+
+    Project is build by Simple Build Tool
+
+
+
+
+
+
+
