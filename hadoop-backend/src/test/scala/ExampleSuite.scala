@@ -1,7 +1,7 @@
 import collection.mutable.ListBuffer
 import org.scalatest.matchers.ShouldMatchers
 import org.scalatest.testng.TestNGSuite
-import org.testng.annotations.{Test, Configuration}
+import org.testng.annotations.{BeforeMethod, Test}
 
 /**
  * User: vjovanovic
@@ -13,7 +13,7 @@ class ExampleSuite extends TestNGSuite with ShouldMatchers {
   var sb: StringBuilder = _
   var lb: ListBuffer[String] = _
 
-  @Configuration { val beforeTestMethod = true }
+  @BeforeMethod
   def initialize() {
     sb = new StringBuilder("ScalaTest is ")
     lb = new ListBuffer[String]
