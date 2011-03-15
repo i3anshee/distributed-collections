@@ -1,3 +1,5 @@
+package local
+
 import collection.mutable.ListBuffer
 import org.scalatest.matchers.ShouldMatchers
 import org.scalatest.testng.TestNGSuite

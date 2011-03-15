@@ -14,7 +14,11 @@ class Project(info: ProjectInfo) extends ParentProject(info) with IdeaProject {
   }
 
   class HadoopBackendProject(info: ProjectInfo) extends DefaultProject(info) with IdeaProject with CommonProjectDependencies {
+    val hadoopCore = "org.apache.mahout.hadoop" % "hadoop-core" % "0.20.1" % "provided"
 
+    // needed by hadoop (will be provided on cluster)
+    val commonsLogging = "commons-logging" % "commons-logging" % "1.1.1" % "provided"
+    val commonsCli = "commons-cli" % "commons-cli" % "1.1" % "provided"
   }
 
   class DistributedCollectionsProject(info: ProjectInfo) extends DefaultProject(info) with IdeaProject with CommonProjectDependencies {
