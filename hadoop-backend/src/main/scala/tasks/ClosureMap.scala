@@ -5,6 +5,7 @@ import org.apache.hadoop.io.{BytesWritable, LongWritable}
 import java.io.{ByteArrayOutputStream, ObjectOutputStream, ObjectInputStream, ByteArrayInputStream}
 import org.apache.hadoop.fs.Path
 import org.apache.hadoop.filecache.DistributedCache
+import java.net.URI
 
 /**
  * User: vjovanovic
@@ -19,24 +20,25 @@ class ClosureMap extends Mapper[LongWritable, BytesWritable, LongWritable, Bytes
   override def setup(context: Mapper[LongWritable, BytesWritable, LongWritable, BytesWritable]#Context) {
     super.setup(context)
 
-    // find the file in the node local cache
     val conf = context.getConfiguration
-    val cacheFiles = DistributedCache.getLocalCacheFiles(conf);
 
-    var closureFile: Path = null;
-    for (i <- 0 to (cacheFiles.length - 1)) {
-      if (cacheFiles(i) != null && cacheFiles(i).getName.endsWith(ClosureMap.MAP_CLOSURE_FILE)) {
-        closureFile = cacheFiles(i)
-      }
-    }
+    // TODO (VJ) evaluate if local cache is faster than getting the files from distributed file system.
+    // find the file in the node local cache
+    val closureFileURI = conf get ("closuremapper.closures")
+    val cacheFiles = DistributedCache.getCacheFiles(conf);
 
-    if (closureFile == null) {
-      throw new IllegalArgumentException("Closure file is not in the Local File cache.")
+    cacheFiles foreach (println)
+    println(closureFileURI)
+
+    val closureFile = new Path(cacheFiles.filter((x: URI) => x.toString == closureFileURI)(0).toString)
+
+    if (closureFileURI == null) {
+      throw new IllegalArgumentException("Closure file is not in the properties.")
     }
 
     val inputStream = new java.io.ObjectInputStream(closureFile.getFileSystem(conf).open(closureFile))
     closure = inputStream.readObject().asInstanceOf[(AnyRef) => AnyRef]
-    inputStream.close();
+    inputStream.close()
   }
 
   override def map(k: LongWritable, v: BytesWritable, context: Mapper[LongWritable, BytesWritable, LongWritable, BytesWritable]#Context): Unit = {
@@ -46,16 +48,16 @@ class ClosureMap extends Mapper[LongWritable, BytesWritable, LongWritable, Bytes
     val value = ois.readObject()
 
     // apply closure
-    val result = closure(v)
+    val result = closure(value)
 
     //serialize again
     val baos = new ByteArrayOutputStream();
     val oos = new ObjectOutputStream(baos);
-    oos.writeObject(result);
-    oos.flush
+    oos writeObject (result);
+    oos flush
 
-    // emit the result
-    context write (k, new BytesWritable(baos.toByteArray))
+      // emit the result
+      context write (k, new BytesWritable(baos.toByteArray))
   }
 }
 

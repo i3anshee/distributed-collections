@@ -30,29 +30,31 @@ object ClosureMapJob {
       System.exit(2)
     }
 
-    val closure = (x: Int) => x + 1
+    val closure = (x: Long) => x + 1
 
     // place the closure in distributed cache
     val fs = FileSystem get (conf)
     val hdfsPath = new Path(ClosureMap.MAP_CLOSURE_FILE)
     val hdfsos = fs create (hdfsPath)
     val oos = new ObjectOutputStream(hdfsos)
-    oos writeObject (closure)
-    oos flush ()
-    oos close ()
-    DistributedCache.addCacheFile(hdfsPath.toUri(), conf)
+    oos.writeObject(closure)
+    oos.flush()
+    oos.close()
+    val serializedClosureUri = hdfsPath.toUri();
+    conf set ("closuremapper.closures", serializedClosureUri.toString)
+    DistributedCache.addCacheFile(serializedClosureUri, conf)
 
     // setting up job classes and name
     val job: Job = new Job(conf, "ClosureMapJob")
-    job setJarByClass (classOf[ClosureMap])
-    job setMapperClass (classOf[ClosureMap])
+    job.setJarByClass(classOf[ClosureMap])
+    job.setMapperClass(classOf[ClosureMap])
 
     // setting input and output
-    job setInputFormatClass (classOf[SequenceFileInputFormat[LongWritable, BytesWritable]])
-    job setMapOutputKeyClass (classOf[LongWritable])
-    job setMapOutputValueClass (classOf[BytesWritable])
-    job setOutputKeyClass (classOf[LongWritable])
-    job setOutputValueClass (classOf[BytesWritable])
+    job.setInputFormatClass(classOf[SequenceFileInputFormat[LongWritable, BytesWritable]])
+    job.setMapOutputKeyClass(classOf[LongWritable])
+    job.setMapOutputValueClass(classOf[BytesWritable])
+    job.setOutputKeyClass(classOf[LongWritable])
+    job.setOutputValueClass(classOf[BytesWritable])
 
     FileInputFormat addInputPath (job, new Path(otherArgs(0)))
     FileOutputFormat setOutputPath (job, new Path(otherArgs(1)))
