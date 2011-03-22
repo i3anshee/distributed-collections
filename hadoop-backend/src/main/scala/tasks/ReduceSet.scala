@@ -13,8 +13,11 @@ import scala.collection.JavaConversions._
 class ReduceSet extends Reducer[LongWritable, BytesWritable, LongWritable, BytesWritable] {
 
   override def reduce(key: LongWritable, values: Iterable[BytesWritable], context: Reducer[LongWritable, BytesWritable, LongWritable, BytesWritable]#Context) = {
+    // eliminate duplicates
+    val valuesSet = values.toSet
+
     // for now
-    values.foreach (context.write(key, _))
+    valuesSet.foreach (context.write(key, _))
   }
 
 }

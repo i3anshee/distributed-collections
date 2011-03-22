@@ -54,8 +54,12 @@ class ClosureFilterMap extends Mapper[LongWritable, BytesWritable, LongWritable,
       oos.writeObject(value);
       oos.flush()
 
-      // emit the result
-      context write (k, new BytesWritable(baos.toByteArray))
+
+      // TODO(VJ) introduce strategy(set, map, seq) for output processing of key value pairs that is loaded from distributed cache
+      // introducing it to the class hierarchy would be an overkill
+
+      // emit the result (set strategy)
+      context.write(new LongWritable(value.hashCode().longValue), new BytesWritable(baos.toByteArray))
     }
   }
 }

@@ -53,11 +53,11 @@ class ClosureMap extends Mapper[LongWritable, BytesWritable, LongWritable, Bytes
     //serialize again
     val baos = new ByteArrayOutputStream();
     val oos = new ObjectOutputStream(baos);
-    oos writeObject (result);
-    oos flush
+    oos.writeObject(result);
+    oos.flush()
 
-      // emit the result
-      context write (k, new BytesWritable(baos.toByteArray))
+    // emit the result
+    context.write(new LongWritable(result.hashCode().longValue), new BytesWritable(baos.toByteArray))
   }
 }
 

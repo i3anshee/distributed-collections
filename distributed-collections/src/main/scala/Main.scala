@@ -12,16 +12,25 @@ object Main {
     val distributedSet = new dcollections.Set[Long](new URI("collection-serialized"));
     println("Random Value = " + someValue)
 
+    // value containing closures
     val generatedSet = distributedSet.filter(_ < someValue)
 
+    // test of printing
     println("Original set:")
     println(distributedSet.toString)
 
     println("New original.map(_ + 1):")
     println(generatedSet.toString)
 
+
+    // checking multiple operations
     println("Multiple operations original.map(_ * 123.123).filter(_ > 400):")
     println(generatedSet.map(_ * 123.123).filter(_ > 400).toString)
 
+    // test set property
+    val noDuplicatesSet = distributedSet.map(_ % 2)
+    println(noDuplicatesSet.toString)
+
+    // test reduce
   }
 }
