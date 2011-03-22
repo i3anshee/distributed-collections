@@ -7,6 +7,6 @@ import org.apache.hadoop.mapreduce.Job
  * Date: 3/21/11
  */
 
-class MapperAdapter extends TaskAdapter {
-  def prepare(job: Job) = null
+abstract class MapperAdapter extends TaskAdapter {
+  def prepare(job: Job): Unit
 }

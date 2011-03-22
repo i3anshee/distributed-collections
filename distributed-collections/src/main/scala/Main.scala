@@ -8,8 +8,15 @@ import java.net.URI
 object Main {
   def main(args: Array[String]) = {
 
-    val distributedSet = new dcollections.Set[Long](new URI("collection"));
+    val distributedSet = new dcollections.Set[Long](new URI("collection-serialized"));
 
     val generatedSet = distributedSet.map(_ + 1)
+
+    println("Original set:")
+    println(distributedSet.toString)
+
+    println("New original.map(_+1):")
+    println(generatedSet.toString)
+
   }
 }

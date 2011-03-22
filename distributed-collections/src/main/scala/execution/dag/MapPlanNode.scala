@@ -1,10 +1,12 @@
 package execution.dag
 
+import mrapi.MapperAdapter
+
 /**
  * User: vjovanovic
  * Date: 3/21/11
  */
 
-class MapPlanNode[A, B](val closure: (A) => B) extends PlanNode(Set(), Set()) {
-
+abstract class MapPlanNode extends PlanNode(Set(), Set()) {
+  def mapAdapter():MapperAdapter
 }

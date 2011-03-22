@@ -11,7 +11,7 @@ import org.apache.hadoop.filecache.DistributedCache
  * Date: 3/21/11
  */
 
-class ClosureMapperAdapter(val closure: (AnyRef) => AnyRef) extends MapperAdapter {
+class ClosureMapperAdapter[A, B](val closure: (A) => B) extends MapperAdapter {
 
   override def prepare(job: Job) = {
     val conf = job.getConfiguration
@@ -24,9 +24,9 @@ class ClosureMapperAdapter(val closure: (AnyRef) => AnyRef) extends MapperAdapte
     oos.writeObject(closure)
     oos.flush()
     oos.close()
-    val serializedClosureUri = hdfsPath.toUri();
-    conf.set("closuremapper.closures", serializedClosureUri.toString)
-    DistributedCache.addCacheFile(serializedClosureUri, conf)
+    val serializedClosureURI = hdfsPath.toUri();
+    conf.set("closuremapper.closures", serializedClosureURI.toString)
+    DistributedCache.addCacheFile(serializedClosureURI, conf)
 
     job.setMapperClass(classOf[ClosureMap])
     job.setJarByClass(classOf[ClosureMap])

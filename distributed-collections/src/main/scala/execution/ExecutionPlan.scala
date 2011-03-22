@@ -1,6 +1,6 @@
 package execution
 
-import dag.{MapPlanNode, OutputPlanNode, PlanNode, InputPlanNode}
+import dag._
 import dcollections.DistributedCollection
 import java.util.UUID
 import java.net.URI
@@ -13,6 +13,7 @@ import mrapi.{ClosureMapperAdapter, JobAdapter}
 
 object ExecutionPlan {
 
+  // may be superfluous
   var inputs = Set[DistributedCollection]()
   var outputs = Set[DistributedCollection]()
   var intermediateResults = Set[Set[DistributedCollection]]()
@@ -27,11 +28,9 @@ object ExecutionPlan {
     node
   }
 
-  def addMapOperation[A, B](planNode: PlanNode, closure: (A) => B): PlanNode = {
-    val mapNode = new MapPlanNode(closure)
-    mapNode.addInEdge(planNode)
-    planNode.addOutEdge(mapNode)
-    mapNode
+  def addOperation(planNode: PlanNode, newPlanNode: PlanNode): PlanNode = {
+    planNode.addOutEdge(newPlanNode)
+    newPlanNode.addInEdge(planNode)
   }
 
   def sendToOutput(planNode: PlanNode, outputFile: URI): OutputPlanNode = {
@@ -44,13 +43,18 @@ object ExecutionPlan {
 
   def execute(): Unit = {
     // TODO (VJ) Here we will optimize the execution plan DAG
+    // then we generate one map one reduce execute them until we consume the whole EP DAG
+
+    // for single collection this will do
     val inputNode = inputNodes.last // for now
     val mapperNode = inputNode.outEdges.last
+    val reducerNode = mapperNode.outEdges.last
     val outputNode = outputNodes.last // for now
 
     // we execute all the commands from the EP DAG, but for now just one single input and single output
-    JobAdapter.execute(inputNode.inputURI, new ClosureMapperAdapter(
-      mapperNode.asInstanceOf[MapPlanNode[AnyRef, AnyRef]].closure), null, outputNode.outputURI)
+    JobAdapter.execute(inputNode.inputURI,
+      mapperNode.asInstanceOf[MapPlanNode].mapAdapter, reducerNode.asInstanceOf[ReducePlanNode].reduceAdapter,
+      outputNode.outputURI)
   }
 }
 

@@ -7,11 +7,13 @@ package execution.dag
 
 class PlanNode(var inEdges: Set[PlanNode], var outEdges: Set[PlanNode]) {
 
-  def addInEdge(planNode: PlanNode) = {
+  def addInEdge(planNode: PlanNode): PlanNode = {
     inEdges += planNode
+    this
   }
 
-  def addOutEdge(planNode: PlanNode) = {
+  def addOutEdge(planNode: PlanNode): PlanNode = {
     outEdges += planNode
+    this
   }
 }

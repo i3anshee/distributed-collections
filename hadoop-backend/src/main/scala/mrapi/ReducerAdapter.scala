@@ -8,6 +8,6 @@ import org.apache.hadoop.mapreduce.Job
  * Date: 3/21/11
  */
 
-class ReducerAdapter extends TaskAdapter {
-  def prepare(job: Job): Unit = {}
+abstract class ReducerAdapter extends TaskAdapter {
+  def prepare(job: Job): Unit
 }
