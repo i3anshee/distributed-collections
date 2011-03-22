@@ -4,7 +4,7 @@ import dag._
 import dcollections.DistributedCollection
 import java.util.UUID
 import java.net.URI
-import mrapi.{ClosureMapperAdapter, JobAdapter}
+import mrapi.{JobAdapter}
 
 /**
  * User: vjovanovic
@@ -55,6 +55,10 @@ object ExecutionPlan {
     JobAdapter.execute(inputNode.inputURI,
       mapperNode.asInstanceOf[MapPlanNode].mapAdapter, reducerNode.asInstanceOf[ReducePlanNode].reduceAdapter,
       outputNode.outputURI)
+
+    //for now we can also just remove the nodes
+    inputNodes = inputNodes.empty
+    outputNodes = outputNodes.empty
   }
 }
 

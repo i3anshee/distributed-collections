@@ -3,7 +3,7 @@ package dcollections
 import execution.{DCUtil, ExecutionPlan}
 import java.net.URI
 import mrapi.FSAdapter
-import execution.dag.{ReduceSetPlanNode, MapClosurePlanNode}
+import execution.dag.{MapFilterClosurePlanNode, ReduceSetPlanNode, MapClosurePlanNode}
 
 /**
  * User: vjovanovic
@@ -21,6 +21,19 @@ class Set[A](val collectionFile: URI) extends DistributedCollection() {
     val reduceNode = ExecutionPlan.addOperation(mapNode, new ReduceSetPlanNode())
 
     val outputSet = new Set[B](DCUtil.generateNewCollectionURI)
+    ExecutionPlan.sendToOutput(reduceNode, outputSet.location)
+
+    ExecutionPlan.execute
+    outputSet
+  }
+
+  def filter(p: A => Boolean): Set[A] = {
+    val inputNode = ExecutionPlan.addInputCollection(this)
+
+    val mapNode = ExecutionPlan.addOperation(inputNode, new MapFilterClosurePlanNode[A](p))
+    val reduceNode = ExecutionPlan.addOperation(mapNode, new ReduceSetPlanNode())
+
+    val outputSet = new Set[A](DCUtil.generateNewCollectionURI)
     ExecutionPlan.sendToOutput(reduceNode, outputSet.location)
 
     ExecutionPlan.execute
