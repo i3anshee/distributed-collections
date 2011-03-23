@@ -7,6 +7,6 @@ import mrapi.MapperAdapter
  * Date: 3/21/11
  */
 
-abstract class MapPlanNode extends PlanNode(Set(), Set()) {
+abstract class MapPlanNode extends PlanNode() {
   def mapAdapter():MapperAdapter
 }

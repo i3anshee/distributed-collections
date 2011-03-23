@@ -7,6 +7,6 @@ import mrapi.ReducerAdapter
  * Date: 3/22/11
  */
 
-abstract class ReducePlanNode extends PlanNode(Set(), Set()) {
+abstract class ReducePlanNode extends PlanNode() {
   def reduceAdapter(): ReducerAdapter
 }

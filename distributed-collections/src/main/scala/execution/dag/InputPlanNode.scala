@@ -7,6 +7,6 @@ import java.net.URI
  * Date: 3/21/11
  */
 
-class InputPlanNode(val inputURI: URI) extends PlanNode(Set(), Set()) {
+class InputPlanNode(val inputURI: URI) extends PlanNode() {
 
 }

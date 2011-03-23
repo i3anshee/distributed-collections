@@ -47,4 +47,9 @@ object FSAdapter {
     result
   }
 
+  def remove[A](file: URI): Boolean = {
+    // TODO this whole class needs to be replace with input output processor
+    true
+  }
+
 }

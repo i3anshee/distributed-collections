@@ -3,7 +3,7 @@ package dcollections
 import execution.{DCUtil, ExecutionPlan}
 import java.net.URI
 import mrapi.FSAdapter
-import execution.dag.{MapFilterClosurePlanNode, ReduceSetPlanNode, MapClosurePlanNode}
+import execution.dag._
 
 /**
  * User: vjovanovic
@@ -38,6 +38,26 @@ class Set[A](val collectionFile: URI) extends DistributedCollection() {
 
     ExecutionPlan.execute
     outputSet
+  }
+
+  def reduce[B, A](op: (A, B) => B): B = {
+    val inputNode = ExecutionPlan.addInputCollection(this)
+
+    val mapNode = ExecutionPlan.addOperation(inputNode, new MapReducePlanNode())
+    val reduceNode = ExecutionPlan.addOperation(mapNode, new ReduceClosurePlanNode(op))
+
+    val outputURI = DCUtil.generateNewCollectionURI
+    ExecutionPlan.sendToOutput(reduceNode, outputURI)
+
+    ExecutionPlan.execute
+
+    // read iterable from file system and apply reduce locally
+    val result = FSAdapter.valuesIterable[B](outputURI).last
+
+    // cleanup the file containing the final result
+    FSAdapter.remove(outputURI)
+
+    result
   }
 
   override def toString(): String = {

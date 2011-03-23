@@ -26,10 +26,6 @@ class ClosureMap extends Mapper[LongWritable, BytesWritable, LongWritable, Bytes
     // find the file in the node local cache
     val closureFileURI = conf get ("closuremapper.closures")
     val cacheFiles = DistributedCache.getCacheFiles(conf);
-
-    cacheFiles foreach (println)
-    println(closureFileURI)
-
     val closureFile = new Path(cacheFiles.filter((x: URI) => x.toString == closureFileURI)(0).toString)
 
     if (closureFileURI == null) {

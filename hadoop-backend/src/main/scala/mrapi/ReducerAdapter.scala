@@ -1,13 +1,8 @@
 package mrapi
 
-import org.apache.hadoop.mapreduce.Job
-
-
 /**
  * User: vjovanovic
- * Date: 3/21/11
+ * Date: 3/23/11
  */
 
-abstract class ReducerAdapter extends TaskAdapter {
-  def prepare(job: Job): Unit
-}
+abstract class ReducerAdapter extends TaskAdapter

@@ -5,7 +5,7 @@ package execution.dag
  * Date: 3/21/11
  */
 
-class PlanNode(var inEdges: Set[PlanNode], var outEdges: Set[PlanNode]) {
+class PlanNode(var inEdges: Set[PlanNode] = Set(), var outEdges: Set[PlanNode] = Set()) {
 
   def addInEdge(planNode: PlanNode): PlanNode = {
     inEdges += planNode
