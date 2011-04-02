@@ -1,64 +1,55 @@
 package execution
 
 import dag._
-import dcollections.DistributedCollection
+import dcollections.DistCollection
 import java.util.UUID
 import java.net.URI
-import mrapi.{JobAdapter}
+import dcollections.api.dag.ExPlanDAG
 
 /**
  * User: vjovanovic
  * Date: 3/20/11
  */
-
+// TODO (VJ) make thread safe
 object ExecutionPlan {
+  var exPlanDAG: ExPlanDAG = new ExPlanDAG()
 
-  // may be superfluous
-  var inputs = Set[DistributedCollection]()
-  var outputs = Set[DistributedCollection]()
-  var intermediateResults = Set[Set[DistributedCollection]]()
-
-  var inputNodes = Set[InputPlanNode]()
-  var outputNodes = Set[OutputPlanNode]()
-
-  def addInputCollection(collection: DistributedCollection): PlanNode = {
-    inputs += collection
-    val node = new InputPlanNode(collection.location)
-    inputNodes += node
+  def addInputCollection(collection: DistCollection[_]): PlanNode = {
+    val node = new InputPlanNode(collection)
+    exPlanDAG.addInputNode(node)
     node
   }
 
-  def addOperation(planNode: PlanNode, newPlanNode: PlanNode): PlanNode = {
-    planNode.addOutEdge(newPlanNode)
-    newPlanNode.addInEdge(planNode)
+  def addPlanNode(collection: DistCollection[_], newPlanNode: PlanNode) = {
+    var existingNode = exPlanDAG.getPlanNode(collection.uID, inputNodes)
+    if (existingNode.isEmpty) {
+      existingNode = Some(new InputPlanNode(collection))
+      exPlanDAG.addInpuNode(existingNode.get)
+    }
+
+    existingNode.get.addOutEdge(newPlanNode)
+    newPlanNode.addInEdge(existingNode.get)
+
+    newPlanNode
+  }
+
+  def addFlattenNode(collection: DistCollection, newFlattenPlanNode: PlanNode) = {
+    // check for every collection
+    throw new UnsupportedOperationException("Yet to be implemented!")
   }
 
   def sendToOutput(planNode: PlanNode, outputFile: URI): OutputPlanNode = {
     val outputNode = new OutputPlanNode(outputFile);
+
     outputNode.addInEdge(planNode)
     planNode.addOutEdge(outputNode)
-    outputNodes += outputNode
+
     outputNode
   }
 
   def execute(): Unit = {
-    // TODO (VJ) Here we will optimize the execution plan DAG
-    // then we generate one map one reduce execute them until we consume the whole EP DAG
-
-    // for single collection this will do
-    val inputNode = inputNodes.last // for now
-    val mapperNode = inputNode.outEdges.last
-    val reducerNode = mapperNode.outEdges.last
-    val outputNode = outputNodes.last // for now
-
-    // we execute all the commands from the EP DAG, but for now just one single input and single output
-    JobAdapter.execute(inputNode.inputURI,
-      mapperNode.asInstanceOf[MapPlanNode].mapAdapter, reducerNode.asInstanceOf[ReducePlanNode].reduceAdapter,
-      outputNode.outputURI)
-
-    //for now we can also just remove the nodes
-    inputNodes = inputNodes.empty
-    outputNodes = outputNodes.empty
+    JobExecutor.execute(exPlanDAG)
+    exPlanDAG = new ExPlanDAG()
   }
 }
 

@@ -1,11 +1,16 @@
 package execution.dag
 
+import java.util.UUID
+
+
 /**
  * User: vjovanovic
  * Date: 3/21/11
  */
 
-class PlanNode(var inEdges: Set[PlanNode] = Set(), var outEdges: Set[PlanNode] = Set()) {
+class PlanNode(val id: UUID = UUID.randomUUID) {
+  var inEdges: Set[PlanNode] = Set()
+  var outEdges: Set[PlanNode] = Set()
 
   def addInEdge(planNode: PlanNode): PlanNode = {
     inEdges += planNode

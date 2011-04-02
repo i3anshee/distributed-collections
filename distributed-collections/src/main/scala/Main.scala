@@ -10,7 +10,8 @@ object Main {
   def main(args: Array[String]) = {
     val someValue = Random.nextInt.abs % 100
 
-    val distributedSet = new dcollections.Set[Long](new URI("collection-serialized"));
+    // TODO from database, memory, abstraction ?
+    val distributedSet = new dcollections.DistSet[Long](new URI("collection-serialized"));
     println("Random Value = " + someValue)
 
     // value containing closures
@@ -35,8 +36,6 @@ object Main {
     // test set property
     val noDuplicatesSet = distributedSet.map(_ % 2)
     println(noDuplicatesSet.toString)
-
-    // test reduce
 
   }
 }

@@ -1,28 +1,35 @@
 import sbt._
 class Project(info: ProjectInfo) extends ParentProject(info) with IdeaProject {
+  lazy val distributedCollectionsBackendAPI  = project("backend-api", "backend-api", new DistributedCollectionsBackendAPIProject(_))
   lazy val hadoopBackend   = project("hadoop-backend", "hadoop-backend", new HadoopBackendProject(_))
   lazy val distributedCollections  = project("distributed-collections", "distributed-collections", new DistributedCollectionsProject(_))
 
   /**
-   * Common project dependencies
+   * Common util project dependencies
    */
-  trait CommonProjectDependencies {
+  trait UtilDependencies {
 
     // testing frameworks
     val testNG = "org.testng" % "testng" % "5.7" % "test" classifier "jdk15" withSources ()
     val scalaTest = "org.scalatest" % "scalatest" % "1.3" % "test" withSources ()
   }
 
-  class HadoopBackendProject(info: ProjectInfo) extends DefaultProject(info) with IdeaProject with CommonProjectDependencies {
+  class HadoopBackendProject(info: ProjectInfo) extends DefaultProject(info) with IdeaProject with UtilDependencies {
     val hadoopCore = "org.apache.mahout.hadoop" % "hadoop-core" % "0.20.1" % "provided"
+    val dependsOnDistributedCollectionsBackendAPI = distributedCollectionsBackendAPI
 
     // needed by hadoop (will be provided on cluster)
     val commonsLogging = "commons-logging" % "commons-logging" % "1.1.1" % "provided"
     val commonsCli = "commons-cli" % "commons-cli" % "1.1" % "provided"
   }
 
-  class DistributedCollectionsProject(info: ProjectInfo) extends DefaultProject(info) with IdeaProject with CommonProjectDependencies {
+  class DistributedCollectionsProject(info: ProjectInfo) extends DefaultProject(info) with IdeaProject with UtilDependencies {
     val dependsOnHadoopBackend = hadoopBackend
+    val dependsOnDistributedCollectionsBackendAPI = distributedCollectionsBackendAPI
+  }
+
+  class DistributedCollectionsBackendAPIProject(info: ProjectInfo) extends DefaultProject(info) with IdeaProject with UtilDependencies {
+
   }
 
 }
