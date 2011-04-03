@@ -31,7 +31,7 @@ object FSAdapter {
     val keyClass = reader.getKeyClass()
     val valueClass = reader.getValueClass()
 
-    val key = new LongWritable()
+    val key = new BytesWritable()
     val value = new BytesWritable()
 
     val result = new scala.collection.mutable.ArrayBuffer[A]()

@@ -1,10 +1,9 @@
 package execution
 
-import dag._
 import dcollections.DistCollection
 import java.util.UUID
 import java.net.URI
-import dcollections.api.dag.ExPlanDAG
+import dcollections.api.dag.{OutputPlanNode, InputPlanNode, PlanNode, ExPlanDAG}
 
 /**
  * User: vjovanovic
@@ -15,16 +14,17 @@ object ExecutionPlan {
   var exPlanDAG: ExPlanDAG = new ExPlanDAG()
 
   def addInputCollection(collection: DistCollection[_]): PlanNode = {
-    val node = new InputPlanNode(collection)
+    val node = new InputPlanNode(collection.location)
     exPlanDAG.addInputNode(node)
     node
   }
 
   def addPlanNode(collection: DistCollection[_], newPlanNode: PlanNode) = {
-    var existingNode = exPlanDAG.getPlanNode(collection.uID, inputNodes)
+    var existingNode = exPlanDAG.getPlanNode(collection.uID)
     if (existingNode.isEmpty) {
-      existingNode = Some(new InputPlanNode(collection))
-      exPlanDAG.addInpuNode(existingNode.get)
+      val inputNode = new InputPlanNode(collection.location)
+      existingNode = Some(inputNode)
+      exPlanDAG.addInputNode(inputNode)
     }
 
     existingNode.get.addOutEdge(newPlanNode)
@@ -33,7 +33,7 @@ object ExecutionPlan {
     newPlanNode
   }
 
-  def addFlattenNode(collection: DistCollection, newFlattenPlanNode: PlanNode) = {
+  def addFlattenNode(collection: DistCollection[_], newFlattenPlanNode: PlanNode) = {
     // check for every collection
     throw new UnsupportedOperationException("Yet to be implemented!")
   }

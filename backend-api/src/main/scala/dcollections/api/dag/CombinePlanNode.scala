@@ -1,10 +1,10 @@
-package execution.dag
+package dcollections.api.dag
 
 /**
  * User: vjovanovic
  * Date: 3/29/11
  */
 
-class CombinePlanNode[A,B,K] (val keyFunction: A => K, val op: (B, A) => B) extends PlanNode {
+case class CombinePlanNode[A, B, K](keyFunction: A => K, op: (B, A) => B) extends PlanNode {
 
 }

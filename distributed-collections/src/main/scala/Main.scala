@@ -11,31 +11,32 @@ object Main {
     val someValue = Random.nextInt.abs % 100
 
     // TODO from database, memory, abstraction ?
-    val distributedSet = new dcollections.DistSet[Long](new URI("collection-serialized"));
+    val distributedSet = new dcollections.DistSet[Long](new URI("long-set"));
     println("Random Value = " + someValue)
 
     // value containing closures
-    val generatedSet = distributedSet.filter(_ < someValue)
+    val generatedSet = distributedSet.map(_ + someValue)
 
-    println("Reduced value (SUM) =" + generatedSet.reduce((a: Long, b: Long) => a + b))
-
-    // test of printing
-    println("Original set:")
-    println(distributedSet.toString)
-
-    println("New original.map(_ + 1):")
     println(generatedSet.toString)
-
-
-    // checking multiple operations
-    println("Multiple operations original.map(_ * 123.123).filter(_ > 400):")
-    println(generatedSet.map(_ * 123.123).filter(_ > 400).toString)
-
-
-
-    // test set property
-    val noDuplicatesSet = distributedSet.map(_ % 2)
-    println(noDuplicatesSet.toString)
+//    println("Reduced value (SUM) =" + generatedSet.reduce((a: Long, b: Long) => a + b))
+//
+//    // test of printing
+//    println("Original set:")
+//    println(distributedSet.toString)
+//
+//    println("New original.map(_ + 1):")
+//    println(generatedSet.toString)
+//
+//
+//    // checking multiple operations
+//    println("Multiple operations original.map(_ * 123.123).filter(_ > 400):")
+//    println(generatedSet.map(_ * 123.123).filter(_ > 400).toString)
+//
+//
+//
+//    // test set property
+//    val noDuplicatesSet = distributedSet.map(_ % 2)
+//    println(noDuplicatesSet.toString)
 
   }
 }

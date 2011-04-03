@@ -1,4 +1,4 @@
-package execution.dag
+package dcollections.api.dag
 
 import dcollections.api.Emitter
 
@@ -7,6 +7,6 @@ import dcollections.api.Emitter
  * Date: 3/29/11
  */
 
-class ParallelDoPlanNode[A, B](val parOperation: (A, Emitter[B]) => Unit) extends PlanNode {
+case class ParallelDoPlanNode[A, B](parOperation: (A, Emitter[B]) => Unit) extends PlanNode {
 
 }

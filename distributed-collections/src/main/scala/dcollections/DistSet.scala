@@ -3,31 +3,39 @@ package dcollections
 import api.Emitter
 import execution.{ExecutionPlan}
 import java.net.URI
+import mrapi.FSAdapter
 
 /**
  * User: vjovanovic
  * Date: 3/13/11
  */
 
-class DistSet[A](val collectionFile: URI) extends DistCollection[A] {
-
-  def location = collectionFile
+class DistSet[A](location: URI) extends DistCollection[A](location) {
 
   def map[B](f: A => B): DistSet[B] = {
     val resultCollection = parallelDo((elem: A, emitter: Emitter[B]) => {
       emitter.emit(f(elem))
     }).groupBy(_.hashCode)
       .parallelDo((pair: (Int, scala.Traversable[B]), emitter: Emitter[B]) => {
-      val existing = Set()
-      trav.foreach((if (!existing.contains(_)) {
-        existing ++ _
-        emitter.emit(pair._2)
-      }))
+      val existing = scala.collection.mutable.HashSet[B]()
+      pair._2.foreach((el: B) =>
+        if (!existing.contains(el)) {
+          existing += el
+          emitter.emit(el)
+        }
+      )
     })
 
     ExecutionPlan.execute()
 
     new DistSet[B](resultCollection.location)
+  }
+
+  override def toString(): String = {
+    val builder = new StringBuilder("[ ")
+    FSAdapter.valuesIterable[A](location).foreach((v: A) => builder.append(v).append(" "))
+    builder.append("]")
+    builder.toString
   }
 
   //  def filter(p: A => Boolean): DistSet[A] = {
@@ -63,10 +71,4 @@ class DistSet[A](val collectionFile: URI) extends DistCollection[A] {
   //    result
   //  }
   //
-  //  override def toString(): String = {
-  //    val builder = new StringBuilder("[ ")
-  //    FSAdapter.valuesIterable[A](location).foreach((v: A) => builder.append(v).append(" "))
-  //    builder.append("]")
-  //    builder.toString
-  //  }
 }

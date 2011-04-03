@@ -1,4 +1,4 @@
-package execution.dag
+package dcollections.api.dag
 
 import java.util.UUID
 
@@ -8,7 +8,7 @@ import java.util.UUID
  * Date: 3/21/11
  */
 
-class PlanNode(val id: UUID = UUID.randomUUID) {
+abstract class PlanNode(val id: UUID = UUID.randomUUID) {
   var inEdges: Set[PlanNode] = Set()
   var outEdges: Set[PlanNode] = Set()
 

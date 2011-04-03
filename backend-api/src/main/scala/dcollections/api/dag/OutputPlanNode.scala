@@ -1,4 +1,4 @@
-package execution.dag
+package dcollections.api.dag
 
 import java.net.URI
 
@@ -7,6 +7,6 @@ import java.net.URI
  * Date: 3/21/11
  */
 
-class OutputPlanNode(val uri: URI) extends PlanNode() {
+case class OutputPlanNode(uri: URI) extends PlanNode() {
 
 }

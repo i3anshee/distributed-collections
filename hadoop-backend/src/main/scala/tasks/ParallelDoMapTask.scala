@@ -1,11 +1,10 @@
 package tasks
 
 import org.apache.hadoop.mapreduce.Mapper
-import org.apache.hadoop.fs.Path
-import java.net.URI
-import org.apache.hadoop.filecache.DistributedCache
 import org.apache.hadoop.io.{BytesWritable}
 import dcollections.api.Emitter
+import scala.{None}
+import collection.mutable.{Buffer, ArrayBuffer}
 
 /**
  * User: vjovanovic
@@ -14,38 +13,46 @@ import dcollections.api.Emitter
 
 class ParallelDoMapTask extends Mapper[BytesWritable, BytesWritable, BytesWritable, BytesWritable] with CollectionTask {
   // closure to be invoked
-  var task: (AnyRef, Emitter[AnyRef]) => AnyRef = None
-  var groupBy: Option[(AnyRef) => AnyRef] = None
+  var parTask: Option[(AnyRef, Emitter[AnyRef]) => Unit] = None
+  var groupBy: Option[(AnyRef, Emitter[AnyRef]) => AnyRef] = None
 
-  var taskDefined: Boolean
-  var groupByDefined: Boolean
 
   override def setup(context: Mapper[BytesWritable, BytesWritable, BytesWritable, BytesWritable]#Context) {
     super.setup(context)
 
     val conf = context.getConfiguration
-
-    // find the file in the node local cache
-    val closureFileURI = conf.get("distcoll.mapper.")
-    val cacheFiles = DistributedCache.getCacheFiles(conf)
-    val closureFile = new Path(cacheFiles.filter((x: URI) => x.toString == closureFileURI)(0).toString)
-
-    if (closureFileURI == null) {
-      throw new IllegalArgumentException("Closure file is not in the properties.")
-    }
-
-    val inputStream = new java.io.ObjectInputStream(closureFile.getFileSystem(conf).open(closureFile))
-    task = inputStream.readObject().asInstanceOf[(AnyRef) => Boolean]
-    inputStream.close()
+    parTask = deserializeOperation(conf, "distcoll.mapper.do")
+    groupBy = deserializeOperation(conf, "distcoll.mapper.groupBy")
   }
 
   override def map(k: BytesWritable, v: BytesWritable, context: Mapper[BytesWritable, BytesWritable, BytesWritable, BytesWritable]#Context): Unit = {
     //deserialize element
     val value = deserializeElement(v.getBytes())
 
-    // apply closure
-    if (taskDefined) {
-      task(value)
+    if (parTask.isEmpty && groupBy.isEmpty) {
+      context.write(k, v)
+    } else {
+      val emitter: EmiterImpl = new EmiterImpl
+
+      // apply parallel do
+      val emitted = parallelDo(ArrayBuffer(value), emitter, parTask)
+
+      // apply group by
+      if (groupBy.isDefined) {
+        emitted.foreach((el) => {
+          val key = groupBy.get(el, emitter)
+          emitter.getBuffer.foreach((v: AnyRef) => {
+            context.write(new BytesWritable(serializeElement(key)), new BytesWritable(serializeElement(v)))
+          })
+          emitter.clear
+        })
+      } else {
+        emitted.foreach((v: AnyRef) => {
+          context.write(k, new BytesWritable(serializeElement(v)))
+        })
+      }
     }
   }
+
 }
+

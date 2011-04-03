@@ -1,12 +1,11 @@
 package dcollections.api.dag
 
-import _root_.execution.dag.PlanNode
-
+import dcollections.api.Emitter
 /**
  * User: vjovanovic
  * Date: 3/29/11
  */
 
-class GroupByPlanNode[A, K](val keyFunction: A => K) extends PlanNode {
+case class GroupByPlanNode[A, B, K](keyFunction: (A, Emitter[B]) => K) extends PlanNode {
 
 }
