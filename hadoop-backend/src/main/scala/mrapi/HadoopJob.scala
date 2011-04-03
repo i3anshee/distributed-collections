@@ -7,12 +7,12 @@ import org.apache.hadoop.io.{BytesWritable}
 import org.apache.hadoop.mapreduce.lib.input.{SequenceFileInputFormat, FileInputFormat}
 import org.apache.hadoop.mapreduce.lib.output.{SequenceFileOutputFormat, FileOutputFormat}
 import dcollections.api.AbstractJobStrategy
-import tasks.{CombineTask, ParallelDoReduceTask}
 import org.apache.hadoop.fs.{FileSystem, Path}
 import java.io.ObjectOutputStream
 import org.apache.hadoop.filecache.DistributedCache
 import java.util.UUID
 import dcollections.api.dag._
+import tasks.{ParallelDoMapTask, CombineTask, ParallelDoReduceTask}
 
 /**
  * User: vjovanovic
@@ -77,7 +77,9 @@ class MapCombineShuffleReduceBuilder {
   var output: Option[OutputPlanNode] = None
 
   def configure(job: Job) = {
+
     // setting mapper and reducer classes and serializing closures
+    job.setMapperClass(classOf[ParallelDoMapTask])
     if (mapParallelDo.isDefined) {
       // serialize parallel do operation
       dfsSerialize(job, "distcoll.mapper.do", mapParallelDo.get.parOperation)
@@ -108,7 +110,6 @@ class MapCombineShuffleReduceBuilder {
     job.setOutputKeyClass(classOf[BytesWritable])
     job.setOutputValueClass(classOf[BytesWritable])
 
-    //
     job.setInputFormatClass(classOf[SequenceFileInputFormat[BytesWritable, BytesWritable]])
     job.setOutputFormatClass(classOf[SequenceFileOutputFormat[BytesWritable, BytesWritable]])
 
