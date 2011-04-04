@@ -65,7 +65,35 @@
           <root url="jar://$MODULE_DIR$/lib_managed/scala_2.8.0/provided/hadoop-core-0.20.1.jar!/" />
         </CLASSES>
         <JAVADOC />
-        <SOURCES />
+        <SOURCES>
+          <root url="file://$MODULE_DIR$/../../materials-dc/hadoop/hadoop-0.20.2/src/contrib/thriftfs/src/java" />
+          <root url="file://$MODULE_DIR$/../../materials-dc/hadoop/hadoop-0.20.2/src/contrib/vaidya/src/java" />
+          <root url="file://$MODULE_DIR$/../../materials-dc/hadoop/hadoop-0.20.2/src/contrib/thriftfs/test" />
+          <root url="file://$MODULE_DIR$/../../materials-dc/hadoop/hadoop-0.20.2/src/contrib/index/src/java" />
+          <root url="file://$MODULE_DIR$/../../materials-dc/hadoop/hadoop-0.20.2/src/contrib/index/src/test" />
+          <root url="file://$MODULE_DIR$/../../materials-dc/hadoop/hadoop-0.20.2/src/contrib/failmon/src/java" />
+          <root url="file://$MODULE_DIR$/../../materials-dc/hadoop/hadoop-0.20.2/src/contrib/hdfsproxy/src/test" />
+          <root url="file://$MODULE_DIR$/../../materials-dc/hadoop/hadoop-0.20.2/src/contrib/hdfsproxy/src/java" />
+          <root url="file://$MODULE_DIR$/../../materials-dc/hadoop/hadoop-0.20.2/src/benchmarks/gridmix2/src/java" />
+          <root url="file://$MODULE_DIR$/../../materials-dc/hadoop/hadoop-0.20.2/src/contrib/eclipse-plugin/src/java" />
+          <root url="file://$MODULE_DIR$/../../materials-dc/hadoop/hadoop-0.20.2/src/tools" />
+          <root url="file://$MODULE_DIR$/../../materials-dc/hadoop/hadoop-0.20.2/src/contrib/data_join/src/java" />
+          <root url="file://$MODULE_DIR$/../../materials-dc/hadoop/hadoop-0.20.2/src/examples" />
+          <root url="file://$MODULE_DIR$/../../materials-dc/hadoop/hadoop-0.20.2/src/contrib/data_join/src/test" />
+          <root url="file://$MODULE_DIR$/../../materials-dc/hadoop/hadoop-0.20.2/src/contrib/streaming/src/test" />
+          <root url="file://$MODULE_DIR$/../../materials-dc/hadoop/hadoop-0.20.2/src/mapred" />
+          <root url="file://$MODULE_DIR$/../../materials-dc/hadoop/hadoop-0.20.2/src/contrib/data_join/src/examples" />
+          <root url="file://$MODULE_DIR$/../../materials-dc/hadoop/hadoop-0.20.2/src/ant" />
+          <root url="file://$MODULE_DIR$/../../materials-dc/hadoop/hadoop-0.20.2/src/contrib/streaming/src/java" />
+          <root url="file://$MODULE_DIR$/../../materials-dc/hadoop/hadoop-0.20.2/src/core" />
+          <root url="file://$MODULE_DIR$/../../materials-dc/hadoop/hadoop-0.20.2/src/hdfs" />
+          <root url="file://$MODULE_DIR$/../../materials-dc/hadoop/hadoop-0.20.2/src/test" />
+          <root url="file://$MODULE_DIR$/../../materials-dc/hadoop/hadoop-0.20.2/src/contrib/thriftfs/gen-java" />
+          <root url="file://$MODULE_DIR$/../../materials-dc/hadoop/hadoop-0.20.2/src/contrib/fairscheduler/src/test" />
+          <root url="file://$MODULE_DIR$/../../materials-dc/hadoop/hadoop-0.20.2/src/contrib/fairscheduler/src/java" />
+          <root url="file://$MODULE_DIR$/../../materials-dc/hadoop/hadoop-0.20.2/src/contrib/capacity-scheduler/src/java" />
+          <root url="file://$MODULE_DIR$/../../materials-dc/hadoop/hadoop-0.20.2/src/contrib/capacity-scheduler/src/test" />
+        </SOURCES>
       </library>
     </orderEntry>
     <orderEntry type="module-library" exported="" scope="TEST">
