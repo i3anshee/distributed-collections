@@ -2,18 +2,18 @@ package tasks
 
 import org.apache.hadoop.mapreduce.Mapper
 import org.apache.hadoop.io.{BytesWritable}
-import dcollections.api.Emitter
 import scala.{None}
 import collection.mutable.{Buffer, ArrayBuffer}
+import dcollections.api.{RecordNumber, Emitter}
 
 /**
  * User: vjovanovic
  * Date: 4/2/11
  */
 
-class ParallelDoMapTask extends Mapper[BytesWritable, BytesWritable, BytesWritable, BytesWritable] with CollectionTask {
+class ParallelDoMapTask extends DistributedCollectionsMapper[BytesWritable, BytesWritable, BytesWritable, BytesWritable] with CollectionTask {
   // closure to be invoked
-  var parTask: Option[(AnyRef, Emitter[AnyRef]) => Unit] = None
+  var parTask: Option[(AnyRef, Emitter[AnyRef], RecordNumber) => Unit] = None
   var groupBy: Option[(AnyRef, Emitter[AnyRef]) => AnyRef] = None
 
 
@@ -25,17 +25,18 @@ class ParallelDoMapTask extends Mapper[BytesWritable, BytesWritable, BytesWritab
     groupBy = deserializeOperation(conf, "distcoll.mapper.groupBy")
   }
 
-  override def map(k: BytesWritable, v: BytesWritable, context: Mapper[BytesWritable, BytesWritable, BytesWritable, BytesWritable]#Context): Unit = {
-    //deserialize element
+  override def distMap(k: BytesWritable, v: BytesWritable, context: Mapper[BytesWritable, BytesWritable, BytesWritable, BytesWritable]#Context, recordNumber: RecordNumber): Unit = {
+    //de-serialize element
     val value = deserializeElement(v.getBytes())
 
+    println(recordNumber.fileNumber + ":" + recordNumber.recordStart + ":" + recordNumber.counter)
     if (parTask.isEmpty && groupBy.isEmpty) {
       context.write(k, v)
     } else {
       val emitter: EmiterImpl = new EmiterImpl
 
       // apply parallel do
-      val emitted = parallelDo(ArrayBuffer(value), emitter, parTask)
+      val emitted = parallelDo(ArrayBuffer(value), emitter, recordNumber, parTask)
 
       // apply group by
       if (groupBy.isDefined) {

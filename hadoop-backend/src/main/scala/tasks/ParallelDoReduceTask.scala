@@ -4,9 +4,9 @@ import org.apache.hadoop.io.BytesWritable
 import org.apache.hadoop.mapreduce.Reducer
 import java.lang.Iterable
 import scala.collection.JavaConversions._
-import dcollections.api.Emitter
 import collection.mutable.{ArrayBuffer}
 import scala.util.Random
+import dcollections.api.{RecordNumber, Emitter}
 
 /**
  * User: vjovanovic
@@ -16,7 +16,7 @@ import scala.util.Random
 class ParallelDoReduceTask extends Reducer[BytesWritable, BytesWritable, BytesWritable, BytesWritable] with CollectionTask {
 
   var isGroupBy: Boolean = false
-  var parTask: Option[(AnyRef, Emitter[AnyRef]) => Unit] = None
+  var parTask: Option[(AnyRef, Emitter[AnyRef], RecordNumber) => Unit] = None
   var foldTask: Option[(AnyRef, Any) => AnyRef] = None
 
   override def setup(context: Reducer[BytesWritable, BytesWritable, BytesWritable, BytesWritable]#Context) {
@@ -49,7 +49,7 @@ class ParallelDoReduceTask extends Reducer[BytesWritable, BytesWritable, BytesWr
 
       // parallel do
       val emitter = new EmiterImpl
-      val result = parallelDo(buffer, emitter, parTask)
+      val result = parallelDo(buffer, emitter, new RecordNumber(0, 0, 0), parTask)
 
       // write results to output
       result.foreach((v: AnyRef) => {

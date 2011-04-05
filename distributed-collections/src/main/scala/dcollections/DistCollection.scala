@@ -1,7 +1,7 @@
 package dcollections
 
 import api.dag.{ParallelDoPlanNode, GroupByPlanNode}
-import api.Emitter
+import api.{RecordNumber, Emitter}
 import java.util.UUID
 import java.net.URI
 import execution.{DCUtil, ExecutionPlan}
@@ -17,7 +17,7 @@ import execution.{DCUtil, ExecutionPlan}
 class DistCollection[A](var location: URI) {
   val uID: UUID = UUID.randomUUID
 
-  def parallelDo[B](parOperation: (A, Emitter[B]) => Unit): DistCollection[B] = {
+  def parallelDo[B](parOperation: (A, Emitter[B], RecordNumber)=> Unit): DistCollection[B] = {
     // add a parallel do node
     val outDistCollection = new DistCollection[B](DCUtil.generateNewCollectionURI)
 
@@ -25,6 +25,10 @@ class DistCollection[A](var location: URI) {
     ExecutionPlan.sendToOutput(node, outDistCollection.location)
 
     outDistCollection
+  }
+
+  def parallelDo[B](parOperation: (A, Emitter[B]) => Unit): DistCollection[B] = {
+    parallelDo((a:A, emitter:Emitter[B], rec: RecordNumber) => parOperation(a, emitter))
   }
 
   def groupBy[K, B](keyFunction: (A, Emitter[B]) => K): DistCollection[Pair[K, Iterable[B]]] = {

@@ -31,6 +31,10 @@ class DistSet[A](location: URI) extends DistCollection[A](location) {
     new DistSet[B](resultCollection.location)
   }
 
+//  def takeWhile() {
+//    val resultCollection = parallelDo((elem:A, emitter: Emitter[A], RecordNumber))
+//  }
+
   override def toString(): String = {
     val builder = new StringBuilder("[ ")
     FSAdapter.valuesIterable[A](location).foreach((v: A) => builder.append(v).append(" "))
