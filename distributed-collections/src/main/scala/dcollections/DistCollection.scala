@@ -5,6 +5,7 @@ import api.{CollectionId, RecordNumber, Emitter}
 import java.util.UUID
 import java.net.URI
 import execution.{DCUtil, ExecutionPlan}
+import mrapi.FSAdapter
 
 /**
  * User: vjovanovic
@@ -22,7 +23,7 @@ class DistCollection[A](location: URI) extends CollectionId(location) {
 
     val node = ExecutionPlan.addPlanNode(this, new ParallelDoPlanNode(outDistCollection, parOperation))
     ExecutionPlan.sendToOutput(node, outDistCollection)
-
+    ExecutionPlan.execute()
     outDistCollection
   }
 
@@ -36,7 +37,7 @@ class DistCollection[A](location: URI) extends CollectionId(location) {
 
     val node = ExecutionPlan.addPlanNode(this, new GroupByPlanNode[A, B, K](outDistCollection, keyFunction))
     ExecutionPlan.sendToOutput(node, outDistCollection)
-
+    ExecutionPlan.execute()
     outDistCollection
   }
 
@@ -52,6 +53,7 @@ class DistCollection[A](location: URI) extends CollectionId(location) {
       new FlattenPlanNode(outDistCollection, List(this) ++ collections)
     )
     ExecutionPlan.sendToOutput(node, outDistCollection)
+    ExecutionPlan.execute()
     outDistCollection
   }
 
@@ -67,4 +69,11 @@ class DistCollection[A](location: URI) extends CollectionId(location) {
 
 
   //  def view(): DistCollection[A] = new DistCollection[A]
+
+  override def toString(): String = {
+    val builder = new StringBuilder("[ ")
+    FSAdapter.valuesIterable[A](location).foreach((v: A) => builder.append(v).append(" "))
+    builder.append("]")
+    builder.toString
+  }
 }

@@ -58,7 +58,7 @@ object HadoopJob extends AbstractJobStrategy {
             mscrBuilder.flatten = Some(value)
             value.collections.foreach((col) => {
               // TODO (VJ) fix this cast
-              val inputNode = dag.getPlanNode(col).asInstanceOf[InputPlanNode]
+              val inputNode = dag.getPlanNode(col).get.asInstanceOf[InputPlanNode]
               mscrBuilder.input += inputNode
               queue.dequeueFirst(_ == inputNode)
             })
@@ -98,15 +98,18 @@ class MapCombineShuffleReduceBuilder {
     if (mapParallelDo.isDefined) {
       // serialize parallel do operation
       dfsSerialize(job, "distcoll.mapper.do", mapParallelDo.get.parOperation)
+      println("Map parallel do!!")
     }
 
     if (flatten.isDefined) {
       dfsSerialize(job, "distcoll.mapper.flatten", flatten.get.collections)
+      println("Flatten!!")
     }
 
     if (groupBy.isDefined) {
       // serialize group by closure
       dfsSerialize(job, "distcoll.mapper.groupBy", groupBy.get.keyFunction)
+      println("GroupBy!!")
     }
 
     // set combiner
@@ -114,6 +117,7 @@ class MapCombineShuffleReduceBuilder {
       dfsSerialize(job, "distcoll.mapper.do", combine.get.keyFunction)
       dfsSerialize(job, "distcoll.mapreduce.combine", combine.get.op)
       job.setCombinerClass(classOf[CombineTask])
+      println("Combine!!")
     }
 
     // serialize reducer parallel closure
@@ -121,6 +125,7 @@ class MapCombineShuffleReduceBuilder {
     if (reduceParallelDo.isDefined) {
       //serialize reduce parallel do
       dfsSerialize(job, "distcoll.reducer.do", reduceParallelDo.get.parOperation)
+      println("Reduce parallel do!!")
     }
 
     // setting input and output and intermediate types

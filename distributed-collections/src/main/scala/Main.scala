@@ -18,7 +18,7 @@ object Main {
     // value containing closures
     val generatedSet = distributedSet.map(_ + someValue)
 
-    val flatten = distributedSet.flatten(List(distributedSet1))
+    val flatten = generatedSet.flatten(List(distributedSet1))
 
 
     println(flatten.toString)

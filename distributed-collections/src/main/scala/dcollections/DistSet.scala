@@ -24,9 +24,8 @@ class DistSet[A](location: URI) extends DistCollection[A](location) {
           emitter.emit(el)
         }
       )
-    })
 
-    ExecutionPlan.execute()
+    })
 
     new DistSet[B](resultCollection.location)
   }
@@ -34,13 +33,6 @@ class DistSet[A](location: URI) extends DistCollection[A](location) {
 //  def takeWhile() {
 //    val resultCollection = parallelDo((elem:A, emitter: Emitter[A], RecordNumber))
 //  }
-
-  override def toString(): String = {
-    val builder = new StringBuilder("[ ")
-    FSAdapter.valuesIterable[A](location).foreach((v: A) => builder.append(v).append(" "))
-    builder.append("]")
-    builder.toString
-  }
 
   //  def filter(p: A => Boolean): DistSet[A] = {
   //    val inputNode = ExecutionPlan.addInputCollection(this)

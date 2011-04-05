@@ -7,4 +7,4 @@ import java.net.URI
  * Date: 4/5/11
  */
 
-class CollectionId(val location:URI)
+@serializable class CollectionId(val location:URI)
