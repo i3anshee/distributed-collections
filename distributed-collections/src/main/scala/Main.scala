@@ -11,13 +11,17 @@ object Main {
     val someValue = Random.nextInt.abs % 100
 
     // TODO from database, memory, abstraction ?
-    val distributedSet = new dcollections.DistSet[Long](new URI("long-set"));
+    val distributedSet = new dcollections.DistSet[Long](new URI("long-set"))
+    val distributedSet1 = new dcollections.DistSet[Long](new URI("long-set1"))
     println("Random Value = " + someValue)
 
     // value containing closures
     val generatedSet = distributedSet.map(_ + someValue)
 
-    println(generatedSet.toString)
+    val flatten = distributedSet.flatten(List(distributedSet1))
+
+
+    println(flatten.toString)
 //    println("Reduced value (SUM) =" + generatedSet.reduce((a: Long, b: Long) => a + b))
 //
 //    // test of printing

@@ -13,6 +13,7 @@ import org.apache.hadoop.filecache.DistributedCache
 import java.util.UUID
 import dcollections.api.dag._
 import tasks.{ParallelDoMapTask, CombineTask, ParallelDoReduceTask}
+import scala.collection.mutable
 
 /**
  * User: vjovanovic
@@ -25,7 +26,7 @@ object HadoopJob extends AbstractJobStrategy {
 
     optimizePlan(dag)
 
-    val queue = new scala.collection.mutable.Queue[PlanNode]() ++= dag.inputNodes
+    var queue = new mutable.Queue[PlanNode]() ++= dag.inputNodes
 
     while (queue.size > 0) {
       val mscrBuilder = new MapCombineShuffleReduceBuilder()
@@ -34,20 +35,33 @@ object HadoopJob extends AbstractJobStrategy {
       while (node.isDefined) {
         node.get match {
           case value: InputPlanNode =>
-            mscrBuilder.input = Some(value)
+            mscrBuilder.input += value
+
           case value: ParallelDoPlanNode[_, _] =>
             if (mapPhase)
               mscrBuilder.mapParallelDo = Some(value)
             else
               mscrBuilder.reduceParallelDo = Some(value)
+
           case value: GroupByPlanNode[_, _, _] =>
             mscrBuilder.groupBy = Some(value)
             mapPhase = false
+
           case value: CombinePlanNode[_, _, _] =>
             mscrBuilder.combine = Some(value)
             mapPhase = false
+
           case value: OutputPlanNode =>
-            mscrBuilder.output = Some(value)
+            mscrBuilder.output += value
+
+          case value: FlattenPlanNode =>
+            mscrBuilder.flatten = Some(value)
+            value.collections.foreach((col) => {
+              // TODO (VJ) fix this cast
+              val inputNode = dag.getPlanNode(col).asInstanceOf[InputPlanNode]
+              mscrBuilder.input += inputNode
+              queue.dequeueFirst(_ == inputNode)
+            })
         }
         node = node.get.outEdges.headOption
       }
@@ -69,12 +83,13 @@ object HadoopJob extends AbstractJobStrategy {
 }
 
 class MapCombineShuffleReduceBuilder {
-  var input: Option[InputPlanNode] = None
+  var input: mutable.Set[InputPlanNode] = mutable.HashSet()
   var mapParallelDo: Option[ParallelDoPlanNode[_, _]] = None
   var groupBy: Option[GroupByPlanNode[_, _, _]] = None
   var combine: Option[CombinePlanNode[_, _, _]] = None
   var reduceParallelDo: Option[ParallelDoPlanNode[_, _]] = None
-  var output: Option[OutputPlanNode] = None
+  var flatten: Option[FlattenPlanNode] = None
+  var output: mutable.HashSet[OutputPlanNode] = mutable.HashSet()
 
   def configure(job: Job) = {
 
@@ -83,6 +98,10 @@ class MapCombineShuffleReduceBuilder {
     if (mapParallelDo.isDefined) {
       // serialize parallel do operation
       dfsSerialize(job, "distcoll.mapper.do", mapParallelDo.get.parOperation)
+    }
+
+    if (flatten.isDefined) {
+      dfsSerialize(job, "distcoll.mapper.flatten", flatten.get.collections)
     }
 
     if (groupBy.isDefined) {
@@ -114,8 +133,10 @@ class MapCombineShuffleReduceBuilder {
     job.setOutputFormatClass(classOf[SequenceFileOutputFormat[BytesWritable, BytesWritable]])
 
     // set the input and output files for the job
-    FileInputFormat.addInputPath(job, new Path(input.get.uri.toString))
-    FileOutputFormat.setOutputPath(job, new Path(output.get.uri.toString))
+    input.foreach((in) => FileInputFormat.addInputPath(job, new Path(in.id.location.toString)))
+
+    // TODO (VJ) fix the multiple outputs
+    output.foreach((out) => FileOutputFormat.setOutputPath(job, new Path(out.id.location.toString)))
   }
 
   private def dfsSerialize(job: Job, key: String, data: AnyRef) = {

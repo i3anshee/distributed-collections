@@ -1,6 +1,7 @@
 package dcollections.api.dag
 
 import java.util.UUID
+import dcollections.api.CollectionId
 
 /**
  * User: vjovanovic
@@ -15,7 +16,7 @@ class ExPlanDAG {
     inputNodes += inputPlanNode
   }
 
-  def getPlanNode(id: UUID): Option[PlanNode] = {
+  def getPlanNode(id: CollectionId): Option[PlanNode] = {
     val queue = new scala.collection.mutable.Queue[PlanNode]() ++= inputNodes
 
     var res: Option[PlanNode] = None

@@ -1,7 +1,7 @@
 package dcollections
 
-import api.dag.{ParallelDoPlanNode, GroupByPlanNode}
-import api.{RecordNumber, Emitter}
+import api.dag.{FlattenPlanNode, ParallelDoPlanNode, GroupByPlanNode}
+import api.{CollectionId, RecordNumber, Emitter}
 import java.util.UUID
 import java.net.URI
 import execution.{DCUtil, ExecutionPlan}
@@ -14,29 +14,28 @@ import execution.{DCUtil, ExecutionPlan}
 /**
  * Super class for all distributed collections. Provides four basic primitives from which all other methods are built.
  */
-class DistCollection[A](var location: URI) {
-  val uID: UUID = UUID.randomUUID
+class DistCollection[A](location: URI) extends CollectionId(location) {
 
-  def parallelDo[B](parOperation: (A, Emitter[B], RecordNumber)=> Unit): DistCollection[B] = {
+  def parallelDo[B](parOperation: (A, Emitter[B], RecordNumber) => Unit): DistCollection[B] = {
     // add a parallel do node
     val outDistCollection = new DistCollection[B](DCUtil.generateNewCollectionURI)
 
-    val node = ExecutionPlan.addPlanNode(this, new ParallelDoPlanNode(parOperation))
-    ExecutionPlan.sendToOutput(node, outDistCollection.location)
+    val node = ExecutionPlan.addPlanNode(this, new ParallelDoPlanNode(outDistCollection, parOperation))
+    ExecutionPlan.sendToOutput(node, outDistCollection)
 
     outDistCollection
   }
 
   def parallelDo[B](parOperation: (A, Emitter[B]) => Unit): DistCollection[B] = {
-    parallelDo((a:A, emitter:Emitter[B], rec: RecordNumber) => parOperation(a, emitter))
+    parallelDo((a: A, emitter: Emitter[B], rec: RecordNumber) => parOperation(a, emitter))
   }
 
   def groupBy[K, B](keyFunction: (A, Emitter[B]) => K): DistCollection[Pair[K, Iterable[B]]] = {
     // add a groupBy node to execution plan
     val outDistCollection = new DistCollection[Pair[K, Iterable[B]]](DCUtil.generateNewCollectionURI)
 
-    val node = ExecutionPlan.addPlanNode(this, new GroupByPlanNode[A, B, K](keyFunction))
-    ExecutionPlan.sendToOutput(node, outDistCollection.location)
+    val node = ExecutionPlan.addPlanNode(this, new GroupByPlanNode[A, B, K](outDistCollection, keyFunction))
+    ExecutionPlan.sendToOutput(node, outDistCollection)
 
     outDistCollection
   }
@@ -48,8 +47,12 @@ class DistCollection[A](var location: URI) {
     })
 
   def flatten(collections: Traversable[DistCollection[A]]): DistCollection[A] = {
-    // add flatten node
-    this
+    val outDistCollection = new DistCollection[A](DCUtil.generateNewCollectionURI)
+    val node = ExecutionPlan.addFlattenNode(
+      new FlattenPlanNode(outDistCollection, List(this) ++ collections)
+    )
+    ExecutionPlan.sendToOutput(node, outDistCollection)
+    outDistCollection
   }
 
   //  def combineValues[K, B](keyFunction: A => K, op: (B, A) => B): DistCollection[Pair[K, B]] = {

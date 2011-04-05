@@ -3,7 +3,8 @@ package execution
 import dcollections.DistCollection
 import java.util.UUID
 import java.net.URI
-import dcollections.api.dag.{OutputPlanNode, InputPlanNode, PlanNode, ExPlanDAG}
+import dcollections.api.CollectionId
+import dcollections.api.dag._
 
 /**
  * User: vjovanovic
@@ -14,15 +15,15 @@ object ExecutionPlan {
   var exPlanDAG: ExPlanDAG = new ExPlanDAG()
 
   def addInputCollection(collection: DistCollection[_]): PlanNode = {
-    val node = new InputPlanNode(collection.location)
+    val node = new InputPlanNode(collection)
     exPlanDAG.addInputNode(node)
     node
   }
 
-  def addPlanNode(collection: DistCollection[_], newPlanNode: PlanNode) = {
-    var existingNode = exPlanDAG.getPlanNode(collection.uID)
+  def addPlanNode(collection: CollectionId, newPlanNode: PlanNode) = {
+    var existingNode = exPlanDAG.getPlanNode(collection)
     if (existingNode.isEmpty) {
-      val inputNode = new InputPlanNode(collection.location)
+      val inputNode = new InputPlanNode(collection)
       existingNode = Some(inputNode)
       exPlanDAG.addInputNode(inputNode)
     }
@@ -33,13 +34,22 @@ object ExecutionPlan {
     newPlanNode
   }
 
-  def addFlattenNode(collection: DistCollection[_], newFlattenPlanNode: PlanNode) = {
-    // check for every collection
-    throw new UnsupportedOperationException("Yet to be implemented!")
+  def addFlattenNode(newFlattenPlanNode: FlattenPlanNode) = {
+    newFlattenPlanNode.collections.foreach((collection: CollectionId) => {
+      var existingNode = exPlanDAG.getPlanNode(collection)
+      if (existingNode.isEmpty) {
+        val inputNode = new InputPlanNode(collection)
+        existingNode = Some(inputNode)
+        exPlanDAG.addInputNode(inputNode)
+      }
+      newFlattenPlanNode.addInEdge(existingNode.get)
+      existingNode.get.addOutEdge(newFlattenPlanNode)
+    })
+    newFlattenPlanNode
   }
 
-  def sendToOutput(planNode: PlanNode, outputFile: URI): OutputPlanNode = {
-    val outputNode = new OutputPlanNode(outputFile);
+  def sendToOutput(planNode: PlanNode, collection: CollectionId): OutputPlanNode = {
+    val outputNode = new OutputPlanNode(collection)
 
     outputNode.addInEdge(planNode)
     planNode.addOutEdge(outputNode)

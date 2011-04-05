@@ -1,14 +1,14 @@
 package dcollections.api.dag
 
-import java.util.UUID
-
+import dcollections.api.CollectionId
+import java.net.URI
 
 /**
  * User: vjovanovic
  * Date: 3/21/11
  */
 
-abstract class PlanNode(val id: UUID = UUID.randomUUID) {
+abstract class PlanNode(val id: CollectionId) {
   var inEdges: Set[PlanNode] = Set()
   var outEdges: Set[PlanNode] = Set()
 
