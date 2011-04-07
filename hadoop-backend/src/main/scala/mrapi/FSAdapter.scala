@@ -19,7 +19,7 @@ object FSAdapter {
    *
    * TODO Currently it fetches all the elements at once and puts them into a List.
    */
-  def valuesIterable[A](file: URI): Iterable[A] = {
+  def valuesTraversable[A](file: URI): Traversable[A] = {
     val filePart = URI.create(file.toString + "/part-r-00000") // to be replaced with proper utility method
 
     val conf = new Configuration()

@@ -47,7 +47,7 @@ object HadoopJob extends AbstractJobStrategy {
             mscrBuilder.groupBy = Some(value)
             mapPhase = false
 
-          case value: CombinePlanNode[_, _, _] =>
+          case value: CombinePlanNode[_, _, _, _] =>
             mscrBuilder.combine = Some(value)
             mapPhase = false
 
@@ -86,7 +86,7 @@ class MapCombineShuffleReduceBuilder {
   var input: mutable.Set[InputPlanNode] = mutable.HashSet()
   var mapParallelDo: Option[ParallelDoPlanNode[_, _]] = None
   var groupBy: Option[GroupByPlanNode[_, _, _]] = None
-  var combine: Option[CombinePlanNode[_, _, _]] = None
+  var combine: Option[CombinePlanNode[_, _, _, _]] = None
   var reduceParallelDo: Option[ParallelDoPlanNode[_, _]] = None
   var flatten: Option[FlattenPlanNode] = None
   var output: mutable.HashSet[OutputPlanNode] = mutable.HashSet()
@@ -114,7 +114,7 @@ class MapCombineShuffleReduceBuilder {
 
     // set combiner
     if (combine.isDefined) {
-      dfsSerialize(job, "distcoll.mapper.do", combine.get.keyFunction)
+      dfsSerialize(job, "distcoll.mapper.groupBy", combine.get.keyFunction)
       dfsSerialize(job, "distcoll.mapreduce.combine", combine.get.op)
       job.setCombinerClass(classOf[CombineTask])
       println("Combine!!")
