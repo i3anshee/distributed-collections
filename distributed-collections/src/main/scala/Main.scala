@@ -1,4 +1,5 @@
 import dcollections.api.Emitter
+import execution.ExecutionPlan
 import java.net.URI
 import scala.util.Random
 
@@ -12,8 +13,10 @@ object Main {
     val someValue = Random.nextInt.abs % 100
 
     val distributedSet = new dcollections.DistSet[Long](new URI("long-set"))
+
+    ExecutionPlan.globalCache.put("testGlobalCache", 1)
     val reduced = distributedSet.combineValues((v, emitter: Emitter[Long]) => {
-      emitter.emit(v);
+      emitter.emit(v)
       1L
     },
       (agg: Long, v: Long) => agg + v
@@ -25,29 +28,10 @@ object Main {
 
     // value containing closures
     val generatedSet = distributedSet.map(_ + someValue)
+    println(generatedSet.size)
 
     val flatten = generatedSet.flatten(List(distributedSet1))
 
     println(flatten.toString)
-    //    println("Reduced value (SUM) =" + generatedSet.reduce((a: Long, b: Long) => a + b))
-    //
-    //    // test of printing
-    //    println("Original set:")
-    //    println(distributedSet.toString)
-    //
-    //    println("New original.map(_ + 1):")
-    //    println(generatedSet.toString)
-    //
-    //
-    //    // checking multiple operations
-    //    println("Multiple operations original.map(_ * 123.123).filter(_ > 400):")
-    //    println(generatedSet.map(_ * 123.123).filter(_ > 400).toString)
-    //
-    //
-    //
-    //    // test set property
-    //    val noDuplicatesSet = distributedSet.map(_ % 2)
-    //    println(noDuplicatesSet.toString)
-
   }
 }

@@ -6,7 +6,9 @@ import java.lang.Iterable
 import scala.collection.JavaConversions._
 import collection.mutable.{ArrayBuffer}
 import scala.util.Random
-import dcollections.api.{RecordNumber, Emitter}
+import dcollections.api.{DistContext, RecordNumber, Emitter}
+import collection.immutable
+import collection.mutable
 
 /**
  * User: vjovanovic
@@ -16,8 +18,9 @@ import dcollections.api.{RecordNumber, Emitter}
 class ParallelDoReduceTask extends Reducer[BytesWritable, BytesWritable, BytesWritable, BytesWritable] with CollectionTask {
 
   var isGroupBy: Boolean = false
-  var parTask: Option[(AnyRef, Emitter[AnyRef], RecordNumber) => Unit] = None
+  var parTask: Option[(AnyRef, Emitter[AnyRef], DistContext) => Unit] = None
   var foldTask: Option[(AnyRef, Any) => AnyRef] = None
+  var distContext: DistContext = new DistContext(mutable.Map[String, Any](), immutable.Map[String, Any]())
 
   override def setup(context: Reducer[BytesWritable, BytesWritable, BytesWritable, BytesWritable]#Context) {
     super.setup(context)
@@ -35,10 +38,14 @@ class ParallelDoReduceTask extends Reducer[BytesWritable, BytesWritable, BytesWr
       if (isGroupBy) {
         // TODO fix this mess when multiple collection format is known
         // make a collection of elements and write it
+        context.getCounter("collections", "current").increment(1)
         context.write(new BytesWritable(serializeElement(new Random().nextLong)),
           new BytesWritable(serializeElement((deserializeElement(key.getBytes), values.map((bytes: BytesWritable) => deserializeElement(bytes.getBytes))))))
       } else {
-        values.foreach((v: BytesWritable) => context.write(key, v))
+        values.foreach((v: BytesWritable) => {
+          context.getCounter("collections", "current").increment(1)
+          context.write(key, v)
+        })
       }
     else {
       var buffer: Traversable[AnyRef] = values.map((v: BytesWritable) => deserializeElement(v.getBytes()))
@@ -49,10 +56,12 @@ class ParallelDoReduceTask extends Reducer[BytesWritable, BytesWritable, BytesWr
 
       // parallel do
       val emitter = new EmiterImpl
-      val result = parallelDo(buffer, emitter, new RecordNumber(0, 0, 0), parTask)
+      distContext.recordNumber = new RecordNumber()
+      val result = parallelDo(buffer, emitter, distContext, parTask)
 
       // write results to output
       result.foreach((v: AnyRef) => {
+        context.getCounter("collections", "current").increment(1)
         context.write(key, new BytesWritable(serializeElement(v)))
       })
     }

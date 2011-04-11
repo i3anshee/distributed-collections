@@ -5,7 +5,7 @@ import java.net.URI
 import org.apache.hadoop.fs.Path
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.filecache.DistributedCache
-import dcollections.api.{RecordNumber, Emitter}
+import dcollections.api.{DistContext, Emitter}
 
 /**
  * User: vjovanovic
@@ -44,11 +44,12 @@ trait CollectionTask {
     }
   }
 
-  def parallelDo(elems: Traversable[AnyRef], emitter: EmiterImpl, recordNumber:RecordNumber,
-                 parTask: Option[(AnyRef, Emitter[AnyRef], RecordNumber) => Unit]): TraversableOnce[AnyRef] = {
+  // TODO (VJ) cleanup. Tie the emitter and context in the function
+  def parallelDo(elems: Traversable[AnyRef], emitter: EmiterImpl, context: DistContext,
+                 parTask: Option[(AnyRef, Emitter[AnyRef], DistContext) => Unit]): TraversableOnce[AnyRef] = {
     if (parTask.isDefined) {
       elems.foreach((el) => {
-        parTask.get(el, emitter, recordNumber)
+        parTask.get(el, emitter, context)
       })
       val newElems = emitter.getBuffer
       emitter.clear

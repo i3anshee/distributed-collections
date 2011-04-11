@@ -1,6 +1,5 @@
 package dcollections.api.dag
 
-import java.util.UUID
 import dcollections.api.CollectionId
 
 /**

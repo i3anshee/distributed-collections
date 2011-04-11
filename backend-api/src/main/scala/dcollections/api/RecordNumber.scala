@@ -5,6 +5,6 @@ package dcollections.api
  * Date: 4/5/11
  */
 
-class RecordNumber(val fileNumber: Int, val recordStart: Long, var counter: Long) {
-  def nextRecord() = counter += 1
+class RecordNumber(val fileNumber: Int = 0, val recordStart: Long = 0L, var counter: Long = 0L) {
+  def incrementRecordCounter() = counter += 1
 }

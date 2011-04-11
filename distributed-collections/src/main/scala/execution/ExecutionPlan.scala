@@ -3,8 +3,9 @@ package execution
 import dcollections.DistCollection
 import java.util.UUID
 import java.net.URI
-import dcollections.api.CollectionId
 import dcollections.api.dag._
+import collection.mutable
+import dcollections.api.{CollectionId}
 
 /**
  * User: vjovanovic
@@ -13,6 +14,7 @@ import dcollections.api.dag._
 // TODO (VJ) make thread safe
 object ExecutionPlan {
   var exPlanDAG: ExPlanDAG = new ExPlanDAG()
+  var globalCache = new mutable.HashMap[String, Any]()
 
   def addInputCollection(collection: DistCollection[_]): PlanNode = {
     val node = new InputPlanNode(collection)
@@ -58,9 +60,10 @@ object ExecutionPlan {
   }
 
   def execute(): Unit = {
-    JobExecutor.execute(exPlanDAG)
+    JobExecutor.execute(exPlanDAG, globalCache)
     exPlanDAG = new ExPlanDAG()
   }
+
 }
 
 /**

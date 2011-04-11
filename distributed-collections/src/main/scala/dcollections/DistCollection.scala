@@ -1,10 +1,11 @@
 package dcollections
 
 import api.dag.{CombinePlanNode, FlattenPlanNode, ParallelDoPlanNode, GroupByPlanNode}
-import api.{CollectionId, RecordNumber, Emitter}
+import api.{DistContext, CollectionId, Emitter}
 import java.net.URI
 import execution.{DCUtil, ExecutionPlan}
 import mrapi.FSAdapter
+import io.CollectionsIO
 
 /**
  * User: vjovanovic
@@ -16,7 +17,7 @@ import mrapi.FSAdapter
  */
 class DistCollection[A](location: URI) extends CollectionId(location) {
 
-  def parallelDo[B](parOperation: (A, Emitter[B], RecordNumber) => Unit): DistCollection[B] = {
+  def parallelDo[B](parOperation: (A, Emitter[B], DistContext) => Unit): DistCollection[B] = {
     // add a parallel do node
     val outDistCollection = new DistCollection[B](DCUtil.generateNewCollectionURI)
 
@@ -27,7 +28,7 @@ class DistCollection[A](location: URI) extends CollectionId(location) {
   }
 
   def parallelDo[B](parOperation: (A, Emitter[B]) => Unit): DistCollection[B] = {
-    parallelDo((a: A, emitter: Emitter[B], rec: RecordNumber) => parOperation(a, emitter))
+    parallelDo((a: A, emitter: Emitter[B], context: DistContext) => parOperation(a, emitter))
   }
 
   def groupBy[K, B](keyFunction: (A, Emitter[B]) => K): DistMap[K, Iterable[B]] = {
@@ -99,14 +100,14 @@ class DistCollection[A](location: URI) extends CollectionId(location) {
   else
     combineValues((v: A, emitter: Emitter[A]) => {
       emitter.emit(v);
-      1L
+      true
     }, op).asTraversable().head._2
 
 
   /**Builds a new collection by applying a function to all elements of this $coll
    *  and concatenating the results.
    */
-  def flatMap[B, That](f: A => Traversable[B]): DistCollection[A] = parallelDo((el, emitter) => f(el).foreach(v => emitter.emit(el)))
+  def flatMap[B](f: A => Traversable[B]): DistCollection[B] = parallelDo((el, emitter) => f(el).foreach((v) => emitter.emit(v)))
 
   /**Selects all elements of this $coll which satisfy a predicate.
    *
@@ -159,7 +160,7 @@ class DistCollection[A](location: URI) extends CollectionId(location) {
    * @return an option value containing the first defined result of
    *              `f`, or `None` if `f` returns `None` for all all elements.
    */
-  def mapFind[B](f: A => Option[B]): Option[B] = throw new UnsupportedOperationException("Waiting for local cache !!!")
+  def mapFind[B](f: A => Option[B]): Option[B] = throw new UnsupportedOperationException("Waiting for global cache !!!")
 
   /**Tests whether a predicate holds for all elements of this $coll.
    *
@@ -169,7 +170,7 @@ class DistCollection[A](location: URI) extends CollectionId(location) {
    * @return        `true` if the given predicate `p` holds for all elements
    *                 of this $coll, otherwise `false`.
    */
-  def forall(p: A => Boolean): Boolean = throw new UnsupportedOperationException("Waiting for local cache !!!")
+  def forall(p: A => Boolean): Boolean = throw new UnsupportedOperationException("Waiting for global cache !!!")
 
   /**Tests whether a predicate holds for some of the elements of this $coll.
    *
@@ -196,8 +197,7 @@ class DistCollection[A](location: URI) extends CollectionId(location) {
    * @return the first element of this $coll.
    * @throws `NoSuchElementException` if the $coll is empty.
    */
-  def
-  head: A = throw new UnsupportedOperationException("Waiting for metadata!!!")
+  def head: A = throw new UnsupportedOperationException("Waiting for metadata!!!")
 
   /**Optionally selects the first element.
    *  $orderDependent
@@ -221,7 +221,7 @@ class DistCollection[A](location: URI) extends CollectionId(location) {
    * @return the first element of this $coll.
    * @throws `NoSuchElementException` if the $coll is empty.
    */
-  def last: A = throw new UnsupportedOperationException()
+  def last: A = throw new UnsupportedOperationException("Waiting for metadata!!!")
 
   /**Optionally selects the last element.
    *  $orderDependent
@@ -392,7 +392,9 @@ class DistCollection[A](location: URI) extends CollectionId(location) {
   def sameElements[B >: A](that: DistCollection[B]): Boolean = throw new UnsupportedOperationException("Waiting for ordered !!!")
 
 
-  def isEmpty: Boolean = throw new UnsupportedOperationException("Waiting for metadata !!!")
+  def isEmpty: Boolean = (size == 0)
+
+  def size: Long = CollectionsIO.getCollectionMetaData(this).size
 
   // NOT IMPLEMENTED
   // scanLeft

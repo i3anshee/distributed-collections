@@ -1,6 +1,7 @@
 package dcollections.api
 
 import dag.ExPlanDAG
+import collection.mutable
 
 /**
  * User: vjovanovic
@@ -8,5 +9,5 @@ import dag.ExPlanDAG
  */
 
 trait AbstractJobStrategy {
-   def execute(dag: ExPlanDAG)
+   def execute(dag: ExPlanDAG, globalCache: mutable.Map[String, Any])
 }

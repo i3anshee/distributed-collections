@@ -5,6 +5,7 @@ import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.{FileSystem, Path}
 import java.io.{ObjectInputStream, ByteArrayInputStream}
 import org.apache.hadoop.io.{SequenceFile, BytesWritable, LongWritable}
+import org.apache.hadoop.mapreduce.Job
 
 /**
  * User: vjovanovic
@@ -50,6 +51,12 @@ object FSAdapter {
   def remove[A](file: URI): Boolean = {
     // TODO this whole class needs to be replace with input output processor
     true
+  }
+
+  def writeToFile(job:Job, path: Path, bytes: Array[Byte]) = {
+    val file = path.getFileSystem(job.getConfiguration).create(path, true)
+    file.write(bytes)
+    file.close()
   }
 
 }

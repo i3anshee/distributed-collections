@@ -2,6 +2,7 @@ package execution
 
 import dcollections.api.dag.ExPlanDAG
 import dcollections.api.AbstractJobStrategy
+import collection.mutable
 import mrapi.HadoopJob
 
 /**
@@ -12,7 +13,7 @@ import mrapi.HadoopJob
 object JobExecutor {
   val myStrategy: AbstractJobStrategy = HadoopJob
 
-  def execute(dag: ExPlanDAG) {
-    myStrategy.execute(dag)
+  def execute(dag: ExPlanDAG, globalCache: mutable.Map[String, Any]) {
+    myStrategy.execute(dag, globalCache)
   }
 }
