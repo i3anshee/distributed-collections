@@ -1,23 +1,23 @@
 package tasks
 
 import org.apache.hadoop.mapreduce.Mapper
-import org.apache.hadoop.io.{BytesWritable}
 import scala.{None}
 import collection.mutable.{ArrayBuffer}
 import dcollections.api.{DistContext, Emitter}
+import org.apache.hadoop.io.{NullWritable, BytesWritable}
 
 /**
  * User: vjovanovic
  * Date: 4/2/11
  */
 
-class ParallelDoMapTask extends DistributedCollectionsMapper[BytesWritable, BytesWritable, BytesWritable, BytesWritable] {
+class ParallelDoMapTask extends DistributedCollectionsMapper[NullWritable, BytesWritable, BytesWritable, BytesWritable] {
   // closure to be invoked
   var parTask: Option[(AnyRef, Emitter[AnyRef], DistContext) => Unit] = None
   var groupBy: Option[(AnyRef, Emitter[AnyRef]) => AnyRef] = None
 
 
-  override def setup(context: Mapper[BytesWritable, BytesWritable, BytesWritable, BytesWritable]#Context) {
+  override def setup(context: Mapper[NullWritable, BytesWritable, BytesWritable, BytesWritable]#Context) {
     super.setup(context)
 
     val conf = context.getConfiguration
@@ -25,14 +25,14 @@ class ParallelDoMapTask extends DistributedCollectionsMapper[BytesWritable, Byte
     groupBy = deserializeOperation(conf, "distcoll.mapper.groupBy")
   }
 
-  override def distMap(k: BytesWritable, v: BytesWritable, context: Mapper[BytesWritable, BytesWritable, BytesWritable, BytesWritable]#Context, distContext: DistContext): Unit = {
+  override def distMap(k: NullWritable, v: BytesWritable, context: Mapper[NullWritable, BytesWritable, BytesWritable, BytesWritable]#Context, distContext: DistContext): Unit = {
     //de-serialize element
     val value = deserializeElement(v.getBytes())
 
     distContext.globalCache.foreach(println)
 
     if (parTask.isEmpty && groupBy.isEmpty) {
-      context.write(k, v)
+      context.write(randomKey , v)
     } else {
       val emitter: EmiterImpl = new EmiterImpl
 
@@ -50,7 +50,7 @@ class ParallelDoMapTask extends DistributedCollectionsMapper[BytesWritable, Byte
         })
       } else {
         emitted.foreach((v: AnyRef) => {
-          context.write(k, new BytesWritable(serializeElement(v)))
+          context.write(randomKey, new BytesWritable(serializeElement(v)))
         })
       }
     }

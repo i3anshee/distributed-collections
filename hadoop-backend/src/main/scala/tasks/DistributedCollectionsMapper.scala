@@ -5,6 +5,8 @@ import org.apache.hadoop.mapreduce.lib.input.FileSplit
 import dcollections.api.{DistContext, RecordNumber}
 import collection.immutable
 import collection.mutable
+import org.apache.hadoop.io.BytesWritable
+import scala.util.Random
 
 /**
  * User: vjovanovic
@@ -40,4 +42,8 @@ abstract class DistributedCollectionsMapper[KEYIN, VALUEIN, KEYOUT, VALUEOUT] ex
   }
 
   def distMap(key: KEYIN, value: VALUEIN, context: Mapper[KEYIN, VALUEIN, KEYOUT, VALUEOUT]#Context, distContext: DistContext)
+
+  protected def randomKey(): BytesWritable = {
+    new BytesWritable(serializeElement(Random.nextLong))
+  }
 }

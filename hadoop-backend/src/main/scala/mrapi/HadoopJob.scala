@@ -3,7 +3,6 @@ package mrapi
 import java.net.URI
 import org.apache.hadoop.mapreduce.Job
 import org.apache.hadoop.conf.Configuration
-import org.apache.hadoop.io.{BytesWritable}
 import org.apache.hadoop.mapreduce.lib.input.{SequenceFileInputFormat, FileInputFormat}
 import org.apache.hadoop.mapreduce.lib.output.{SequenceFileOutputFormat, FileOutputFormat}
 import dcollections.api.AbstractJobStrategy
@@ -15,6 +14,7 @@ import scala.collection.mutable
 import dcollections.api.io.CollectionMetaData
 import java.io.{ByteArrayOutputStream, ObjectOutputStream}
 import org.apache.hadoop.fs.{PathFilter, FileSystem, Path}
+import org.apache.hadoop.io.{NullWritable, BytesWritable}
 
 /**
  * User: vjovanovic
@@ -126,7 +126,7 @@ object HadoopJob extends AbstractJobStrategy {
   }
 
   private def tmpPath(): Path = {
-    new Path(new URI(UUID.randomUUID.toString).toString)
+    new Path("tmp/" + new URI(UUID.randomUUID.toString).toString)
   }
 
 }
@@ -180,11 +180,11 @@ class MapCombineShuffleReduceBuilder {
     // setting input and output and intermediate types
     job.setMapOutputKeyClass(classOf[BytesWritable])
     job.setMapOutputValueClass(classOf[BytesWritable])
-    job.setOutputKeyClass(classOf[BytesWritable])
+    job.setOutputKeyClass(classOf[NullWritable])
     job.setOutputValueClass(classOf[BytesWritable])
 
-    job.setInputFormatClass(classOf[SequenceFileInputFormat[BytesWritable, BytesWritable]])
-    job.setOutputFormatClass(classOf[SequenceFileOutputFormat[BytesWritable, BytesWritable]])
+    job.setInputFormatClass(classOf[SequenceFileInputFormat[NullWritable, BytesWritable]])
+    job.setOutputFormatClass(classOf[SequenceFileOutputFormat[NullWritable, BytesWritable]])
 
 
     // set the input and output files for the job

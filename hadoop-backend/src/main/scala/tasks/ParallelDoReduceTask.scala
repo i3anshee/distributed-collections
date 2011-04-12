@@ -1,6 +1,5 @@
 package tasks
 
-import org.apache.hadoop.io.BytesWritable
 import org.apache.hadoop.mapreduce.Reducer
 import java.lang.Iterable
 import scala.collection.JavaConversions._
@@ -9,20 +8,21 @@ import scala.util.Random
 import dcollections.api.{DistContext, RecordNumber, Emitter}
 import collection.immutable
 import collection.mutable
+import org.apache.hadoop.io.{NullWritable, BytesWritable}
 
 /**
  * User: vjovanovic
  * Date: 4/2/11
  */
 
-class ParallelDoReduceTask extends Reducer[BytesWritable, BytesWritable, BytesWritable, BytesWritable] with CollectionTask {
+class ParallelDoReduceTask extends Reducer[BytesWritable, BytesWritable, NullWritable, BytesWritable] with CollectionTask {
 
   var isGroupBy: Boolean = false
   var parTask: Option[(AnyRef, Emitter[AnyRef], DistContext) => Unit] = None
   var foldTask: Option[(AnyRef, Any) => AnyRef] = None
   var distContext: DistContext = new DistContext(mutable.Map[String, Any](), immutable.Map[String, Any]())
 
-  override def setup(context: Reducer[BytesWritable, BytesWritable, BytesWritable, BytesWritable]#Context) {
+  override def setup(context: Reducer[BytesWritable, BytesWritable, NullWritable, BytesWritable]#Context) {
     super.setup(context)
 
     val conf = context.getConfiguration
@@ -32,19 +32,19 @@ class ParallelDoReduceTask extends Reducer[BytesWritable, BytesWritable, BytesWr
     parTask = deserializeOperation(conf, "distcoll.reducer.do")
   }
 
-  override def reduce(key: BytesWritable, values: Iterable[BytesWritable], context: Reducer[BytesWritable, BytesWritable, BytesWritable, BytesWritable]#Context) = {
+  override def reduce(key: BytesWritable, values: Iterable[BytesWritable], context: Reducer[BytesWritable, BytesWritable, NullWritable, BytesWritable]#Context) = {
 
     if (foldTask.isEmpty && parTask.isEmpty)
       if (isGroupBy) {
         // TODO fix this mess when multiple collection format is known
         // make a collection of elements and write it
         context.getCounter("collections", "current").increment(1)
-        context.write(new BytesWritable(serializeElement(new Random().nextLong)),
-          new BytesWritable(serializeElement((deserializeElement(key.getBytes), values.map((bytes: BytesWritable) => deserializeElement(bytes.getBytes))))))
+        context.write(NullWritable.get, new BytesWritable(serializeElement(
+          (deserializeElement(key.getBytes), values.map((bytes: BytesWritable) => deserializeElement(bytes.getBytes))))))
       } else {
         values.foreach((v: BytesWritable) => {
           context.getCounter("collections", "current").increment(1)
-          context.write(key, v)
+          context.write(NullWritable.get, v)
         })
       }
     else {
@@ -56,7 +56,7 @@ class ParallelDoReduceTask extends Reducer[BytesWritable, BytesWritable, BytesWr
         // write results to output
         buffer.foreach((v: AnyRef) => {
           context.getCounter("collections", "current").increment(1)
-          context.write(new BytesWritable(serializeElement(new Random().nextLong)),
+          context.write(NullWritable.get,
             new BytesWritable(serializeElement((deserializeElement(key.getBytes), v))))
         })
       } else {
@@ -68,7 +68,7 @@ class ParallelDoReduceTask extends Reducer[BytesWritable, BytesWritable, BytesWr
         // write results to output
         result.foreach((v: AnyRef) => {
           context.getCounter("collections", "current").increment(1)
-          context.write(key, new BytesWritable(serializeElement(v)))
+          context.write(NullWritable.get, new BytesWritable(serializeElement(v)))
         })
       }
     }
