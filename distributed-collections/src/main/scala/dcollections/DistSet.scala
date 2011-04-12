@@ -1,7 +1,9 @@
 package dcollections
 
-import api.Emitter
+import api.{DistContext, Emitter}
+import builder.{DistSetBuilderFactory, DistCanBuildFrom}
 import java.net.URI
+import execution.ExecutionPlan
 
 /**
  * User: vjovanovic
@@ -9,10 +11,6 @@ import java.net.URI
  */
 
 class DistSet[A](location: URI) extends DistCollection[A](location) {
-
-  override def map[B](f: A => B): DistSet[B] = ensureSet(parallelDo((elem: A, emitter: Emitter[B]) => {
-    emitter.emit(f(elem))
-  }))
 
   /**Tests if some element is contained in this set.
    *
@@ -28,7 +26,16 @@ class DistSet[A](location: URI) extends DistCollection[A](location) {
    * @return a new set that contains all elements of this set and that also
    *          contains `elem`.
    */
-  def +(elem: A): DistSet[A] = throw new UnsupportedOperationException("Unsupported operation!!!")
+  def +(elem: A): DistSet[A] = {
+    ExecutionPlan.globalCache.put("nv", elem)
+    ensureSet(parallelDo((el: A, em: Emitter[A], context: DistContext) => {
+      if (!context.localCache.get("pl").isDefined) {
+        context.localCache.put("pl", true)
+        em.emit(context.globalCache("nv").asInstanceOf[A])
+      }
+      em.emit(el)
+    }))
+  }
 
   /**Creates a new set with a given element removed from this set.
    *
@@ -36,7 +43,7 @@ class DistSet[A](location: URI) extends DistCollection[A](location) {
    * @return a new set that contains all elements of this set but that does not
    *          contain `elem`.
    */
-  def -(elem: A): DistSet[A] = throw new UnsupportedOperationException("Unsupported operation!!!")
+  def -(elem: A): DistSet[A] = new DistSet[A](filter(p => p != elem).location)
 
   /**Tests if some element is contained in this set.
    *
@@ -52,7 +59,11 @@ class DistSet[A](location: URI) extends DistCollection[A](location) {
    * @return a new set consisting of all elements that are both in this
    *  set and in the given set `that`.
    */
-  def intersect(that: DistSet[A]): DistSet[A] = ensureSet(filter(that.contains))
+  def intersect(that: DistSet[A]): DistSet[A] = ensureSet(flatten(List(that)).
+    groupBy((el: (A), em: Emitter[A]) => {
+    em.emit(el);
+    el
+  }).parallelDo((el: (A, Iterable[A]), em: Emitter[A]) => if (el._2.size > 1) el._2.foreach(em.emit(_))))
 
   /**Computes the intersection between this set and another set.
    *
@@ -86,7 +97,23 @@ class DistSet[A](location: URI) extends DistCollection[A](location) {
    * @return a set containing those elements of this
    *              set that are not also contained in the given set `that`.
    */
-  //def diff(that: DistSet[A]): DistSet[A] = --(that)
+  def diff(that: DistSet[A]): DistSet[A] = --(that)
+
+  /**Computes the difference of this set and another set.
+   *
+   * @param that the set of elements to exclude.
+   * @return a set containing those elements of this
+   *              set that are not also contained in the given set `that`.
+   */
+  def --(that: DistCollection[A]): DistSet[A] = new DistSet[A](
+    parallelDo((el, em: Emitter[(A, Boolean)]) => em.emit((el, true))).
+      flatten(List(
+      that.parallelDo((el, em: Emitter[(A, Boolean)]) => em.emit((el, false))))).
+      groupBy((el: (A, Boolean), em: Emitter[Boolean]) => {
+      em.emit(el._2)
+      el._1
+    }).
+      parallelDo((el: (A, Iterable[Boolean]), em: Emitter[A]) => if (el._2.size == 1 && el._2.head == true) em.emit(el._1)).location)
 
   /**The difference of this set and another set.
    *
@@ -95,7 +122,7 @@ class DistSet[A](location: URI) extends DistCollection[A](location) {
    * @return a set containing those elements of this
    *              set that are not also contained in the given set `that`.
    */
-  //def &~(that: DistSet[A]): DistSet[A] = diff(that)
+  def &~(that: DistSet[A]): DistSet[A] = diff(that)
 
   /**Tests whether this set is a subset of another set.
    *

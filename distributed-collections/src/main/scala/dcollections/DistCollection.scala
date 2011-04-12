@@ -2,6 +2,7 @@ package dcollections
 
 import api.dag.{CombinePlanNode, FlattenPlanNode, ParallelDoPlanNode, GroupByPlanNode}
 import api.{DistContext, CollectionId, Emitter}
+import builder.{DistCollectionBuilderFactory, DistCanBuildFrom}
 import java.net.URI
 import execution.{DCUtil, ExecutionPlan}
 import mrapi.FSAdapter
@@ -11,6 +12,10 @@ import io.CollectionsIO
  * User: vjovanovic
  * Date: 3/21/11
  */
+
+object DistCollection {
+  implicit def bf[A]: DistCanBuildFrom[DistCollection[A], A, DistCollection[A]] = new DistCollectionBuilderFactory[A]
+}
 
 /**
  * Super class for all distributed collections. Provides four basic primitives from which all other methods are built.
@@ -82,9 +87,15 @@ class DistCollection[A](location: URI) extends CollectionId(location) {
    */
   def ++[B >: A](that: DistCollection[B]): DistCollection[A] = flatten(List(that))
 
+
   /**Builds a new collection by applying a function to all elements of this $coll.
    */
-  def map[B](f: A => B): DistCollection[B] = parallelDo((el, emitter) => emitter.emit(f(el)))
+  // TODO (VJ) Resolve the issue with implicit conversions ( convert to the interface DistIterable? )
+  def map[B, That](f: A => B)(implicit bf: DistCanBuildFrom[DistCollection[A], B, That]): That = {
+    val builder = bf(this)
+    builder += parallelDo((el, emitter) => emitter.emit(f(el)))
+    builder.result
+  }
 
   /**Applies a binary operator to a start value and all elements of this $coll, going left to right.
    */
@@ -180,7 +191,12 @@ class DistCollection[A](location: URI) extends CollectionId(location) {
    * @return        `true` if the given predicate `p` holds for some of the elements
    *                 of this $coll, otherwise `false`.
    */
-  def exists(p: A => Boolean): Boolean = throw new UnsupportedOperationException("Waiting for local cache !!!")
+  def exists(p: A => Boolean): Boolean = parallelDo((el: A, em: Emitter[Boolean], context: DistContext) => if (context.localCache.get("found").isEmpty)
+    if (p(el)) {
+      em.emit(true)
+      context.localCache.put("found", true)
+    }
+  ).size > 0
 
   /**Finds the first element of the $coll satisfying a predicate, if any.
    *
