@@ -88,7 +88,7 @@ class DistCollection[A](location: URI) extends CollectionId(location) {
 
   /**Applies a binary operator to a start value and all elements of this $coll, going left to right.
    */
-  def fold[B >: A](z: B)(op: (B, B) => B): B = op(reduce(op), z)
+  def fold[B >: A](z: B)(op: (B, B) => B): B = if (!isEmpty) op(reduce(op), z) else z
 
   /**Applies a binary operator to all elements of this $coll, going right to left.
    *  $willNotTerminateInf
@@ -96,11 +96,11 @@ class DistCollection[A](location: URI) extends CollectionId(location) {
    * @throws `UnsupportedOperationException` if this $coll is empty.
    */
   def reduce[B >: A](op: (B, B) => B): B = if (isEmpty)
-    throw new UnsupportedOperationException("empty.reduceRight")
+    throw new UnsupportedOperationException("empty.reduce")
   else
     combineValues((v: A, emitter: Emitter[A]) => {
       emitter.emit(v);
-      true
+      1
     }, op).asTraversable().head._2
 
 

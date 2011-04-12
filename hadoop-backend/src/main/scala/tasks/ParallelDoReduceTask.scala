@@ -51,19 +51,26 @@ class ParallelDoReduceTask extends Reducer[BytesWritable, BytesWritable, BytesWr
       var buffer: Traversable[AnyRef] = values.map((v: BytesWritable) => deserializeElement(v.getBytes()))
 
       // combine reduce part
-      if (foldTask.isDefined)
+      if (foldTask.isDefined) {
         buffer = ArrayBuffer(buffer.reduceLeft(foldTask.get))
+        // write results to output
+        buffer.foreach((v: AnyRef) => {
+          context.getCounter("collections", "current").increment(1)
+          context.write(new BytesWritable(serializeElement(new Random().nextLong)),
+            new BytesWritable(serializeElement((deserializeElement(key.getBytes), v))))
+        })
+      } else {
+        // parallel do
+        val emitter = new EmiterImpl
+        distContext.recordNumber = new RecordNumber()
+        val result = parallelDo(buffer, emitter, distContext, parTask)
 
-      // parallel do
-      val emitter = new EmiterImpl
-      distContext.recordNumber = new RecordNumber()
-      val result = parallelDo(buffer, emitter, distContext, parTask)
-
-      // write results to output
-      result.foreach((v: AnyRef) => {
-        context.getCounter("collections", "current").increment(1)
-        context.write(key, new BytesWritable(serializeElement(v)))
-      })
+        // write results to output
+        result.foreach((v: AnyRef) => {
+          context.getCounter("collections", "current").increment(1)
+          context.write(key, new BytesWritable(serializeElement(v)))
+        })
+      }
     }
   }
 }

@@ -15,12 +15,8 @@ object Main {
     val distributedSet = new dcollections.DistSet[Long](new URI("long-set"))
 
     ExecutionPlan.globalCache.put("testGlobalCache", 1)
-    val reduced = distributedSet.combineValues((v, emitter: Emitter[Long]) => {
-      emitter.emit(v)
-      1L
-    },
-      (agg: Long, v: Long) => agg + v
-    )
+    val reduced = distributedSet.reduce(_ + _)
+
     println("Reduced = " + reduced.toString)
 
     val distributedSet1 = new dcollections.DistSet[Long](new URI("long-set1"))
