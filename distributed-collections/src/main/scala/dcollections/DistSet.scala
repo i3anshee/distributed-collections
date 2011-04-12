@@ -1,7 +1,6 @@
 package dcollections
 
 import api.{DistContext, Emitter}
-import builder.{DistSetBuilderFactory, DistCanBuildFrom}
 import java.net.URI
 import execution.ExecutionPlan
 

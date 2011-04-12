@@ -3,8 +3,8 @@ package tasks
 import org.apache.hadoop.mapreduce.Mapper
 import org.apache.hadoop.io.{BytesWritable}
 import scala.{None}
-import collection.mutable.{Buffer, ArrayBuffer}
-import dcollections.api.{DistContext, RecordNumber, Emitter}
+import collection.mutable.{ArrayBuffer}
+import dcollections.api.{DistContext, Emitter}
 
 /**
  * User: vjovanovic

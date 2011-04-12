@@ -1,7 +1,6 @@
 package dcollections.builder
 
-import dcollections.api.Emitter
-import dcollections.{DistSet, DistCollection}
+import dcollections.{DistCollection}
 
 /**
  * User: vjovanovic

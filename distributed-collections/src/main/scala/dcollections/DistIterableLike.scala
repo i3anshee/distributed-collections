@@ -1,7 +1,5 @@
 package dcollections
 
-import builder.DistCanBuildFrom
-
 /**
  * User: vjovanovic
  * Date: 4/12/11

@@ -7,7 +7,7 @@ import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.Path
 import org.apache.hadoop.mapreduce.lib.output.{FileOutputFormat, SequenceFileOutputFormat}
 import org.apache.hadoop.mapreduce.lib.input.{FileInputFormat, SequenceFileInputFormat}
-import tasks.util.{LongKeyToBytesKey, IdentityLongToBytesReducer}
+import tasks.util.{LongKeyToBytesKey}
 
 /**
  * User: vjovanovic

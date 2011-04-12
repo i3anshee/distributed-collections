@@ -1,10 +1,7 @@
 package tasks
 
-import org.apache.hadoop.mapreduce.Mapper
-import org.apache.hadoop.io.{BytesWritable}
 import dcollections.api.Emitter
-import scala.{None}
-import collection.mutable.{Buffer, ArrayBuffer}
+import collection.mutable.{ArrayBuffer}
 
 /**
  * User: vjovanovic
