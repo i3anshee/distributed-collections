@@ -3,7 +3,7 @@ package tasks
 import org.apache.hadoop.mapreduce.Mapper
 import scala.{None}
 import collection.mutable.{ArrayBuffer}
-import dcollections.api.{DistContext, Emitter}
+import scala.collection.distributed.api.{DistContext, Emitter}
 import org.apache.hadoop.io.{NullWritable, BytesWritable}
 
 /**

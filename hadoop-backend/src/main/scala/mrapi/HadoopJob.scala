@@ -5,13 +5,13 @@ import org.apache.hadoop.mapreduce.Job
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.mapreduce.lib.input.{SequenceFileInputFormat, FileInputFormat}
 import org.apache.hadoop.mapreduce.lib.output.{SequenceFileOutputFormat, FileOutputFormat}
-import dcollections.api.AbstractJobStrategy
+import scala.collection.distributed.api.AbstractJobStrategy
 import org.apache.hadoop.filecache.DistributedCache
 import java.util.UUID
-import dcollections.api.dag._
+import scala.collection.distributed.api.dag._
 import tasks.{ParallelDoMapTask, CombineTask, ParallelDoReduceTask}
 import scala.collection.mutable
-import dcollections.api.io.CollectionMetaData
+import scala.collection.distributed.api.io.CollectionMetaData
 import java.io.{ByteArrayOutputStream, ObjectOutputStream}
 import org.apache.hadoop.fs.{PathFilter, FileSystem, Path}
 import org.apache.hadoop.io.{NullWritable, BytesWritable}

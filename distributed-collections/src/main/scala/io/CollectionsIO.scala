@@ -1,7 +1,7 @@
 package io
 
-import dcollections.api.io.CollectionsIOAPI
-import dcollections.api.CollectionId
+import scala.collection.distributed.api.io.CollectionsIOAPI
+import scala.collection.distributed.api.CollectionId
 
 /**
  * User: vjovanovic

@@ -2,7 +2,7 @@ package tasks
 
 import org.apache.hadoop.mapreduce.Mapper
 import org.apache.hadoop.mapreduce.lib.input.FileSplit
-import dcollections.api.{DistContext, RecordNumber}
+import scala.collection.distributed.api.{DistContext, RecordNumber}
 import collection.immutable
 import org.apache.hadoop.io.BytesWritable
 import scala.util.Random

@@ -1,6 +1,6 @@
 package examples
 
-import dcollections.DistSet
+import scala.collection.distributed.DistSet
 import java.net.URI
 import collection.mutable.ArrayBuffer
 

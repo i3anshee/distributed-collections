@@ -1,8 +1,8 @@
 package examples
 
-import dcollections.DistSet
+import scala.collection.distributed.DistSet
 import java.net.URI
-import dcollections.api.Emitter
+import scala.collection.distributed.api.Emitter
 
 /**
  * User: vjovanovic

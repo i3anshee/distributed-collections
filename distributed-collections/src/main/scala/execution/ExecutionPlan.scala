@@ -1,11 +1,11 @@
 package execution
 
-import dcollections.DistCollection
+import scala.collection.distributed.DistCollection
 import java.util.UUID
 import java.net.URI
-import dcollections.api.dag._
+import scala.collection.distributed.api.dag._
 import collection.mutable
-import dcollections.api.{CollectionId}
+import scala.collection.distributed.api.{CollectionId}
 
 /**
  * User: vjovanovic

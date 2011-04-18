@@ -1,6 +1,6 @@
 package tasks
 
-import dcollections.api.Emitter
+import scala.collection.distributed.api.Emitter
 import collection.mutable.{ArrayBuffer}
 
 /**

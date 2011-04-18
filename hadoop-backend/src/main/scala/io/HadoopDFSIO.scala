@@ -1,9 +1,9 @@
 package io
 
-import dcollections.api.io.{CollectionMetaData, CollectionsIOAPI}
+import scala.collection.distributed.api.io.{CollectionMetaData, CollectionsIOAPI}
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.{Path, FileSystem}
-import dcollections.api.CollectionId
+import scala.collection.distributed.api.CollectionId
 import java.io.{ObjectInputStream}
 
 /**

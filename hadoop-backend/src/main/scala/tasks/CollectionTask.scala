@@ -5,7 +5,7 @@ import java.net.URI
 import org.apache.hadoop.fs.Path
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.filecache.DistributedCache
-import dcollections.api.{DistContext, Emitter}
+import scala.collection.distributed.api.{DistContext, Emitter}
 
 /**
  * User: vjovanovic

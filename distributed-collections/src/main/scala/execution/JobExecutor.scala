@@ -1,7 +1,7 @@
 package execution
 
-import dcollections.api.dag.ExPlanDAG
-import dcollections.api.AbstractJobStrategy
+import scala.collection.distributed.api.dag.ExPlanDAG
+import scala.collection.distributed.api.AbstractJobStrategy
 import collection.mutable
 import mrapi.HadoopJob
 

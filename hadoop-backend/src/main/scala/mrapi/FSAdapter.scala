@@ -6,7 +6,7 @@ import org.apache.hadoop.fs.{FileSystem, Path}
 import org.apache.hadoop.mapreduce.Job
 import org.apache.hadoop.io.{NullWritable, SequenceFile, BytesWritable}
 import java.io.{ObjectOutputStream, ByteArrayOutputStream, ObjectInputStream, ByteArrayInputStream}
-import dcollections.api.io.CollectionMetaData
+import scala.collection.distributed.api.io.CollectionMetaData
 import org.apache.hadoop.fs.permission.{FsAction, FsPermission}
 
 /**
