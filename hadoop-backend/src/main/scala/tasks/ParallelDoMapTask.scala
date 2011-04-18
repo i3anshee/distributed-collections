@@ -32,7 +32,7 @@ class ParallelDoMapTask extends DistributedCollectionsMapper[NullWritable, Bytes
     distContext.globalCache.foreach(println)
 
     if (parTask.isEmpty && groupBy.isEmpty) {
-      context.write(randomKey , v)
+      context.write(randomKey, v)
     } else {
       val emitter: EmiterImpl = new EmiterImpl
 
@@ -55,6 +55,5 @@ class ParallelDoMapTask extends DistributedCollectionsMapper[NullWritable, Bytes
       }
     }
   }
-
 }
 

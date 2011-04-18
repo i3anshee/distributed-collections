@@ -8,6 +8,6 @@ import scala.collection.immutable
  * Date: 4/7/11
  */
 
-class DistContext(val localCache: mutable.Map[String, Any],  val globalCache: immutable.Map[String, Any]) {
+class DistContext(val globalCache: immutable.Map[String, Any]) {
   var recordNumber: RecordNumber = new RecordNumber()
 }

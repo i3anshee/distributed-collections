@@ -20,7 +20,7 @@ class ParallelDoReduceTask extends Reducer[BytesWritable, BytesWritable, NullWri
   var isGroupBy: Boolean = false
   var parTask: Option[(AnyRef, Emitter[AnyRef], DistContext) => Unit] = None
   var foldTask: Option[(AnyRef, Any) => AnyRef] = None
-  var distContext: DistContext = new DistContext(mutable.Map[String, Any](), immutable.Map[String, Any]())
+  var distContext: DistContext = new DistContext(immutable.Map[String, Any]())
 
   override def setup(context: Reducer[BytesWritable, BytesWritable, NullWritable, BytesWritable]#Context) {
     super.setup(context)

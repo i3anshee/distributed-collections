@@ -191,237 +191,241 @@ class DistCollection[A](location: URI) extends CollectionId(location) {
    * @return        `true` if the given predicate `p` holds for some of the elements
    *                 of this $coll, otherwise `false`.
    */
-  def exists(p: A => Boolean): Boolean = parallelDo((el: A, em: Emitter[Boolean], context: DistContext) => if (context.localCache.get("found").isEmpty)
-    if (p(el)) {
-      em.emit(true)
-      context.localCache.put("found", true)
-    }
-  ).size > 0
-
-  /**Finds the first element of the $coll satisfying a predicate, if any.
-   *
-   *  $orderDependent
-   *
-   * @param p    the predicate used to test elements.
-   * @return an option value containing the first element in the $coll
-   *              that satisfies `p`, or `None` if none exists.
-   */
-  def find(p: A => Boolean): Option[A] = throw new UnsupportedOperationException("Waiting for global cache !!!")
-
-  /**Selects the first element of this $coll.
-   *  $orderDependent
-   * @return the first element of this $coll.
-   * @throws `NoSuchElementException` if the $coll is empty.
-   */
-  def head: A = throw new UnsupportedOperationException("Waiting for metadata!!!")
-
-  /**Optionally selects the first element.
-   *  $orderDependent
-   * @return the first element of this $coll if it is nonempty, `None` if it is empty.
-   */
-  def headOption: Option[A] = if (isEmpty) None else Some(head)
-
-  /**Selects all elements except the first.
-   *  $orderDependent
-   * @return a $coll consisting of all elements of this $coll
-   *           except the first one.
-   * @throws `UnsupportedOperationException` if the $coll is empty.
-   */
-  def tail: DistCollection[A] = {
-    if (isEmpty) throw new UnsupportedOperationException("empty.tail")
-    drop(1)
+  def exists(p: A => Boolean): Boolean = {
+    var found = false
+    parallelDo((el: A, em: Emitter[Boolean], context: DistContext) => if (found)
+      if (p(el)) {
+        em.emit(true)
+        found = true
+      }
+    ).size > 0
   }
 
-  /**Selects the last element.
-   *  $orderDependent
-   * @return the first element of this $coll.
-   * @throws `NoSuchElementException` if the $coll is empty.
-   */
-  def last: A = throw new UnsupportedOperationException("Waiting for metadata!!!")
 
-  /**Optionally selects the last element.
-   *  $orderDependent
-   * @return the last element of this $coll$ if it is nonempty, `None` if it is empty.
-   */
-  def lastOption: Option[A] = if (isEmpty) None else Some(last)
+/**Finds the first element of the $coll satisfying a predicate, if any.
+ *
+ *  $orderDependent
+ *
+ * @param p    the predicate used to test elements.
+ * @return an option value containing the first element in the $coll
+ *              that satisfies `p`, or `None` if none exists.
+ */
+def find (p: A => Boolean): Option[A] = throw new UnsupportedOperationException ("Waiting for global cache !!!")
 
-  /**Selects all elements except the last.
-   *  $orderDependent
-   * @return a $coll consisting of all elements of this $coll
-   *           except the last one.
-   * @throws `UnsupportedOperationException` if the $coll is empty.
-   */
-  def init: DistCollection[A] = {
-    if (isEmpty) throw new UnsupportedOperationException("empty.init")
-    throw new UnsupportedOperationException("Waiting for ordering and global cache !!!")
-  }
+/**Selects the first element of this $coll.
+ *  $orderDependent
+ * @return the first element of this $coll.
+ * @throws `NoSuchElementException` if the $coll is empty.
+ */
+def head: A = throw new UnsupportedOperationException ("Waiting for metadata!!!")
 
-  /**Selects first ''n'' elements.
-   *  $orderDependent
-   * @param n    Tt number of elements to take from this $coll.
-   * @return a $coll consisting only of the first `n` elements of this $coll, or else the
-   *          whole $coll, if it has less than `n` elements.
-   */
-  def take(n: Int): DistCollection[A] = throw new UnsupportedOperationException("Waiting for ordering and global cache !!!")
+/**Optionally selects the first element.
+ *  $orderDependent
+ * @return the first element of this $coll if it is nonempty, `None` if it is empty.
+ */
+def headOption: Option[A] = if (isEmpty) None else Some (head)
 
-  /**Selects all elements except first ''n'' ones.
-   *  $orderDependent
-   * @param n    the number of elements to drop from this $coll.
-   * @return a $coll consisting of all elements of this $coll except the first `n` ones, or else the
-   *          empty $coll, if this $coll has less than `n` elements.
-   */
-  def drop(n: Int): DistCollection[A] = throw new UnsupportedOperationException("Waiting for ordering and global cache !!!")
+/**Selects all elements except the first.
+ *  $orderDependent
+ * @return a $coll consisting of all elements of this $coll
+ *           except the first one.
+ * @throws `UnsupportedOperationException` if the $coll is empty.
+ */
+def tail: DistCollection[A] = {
+if (isEmpty) throw new UnsupportedOperationException ("empty.tail")
+drop (1)
+}
 
-  /**Selects an interval of elements.
-   *
-   *  Note: `c.slice(from, to)`  is equivalent to (but possibly more efficient than)
-   *  `c.drop(from).take(to - from)`
-   *  $orderDependent
-   *
-   * @param from   the index of the first returned element in this $coll.
-   * @param until  the index one past the last returned element in this $coll.
-   * @return a $coll containing the elements starting at index `from`
-   *           and extending up to (but not including) index `until` of this $coll.
-   */
-  def slice(from: Int, until: Int): DistCollection[A] = throw new UnsupportedOperationException("Waiting for ordering and global cache !!!")
+/**Selects the last element.
+ *  $orderDependent
+ * @return the first element of this $coll.
+ * @throws `NoSuchElementException` if the $coll is empty.
+ */
+def last: A = throw new UnsupportedOperationException ("Waiting for metadata!!!")
 
-  /**Takes longest prefix of elements that satisfy a predicate.
-   *  $orderDependent
-   * @param p  The predicate used to test elements.
-   * @return the longest prefix of this $coll whose elements all satisfy
-   *           the predicate `p`.
-   */
-  def takeWhile(p: A => Boolean): DistCollection[A] = throw new UnsupportedOperationException("Waiting for ordering and global cache !!!")
+/**Optionally selects the last element.
+ *  $orderDependent
+ * @return the last element of this $coll$ if it is nonempty, `None` if it is empty.
+ */
+def lastOption: Option[A] = if (isEmpty) None else Some (last)
 
-  /**Drops longest prefix of elements that satisfy a predicate.
-   *  $orderDependent
-   * @param p  The predicate used to test elements.
-   * @return the longest suffix of this $coll whose first element
-   *           does not satisfy the predicate `p`.
-   */
-  def dropWhile(p: A => Boolean): DistCollection[A] = throw new UnsupportedOperationException("Waiting for ordering and global cache !!!")
+/**Selects all elements except the last.
+ *  $orderDependent
+ * @return a $coll consisting of all elements of this $coll
+ *           except the last one.
+ * @throws `UnsupportedOperationException` if the $coll is empty.
+ */
+def init: DistCollection[A] = {
+if (isEmpty) throw new UnsupportedOperationException ("empty.init")
+throw new UnsupportedOperationException ("Waiting for ordering and global cache !!!")
+}
 
+/**Selects first ''n'' elements.
+ *  $orderDependent
+ * @param n    Tt number of elements to take from this $coll.
+ * @return a $coll consisting only of the first `n` elements of this $coll, or else the
+ *          whole $coll, if it has less than `n` elements.
+ */
+def take (n: Int): DistCollection[A] = throw new UnsupportedOperationException ("Waiting for ordering and global cache !!!")
 
-  /**Splits this $coll into two at a given position.
-   *  Note: `c splitAt n` is equivalent to (but possibly more efficient than)
-   *         `(c take n, c drop n)`.
-   *  $orderDependent
-   *
-   * @param n the position at which to split.
-   * @return a pair of ${coll}s consisting of the first `n`
-   *           elements of this $coll, and the other elements.
-   */
-  def splitAt(n: Int): (DistCollection[A], DistCollection[A]) = throw new UnsupportedOperationException("Waiting for ordering and global cache !!!")
+/**Selects all elements except first ''n'' ones.
+ *  $orderDependent
+ * @param n    the number of elements to drop from this $coll.
+ * @return a $coll consisting of all elements of this $coll except the first `n` ones, or else the
+ *          empty $coll, if this $coll has less than `n` elements.
+ */
+def drop (n: Int): DistCollection[A] = throw new UnsupportedOperationException ("Waiting for ordering and global cache !!!")
 
-  /**Splits this $coll into a prefix/suffix pair according to a predicate.
-   *
-   *  Note: `c span p`  is equivalent to (but possibly more efficient than)
-   *  `(c takeWhile p, c dropWhile p)`, provided the evaluation of the predicate `p`
-   *  does not cause any side-effects.
-   *  $orderDependent
-   *
-   * @param p the test predicate
-   * @return a pair consisting of the longest prefix of this $coll whose
-   *           elements all satisfy `p`, and the rest of this $coll.
-   */
-  def span(p: A => Boolean): (DistCollection[A], DistCollection[A]) = throw new UnsupportedOperationException("Waiting for ordering and global cache !!!")
+/**Selects an interval of elements.
+ *
+ *  Note: `c.slice(from, to)`  is equivalent to (but possibly more efficient than)
+ *  `c.drop(from).take(to - from)`
+ *  $orderDependent
+ *
+ * @param from   the index of the first returned element in this $coll.
+ * @param until  the index one past the last returned element in this $coll.
+ * @return a $coll containing the elements starting at index `from`
+ *           and extending up to (but not including) index `until` of this $coll.
+ */
+def slice (from: Int, until: Int): DistCollection[A] = throw new UnsupportedOperationException ("Waiting for ordering and global cache !!!")
 
-  /**Partitions elements in fixed size ${coll}s.
-   * @see Iterator#grouped
-   *
-   * @param size the number of elements per group
-   * @return An iterator producing ${coll}s of size `size`, except the
-   *          last will be truncated if the elements don't divide evenly.
-   */
-  def grouped(size: Int): DistCollection[Traversable[A]] = throw new UnsupportedOperationException("Waiting for local cache !!!")
+/**Takes longest prefix of elements that satisfy a predicate.
+ *  $orderDependent
+ * @param p  The predicate used to test elements.
+ * @return the longest prefix of this $coll whose elements all satisfy
+ *           the predicate `p`.
+ */
+def takeWhile (p: A => Boolean): DistCollection[A] = throw new UnsupportedOperationException ("Waiting for ordering and global cache !!!")
 
-  /**Groups elements in fixed size blocks by passing a "sliding window"
-   *  over them (as opposed to partitioning them, as is done in grouped.)
-   *
-   * @return An iterator producing ${coll}s of size `size`, except the
-   *          last will be truncated if the elements don't divide evenly.
-   */
-  def sliding(size: Int): DistCollection[Traversable[A]] = throw new UnsupportedOperationException("Waiting for global cache!!!")
-
-  /**Groups elements in fixed size blocks by passing a "sliding window"
-   *  over them (as opposed to partitioning them, as is done in grouped.)
-   *
-   * @return An iterator producing ${coll}s of size `size`, except the
-   *          last will be truncated if the elements don't divide evenly.
-   */
-  def sliding(size: Int, step: Int): DistCollection[Traversable[A]] = throw new UnsupportedOperationException("Waiting for global cache!!!")
-
-  /**Selects last ''n'' elements.
-   *  $orderDependent
-   *
-   * @param n the number of elements to take
-   * @return a $coll consisting only of the last `n` elements of this $coll, or else the
-   *          whole $coll, if it has less than `n` elements.
-   */
-  def takeRight(n: Int): DistCollection[A] =
-    throw new UnsupportedOperationException("Ordered collections !!!")
-
-  /**Selects all elements except last ''n'' ones.
-   *  $orderDependent
-   *
-   * @param n    The number of elements to take
-   * @return a $coll consisting of all elements of this $coll except the first `n` ones, or else the
-   *          empty $coll, if this $coll has less than `n` elements.
-   */
-  def dropRight(n: Int): DistCollection[A] =
-    throw new UnsupportedOperationException("Ordered collections !!!")
-
-  /**Returns a $coll formed from this $coll and another iterable collection
-   *  by combining corresponding elements in pairs.
-   *  If one of the two collections is longer than the other, its remaining elements are ignored.
-   *
-   *  $orderDependent
-   *
-   * @return a new $coll containing pairs consisting of
-   *                 corresponding elements of this $coll and `that`. The length
-   *                 of the returned collection is the minimum of the lengths of this $coll and `that`.
-   */
-  def zip[A1 >: A, B]: DistCollection[A] =
-    throw new UnsupportedOperationException("Ordered collections !!!")
-
-  /**Returns a $coll formed from this $coll and another distributed collection
-   *  by combining corresponding elements in pairs.
-   *  If one of the two collections is shorter than the other,
-   *  placeholder elements are used to extend the shorter collection to the length of the longer.
-   */
-  def zipAll[B, A1 >: A](that: DistCollection[B], thisElem: A1, thatElem: B): DistCollection[(A, B)] =
-    throw new UnsupportedOperationException("Ordered collections !!!")
+/**Drops longest prefix of elements that satisfy a predicate.
+ *  $orderDependent
+ * @param p  The predicate used to test elements.
+ * @return the longest suffix of this $coll whose first element
+ *           does not satisfy the predicate `p`.
+ */
+def dropWhile (p: A => Boolean): DistCollection[A] = throw new UnsupportedOperationException ("Waiting for ordering and global cache !!!")
 
 
-  /**Zips this $coll with its indices.
-   *
-   *  $orderDependent
-   */
-  def zipWithIndex[A1 >: A](): DistCollection[A] =
-    throw new UnsupportedOperationException("Ordered collections !!!")
+/**Splits this $coll into two at a given position.
+ *  Note: `c splitAt n` is equivalent to (but possibly more efficient than)
+ *         `(c take n, c drop n)`.
+ *  $orderDependent
+ *
+ * @param n the position at which to split.
+ * @return a pair of ${coll}s consisting of the first `n`
+ *           elements of this $coll, and the other elements.
+ */
+def splitAt (n: Int): (DistCollection[A], DistCollection[A] ) = throw new UnsupportedOperationException ("Waiting for ordering and global cache !!!")
 
-  /**Checks if the other distributed collection contains the same elements in the same order as this $coll.
-   *
-   * @param that  the collection to compare with.
-   * @return `true`, if both collections contain the same elements in the same order, `false` otherwise.
-   */
-  def sameElements[B >: A](that: DistCollection[B]): Boolean = throw new UnsupportedOperationException("Waiting for ordered !!!")
+/**Splits this $coll into a prefix/suffix pair according to a predicate.
+ *
+ *  Note: `c span p`  is equivalent to (but possibly more efficient than)
+ *  `(c takeWhile p, c dropWhile p)`, provided the evaluation of the predicate `p`
+ *  does not cause any side-effects.
+ *  $orderDependent
+ *
+ * @param p the test predicate
+ * @return a pair consisting of the longest prefix of this $coll whose
+ *           elements all satisfy `p`, and the rest of this $coll.
+ */
+def span (p: A => Boolean): (DistCollection[A], DistCollection[A] ) = throw new UnsupportedOperationException ("Waiting for ordering and global cache !!!")
+
+/**Partitions elements in fixed size ${coll}s.
+ * @see Iterator#grouped
+ *
+ * @param size the number of elements per group
+ * @return An iterator producing ${coll}s of size `size`, except the
+ *          last will be truncated if the elements don't divide evenly.
+ */
+def grouped (size: Int): DistCollection[Traversable[A]] = throw new UnsupportedOperationException ("Waiting for local cache !!!")
+
+/**Groups elements in fixed size blocks by passing a "sliding window"
+ *  over them (as opposed to partitioning them, as is done in grouped.)
+ *
+ * @return An iterator producing ${coll}s of size `size`, except the
+ *          last will be truncated if the elements don't divide evenly.
+ */
+def sliding (size: Int): DistCollection[Traversable[A]] = throw new UnsupportedOperationException ("Waiting for global cache!!!")
+
+/**Groups elements in fixed size blocks by passing a "sliding window"
+ *  over them (as opposed to partitioning them, as is done in grouped.)
+ *
+ * @return An iterator producing ${coll}s of size `size`, except the
+ *          last will be truncated if the elements don't divide evenly.
+ */
+def sliding (size: Int, step: Int): DistCollection[Traversable[A]] = throw new UnsupportedOperationException ("Waiting for global cache!!!")
+
+/**Selects last ''n'' elements.
+ *  $orderDependent
+ *
+ * @param n the number of elements to take
+ * @return a $coll consisting only of the last `n` elements of this $coll, or else the
+ *          whole $coll, if it has less than `n` elements.
+ */
+def takeRight (n: Int): DistCollection[A] =
+throw new UnsupportedOperationException ("Ordered collections !!!")
+
+/**Selects all elements except last ''n'' ones.
+ *  $orderDependent
+ *
+ * @param n    The number of elements to take
+ * @return a $coll consisting of all elements of this $coll except the first `n` ones, or else the
+ *          empty $coll, if this $coll has less than `n` elements.
+ */
+def dropRight (n: Int): DistCollection[A] =
+throw new UnsupportedOperationException ("Ordered collections !!!")
+
+/**Returns a $coll formed from this $coll and another iterable collection
+ *  by combining corresponding elements in pairs.
+ *  If one of the two collections is longer than the other, its remaining elements are ignored.
+ *
+ *  $orderDependent
+ *
+ * @return a new $coll containing pairs consisting of
+ *                 corresponding elements of this $coll and `that`. The length
+ *                 of the returned collection is the minimum of the lengths of this $coll and `that`.
+ */
+def zip[A1 >: A, B]: DistCollection[A] =
+throw new UnsupportedOperationException ("Ordered collections !!!")
+
+/**Returns a $coll formed from this $coll and another distributed collection
+ *  by combining corresponding elements in pairs.
+ *  If one of the two collections is shorter than the other,
+ *  placeholder elements are used to extend the shorter collection to the length of the longer.
+ */
+def zipAll[B, A1 >: A] (that: DistCollection[B], thisElem: A1, thatElem: B): DistCollection[(A, B)] =
+throw new UnsupportedOperationException ("Ordered collections !!!")
 
 
-  def isEmpty: Boolean = (size == 0)
+/**Zips this $coll with its indices.
+ *
+ *  $orderDependent
+ */
+def zipWithIndex[A1 >: A] (): DistCollection[A] =
+throw new UnsupportedOperationException ("Ordered collections !!!")
 
-  def size: Long = CollectionsIO.getCollectionMetaData(this).size
+/**Checks if the other distributed collection contains the same elements in the same order as this $coll.
+ *
+ * @param that  the collection to compare with.
+ * @return `true`, if both collections contain the same elements in the same order, `false` otherwise.
+ */
+def sameElements[B >: A] (that: DistCollection[B] ): Boolean = throw new UnsupportedOperationException ("Waiting for ordered !!!")
 
-  // NOT IMPLEMENTED
-  // scanLeft
-  // scanRight
 
-  def asTraversable(): Traversable[A] = FSAdapter.valuesTraversable[A](location)
+def isEmpty: Boolean = (size == 0)
 
-  override def toString(): String = {
-    val builder = new StringBuilder("[ ")
-    FSAdapter.valuesTraversable[A](location).foreach((v: A) => builder.append(v).append(" "))
-    builder.append("]")
-    builder.toString
-  }
+def size: Long = CollectionsIO.getCollectionMetaData (this).size
+
+// NOT IMPLEMENTED
+// scanLeft
+// scanRight
+
+def asTraversable (): Traversable[A] = FSAdapter.valuesTraversable[A] (location)
+
+override def toString (): String = {
+val builder = new StringBuilder ("[ ")
+FSAdapter.valuesTraversable[A] (location).foreach ((v: A) => builder.append (v).append (" ") )
+builder.append ("]")
+builder.toString
+}
 }

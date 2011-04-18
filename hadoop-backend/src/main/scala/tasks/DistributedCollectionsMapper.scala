@@ -4,7 +4,6 @@ import org.apache.hadoop.mapreduce.Mapper
 import org.apache.hadoop.mapreduce.lib.input.FileSplit
 import dcollections.api.{DistContext, RecordNumber}
 import collection.immutable
-import collection.mutable
 import org.apache.hadoop.io.BytesWritable
 import scala.util.Random
 
@@ -18,9 +17,8 @@ abstract class DistributedCollectionsMapper[KEYIN, VALUEIN, KEYOUT, VALUEOUT] ex
 
   override def setup(context: Mapper[KEYIN, VALUEIN, KEYOUT, VALUEOUT]#Context) = {
     super.setup(context)
-    val localCache = mutable.Map[String, Any]()
     val globalCache = deserializeOperation[immutable.Map[String, Any]](context.getConfiguration, "global.cache")
-    distContext = new DistContext(localCache, globalCache.get)
+    distContext = new DistContext(globalCache.get)
   }
 
   override def run(context: Mapper[KEYIN, VALUEIN, KEYOUT, VALUEOUT]#Context) = {

@@ -27,10 +27,11 @@ class DistSet[A](location: URI) extends DistCollection[A](location) {
    */
   def +(elem: A): DistSet[A] = {
     ExecutionPlan.globalCache.put("nv", elem)
+    var alreadyAdded = false
     ensureSet(parallelDo((el: A, em: Emitter[A], context: DistContext) => {
-      if (!context.localCache.get("pl").isDefined) {
-        context.localCache.put("pl", true)
+      if (!alreadyAdded) {
         em.emit(context.globalCache("nv").asInstanceOf[A])
+        alreadyAdded = true
       }
       em.emit(el)
     }))
