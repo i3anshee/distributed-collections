@@ -9,7 +9,7 @@ import execution.ExecutionPlan
  * Date: 3/13/11
  */
 
-class DistSet[A](location: URI) extends DistCollection[A](location) {
+class DistSet[A](uri: URI) extends DistCollection[A](uri) {
 
   /**Tests if some element is contained in this set.
    *
@@ -26,11 +26,10 @@ class DistSet[A](location: URI) extends DistCollection[A](location) {
    *          contains `elem`.
    */
   def +(elem: A): DistSet[A] = {
-    ExecutionPlan.globalCache.put("nv", elem)
     var alreadyAdded = false
     ensureSet(parallelDo((el: A, em: Emitter[A], context: DistContext) => {
       if (!alreadyAdded) {
-        em.emit(context.globalCache("nv").asInstanceOf[A])
+        em.emit(elem)
         alreadyAdded = true
       }
       em.emit(el)
@@ -59,11 +58,11 @@ class DistSet[A](location: URI) extends DistCollection[A](location) {
    * @return a new set consisting of all elements that are both in this
    *  set and in the given set `that`.
    */
-  def intersect(that: DistSet[A]): DistSet[A] = ensureSet(flatten(List(that)).
+  def intersect(that: DistSet[A]): DistSet[A] = null /*ensureSet(flatten(List(that)).
     groupBy((el: (A), em: Emitter[A]) => {
     em.emit(el);
     el
-  }).parallelDo((el: (A, Iterable[A]), em: Emitter[A]) => if (el._2.size > 1) el._2.foreach(em.emit(_))))
+  }).parallelDo((el: (A, Iterable[A]), em: Emitter[A]) => if (el._2.size > 1) el._2.foreach(em.emit(_))))*/
 
   /**Computes the intersection between this set and another set.
    *

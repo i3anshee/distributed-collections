@@ -40,8 +40,6 @@
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
     <orderEntry type="library" name="buildScala" level="project" />
-    <orderEntry type="module" module-name="backend-api" />
-    <orderEntry type="module" module-name="hadoop-backend" />
     <orderEntry type="module-library" exported="" scope="TEST">
       <library>
         <CLASSES>

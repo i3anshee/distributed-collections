@@ -4,10 +4,8 @@ import org.apache.hadoop.mapreduce.Reducer
 import java.lang.Iterable
 import scala.collection.JavaConversions._
 import collection.mutable.{ArrayBuffer}
-import scala.util.Random
 import scala.collection.distributed.api.{DistContext, RecordNumber, Emitter}
 import collection.immutable
-import collection.mutable
 import org.apache.hadoop.io.{NullWritable, BytesWritable}
 
 /**

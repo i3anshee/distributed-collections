@@ -3,13 +3,14 @@ package examples
 import scala.collection.distributed.DistSet
 import java.net.URI
 import scala.collection.distributed.api.Emitter
+import java.io.Serializable
 
 /**
  * User: vjovanovic
  * Date: 4/18/11
  */
 
-@serializable class A(val a: Int) {
+class A(val a: Int) extends Serializable {
   override def equals(p1: Any) = p1 match {
     case v: A => (v.a == a)
     case _ => false

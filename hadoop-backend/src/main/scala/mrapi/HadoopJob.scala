@@ -1,20 +1,19 @@
 package mrapi
 
 import java.net.URI
-import org.apache.hadoop.mapreduce.Job
 import org.apache.hadoop.conf.Configuration
-import org.apache.hadoop.mapreduce.lib.input.{SequenceFileInputFormat, FileInputFormat}
-import org.apache.hadoop.mapreduce.lib.output.{SequenceFileOutputFormat, FileOutputFormat}
+import org.apache.hadoop.mapreduce.lib.input.{FileInputFormat}
+import org.apache.hadoop.mapreduce.lib.output.{FileOutputFormat}
 import scala.collection.distributed.api.AbstractJobStrategy
 import org.apache.hadoop.filecache.DistributedCache
 import java.util.UUID
 import scala.collection.distributed.api.dag._
-import tasks.{ParallelDoMapTask, CombineTask, ParallelDoReduceTask}
 import scala.collection.mutable
 import scala.collection.distributed.api.io.CollectionMetaData
 import java.io.{ByteArrayOutputStream, ObjectOutputStream}
 import org.apache.hadoop.fs.{PathFilter, FileSystem, Path}
 import org.apache.hadoop.io.{NullWritable, BytesWritable}
+import org.apache.hadoop.mapreduce.{Job}
 
 /**
  * User: vjovanovic
@@ -143,7 +142,7 @@ class MapCombineShuffleReduceBuilder {
   def configure(job: Job) = {
 
     // setting mapper and reducer classes and serializing closures
-    job.setMapperClass(classOf[ParallelDoMapTask])
+
     if (mapParallelDo.isDefined) {
       // serialize parallel do operation
       HadoopJob.dfsSerialize(job, "distcoll.mapper.do", mapParallelDo.get.parOperation)
@@ -165,12 +164,10 @@ class MapCombineShuffleReduceBuilder {
     if (combine.isDefined) {
       HadoopJob.dfsSerialize(job, "distcoll.mapper.groupBy", combine.get.keyFunction)
       HadoopJob.dfsSerialize(job, "distcoll.mapreduce.combine", combine.get.op)
-      job.setCombinerClass(classOf[CombineTask])
       println("Combine!!")
     }
 
     // serialize reducer parallel closure
-    job.setReducerClass(classOf[ParallelDoReduceTask])
     if (reduceParallelDo.isDefined) {
       //serialize reduce parallel do
       HadoopJob.dfsSerialize(job, "distcoll.reducer.do", reduceParallelDo.get.parOperation)
@@ -183,13 +180,11 @@ class MapCombineShuffleReduceBuilder {
     job.setOutputKeyClass(classOf[NullWritable])
     job.setOutputValueClass(classOf[BytesWritable])
 
-    job.setInputFormatClass(classOf[SequenceFileInputFormat[NullWritable, BytesWritable]])
-    job.setOutputFormatClass(classOf[SequenceFileOutputFormat[NullWritable, BytesWritable]])
-
+    QuickTypeFixScalaI0.setJobClassesBecause210SnapshotWillNot(job, groupBy.isDefined);
 
     // set the input and output files for the job
     input.foreach((in) => FileInputFormat.addInputPath(job, new Path(in.id.location.toString)))
-    FileInputFormat.setInputPathFilter(job: Job, classOf[MetaPathFilter])
+    FileInputFormat.setInputPathFilter(job, classOf[MetaPathFilter])
 
     // TODO (VJ) fix the multiple outputs
     output.foreach((out) => FileOutputFormat.setOutputPath(job, new Path(out.id.location.toString)))

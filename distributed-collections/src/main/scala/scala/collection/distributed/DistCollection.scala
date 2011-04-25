@@ -20,7 +20,9 @@ object DistCollection {
 /**
  * Super class for all distributed collections. Provides four basic primitives from which all other methods are built.
  */
-class DistCollection[A](location: URI) extends CollectionId(location) {
+class DistCollection[A](uri: URI) extends CollectionId {
+
+  override def location = uri
 
   def parallelDo[B](parOperation: (A, Emitter[B], DistContext) => Unit): DistCollection[B] = {
     // add a parallel do node
@@ -32,16 +34,37 @@ class DistCollection[A](location: URI) extends CollectionId(location) {
     outDistCollection
   }
 
-  def parallelDo[B](parOperation: (A, Emitter[B]) => Unit): DistCollection[B] = {
-    parallelDo((a: A, emitter: Emitter[B], context: DistContext) => parOperation(a, emitter))
-  }
-
   def groupBy[K, B](keyFunction: (A, Emitter[B]) => K): DistMap[K, Iterable[B]] = {
     // add a groupBy node to execution plan
     val outDistCollection = new DistMap[K, Iterable[B]](DCUtil.generateNewCollectionURI)
 
     val node = ExecutionPlan.addPlanNode(this, new GroupByPlanNode[A, B, K](outDistCollection, keyFunction))
     ExecutionPlan.sendToOutput(node, outDistCollection)
+    ExecutionPlan.execute()
+    outDistCollection
+  }
+
+  def flatten[B >: A](collections: Traversable[DistCollection[B]]): DistCollection[A] = {
+    val outDistCollection = new DistCollection[A](DCUtil.generateNewCollectionURI)
+    val node = ExecutionPlan.addFlattenNode(
+      new FlattenPlanNode(outDistCollection, List(this) ++ collections)
+    )
+    ExecutionPlan.sendToOutput(node, outDistCollection)
+    ExecutionPlan.execute()
+    outDistCollection
+  }
+
+  def parallelDo[B](parOperation: (A, Emitter[B]) => Unit): DistCollection[B] = {
+    parallelDo((a: A, emitter: Emitter[B], context: DistContext) => parOperation(a, emitter))
+  }
+
+  def combineValues[K, B, C](keyFunction: (A, Emitter[B]) => K, op: (C, B) => C): DistCollection[Pair[K, C]] = {
+    // add combine node
+    val outDistCollection = new DistCollection[Pair[K, C]](DCUtil.generateNewCollectionURI)
+
+    val node = ExecutionPlan.addPlanNode(this, new CombinePlanNode[A, K, B, C](outDistCollection, keyFunction, op))
+    ExecutionPlan.sendToOutput(node, outDistCollection)
+
     ExecutionPlan.execute()
     outDistCollection
   }
@@ -61,27 +84,6 @@ class DistCollection[A](location: URI) extends CollectionId(location) {
       emitter.emit(el)
       keyFunction(el)
     })
-
-  def flatten[B >: A](collections: Traversable[DistCollection[B]]): DistCollection[A] = {
-    val outDistCollection = new DistCollection[A](DCUtil.generateNewCollectionURI)
-    val node = ExecutionPlan.addFlattenNode(
-      new FlattenPlanNode(outDistCollection, List(this) ++ collections)
-    )
-    ExecutionPlan.sendToOutput(node, outDistCollection)
-    ExecutionPlan.execute()
-    outDistCollection
-  }
-
-  def combineValues[K, B, C](keyFunction: (A, Emitter[B]) => K, op: (C, B) => C): DistCollection[Pair[K, C]] = {
-    // add combine node
-    val outDistCollection = new DistCollection[Pair[K, C]](DCUtil.generateNewCollectionURI)
-
-    val node = ExecutionPlan.addPlanNode(this, new CombinePlanNode[A, K, B, C](outDistCollection, keyFunction, op))
-    ExecutionPlan.sendToOutput(node, outDistCollection)
-
-    ExecutionPlan.execute()
-    outDistCollection
-  }
 
   /**Concatenates this $coll with the elements of a distributed collection.
    */
@@ -178,7 +180,7 @@ class DistCollection[A](location: URI) extends CollectionId(location) {
    *  $mayNotTerminateInf
    *
    * @param p     the predicate used to test elements.
-   * @return        `true` if the given predicate `p` holds for all elements
+   * @return      `true` if the given predicate `p` holds for all elements
    *                 of this $coll, otherwise `false`.
    */
   def forall(p: A => Boolean): Boolean = throw new UnsupportedOperationException("Waiting for global cache !!!")

@@ -9,8 +9,8 @@
     </facet>
   </component>
   <component name="NewModuleRootManager" inherit-compiler-output="false">
-    <output url="file://$MODULE_DIR$/target/scala_2.8.0/classes" />
-    <output-test url="file://$MODULE_DIR$/target/scala_2.8.0/test-classes" />
+    <output url="file://$MODULE_DIR$/target/scala_2.10.0-SNAPSHOT/classes" />
+    <output-test url="file://$MODULE_DIR$/target/scala_2.10.0-SNAPSHOT/test-classes" />
     <exclude-output />
     <content url="file://$MODULE_DIR$">
       <sourceFolder url="file://$MODULE_DIR$/src/main/scala" isTestSource="false" />
@@ -22,7 +22,7 @@
     <orderEntry type="module-library" exported="" scope="TEST">
       <library>
         <CLASSES>
-          <root url="file://$MODULE_DIR$/target/scala_2.8.0/test-resources" />
+          <root url="file://$MODULE_DIR$/target/scala_2.10.0-SNAPSHOT/test-resources" />
         </CLASSES>
         <JAVADOC />
         <SOURCES />
@@ -31,7 +31,7 @@
     <orderEntry type="module-library" exported="">
       <library>
         <CLASSES>
-          <root url="file://$MODULE_DIR$/target/scala_2.8.0/resources" />
+          <root url="file://$MODULE_DIR$/target/scala_2.10.0-SNAPSHOT/resources" />
         </CLASSES>
         <JAVADOC />
         <SOURCES />
@@ -44,7 +44,7 @@
     <orderEntry type="module-library" exported="" scope="PROVIDED">
       <library>
         <CLASSES>
-          <root url="jar://$MODULE_DIR$/lib_managed/scala_2.8.0/provided/commons-cli-1.1.jar!/" />
+          <root url="jar://$MODULE_DIR$/lib_managed/scala_2.10.0-SNAPSHOT/provided/commons-cli-1.1.jar!/" />
         </CLASSES>
         <JAVADOC />
         <SOURCES />
@@ -53,7 +53,7 @@
     <orderEntry type="module-library" exported="" scope="PROVIDED">
       <library>
         <CLASSES>
-          <root url="jar://$MODULE_DIR$/lib_managed/scala_2.8.0/provided/commons-logging-1.1.1.jar!/" />
+          <root url="jar://$MODULE_DIR$/lib_managed/scala_2.10.0-SNAPSHOT/provided/commons-logging-1.1.1.jar!/" />
         </CLASSES>
         <JAVADOC />
         <SOURCES />
@@ -62,71 +62,69 @@
     <orderEntry type="module-library" exported="" scope="PROVIDED">
       <library>
         <CLASSES>
-          <root url="jar://$MODULE_DIR$/lib_managed/scala_2.8.0/provided/hadoop-core-0.20.1.jar!/" />
+          <root url="jar://$MODULE_DIR$/lib_managed/scala_2.10.0-SNAPSHOT/provided/hadoop-core-0.20.1.jar!/" />
         </CLASSES>
         <JAVADOC />
         <SOURCES>
-          <root url="file://$USER_HOME$/materials-dc/hadoop/hadoop-0.20.2/src/contrib/thriftfs/src/java" />
-          <root url="file://$USER_HOME$/materials-dc/hadoop/hadoop-0.20.2/src/contrib/vaidya/src/java" />
-          <root url="file://$USER_HOME$/materials-dc/hadoop/hadoop-0.20.2/src/contrib/thriftfs/test" />
-          <root url="file://$USER_HOME$/materials-dc/hadoop/hadoop-0.20.2/src/contrib/index/src/java" />
-          <root url="file://$USER_HOME$/materials-dc/hadoop/hadoop-0.20.2/src/contrib/index/src/test" />
-          <root url="file://$USER_HOME$/materials-dc/hadoop/hadoop-0.20.2/src/contrib/failmon/src/java" />
-          <root url="file://$USER_HOME$/materials-dc/hadoop/hadoop-0.20.2/src/contrib/hdfsproxy/src/test" />
-          <root url="file://$USER_HOME$/materials-dc/hadoop/hadoop-0.20.2/src/contrib/hdfsproxy/src/java" />
-          <root url="file://$USER_HOME$/materials-dc/hadoop/hadoop-0.20.2/src/benchmarks/gridmix2/src/java" />
-          <root url="file://$USER_HOME$/materials-dc/hadoop/hadoop-0.20.2/src/contrib/eclipse-plugin/src/java" />
-          <root url="file://$USER_HOME$/materials-dc/hadoop/hadoop-0.20.2/src/tools" />
-          <root url="file://$USER_HOME$/materials-dc/hadoop/hadoop-0.20.2/src/contrib/data_join/src/java" />
-          <root url="file://$USER_HOME$/materials-dc/hadoop/hadoop-0.20.2/src/examples" />
-          <root url="file://$USER_HOME$/materials-dc/hadoop/hadoop-0.20.2/src/contrib/data_join/src/test" />
-          <root url="file://$USER_HOME$/materials-dc/hadoop/hadoop-0.20.2/src/contrib/streaming/src/test" />
-          <root url="file://$USER_HOME$/materials-dc/hadoop/hadoop-0.20.2/src/mapred" />
-          <root url="file://$USER_HOME$/materials-dc/hadoop/hadoop-0.20.2/src/contrib/data_join/src/examples" />
-          <root url="file://$USER_HOME$/materials-dc/hadoop/hadoop-0.20.2/src/ant" />
-          <root url="file://$USER_HOME$/materials-dc/hadoop/hadoop-0.20.2/src/contrib/streaming/src/java" />
-          <root url="file://$USER_HOME$/materials-dc/hadoop/hadoop-0.20.2/src/core" />
-          <root url="file://$USER_HOME$/materials-dc/hadoop/hadoop-0.20.2/src/hdfs" />
-          <root url="file://$USER_HOME$/materials-dc/hadoop/hadoop-0.20.2/src/test" />
-          <root url="file://$USER_HOME$/materials-dc/hadoop/hadoop-0.20.2/src/contrib/thriftfs/gen-java" />
-          <root url="file://$USER_HOME$/materials-dc/hadoop/hadoop-0.20.2/src/contrib/fairscheduler/src/test" />
-          <root url="file://$USER_HOME$/materials-dc/hadoop/hadoop-0.20.2/src/contrib/fairscheduler/src/java" />
-          <root url="file://$USER_HOME$/materials-dc/hadoop/hadoop-0.20.2/src/contrib/capacity-scheduler/src/java" />
-          <root url="file://$USER_HOME$/materials-dc/hadoop/hadoop-0.20.2/src/contrib/capacity-scheduler/src/test" />
-          <root url="file://$USER_HOME$/work/research/materials-dc/hadoop/hadoop-0.20.2/src/contrib/data_join/src/examples" />
-          <root url="file://$USER_HOME$/work/research/materials-dc/hadoop/hadoop-0.20.2/src/contrib/thriftfs/src/java" />
-          <root url="file://$USER_HOME$/work/research/materials-dc/hadoop/hadoop-0.20.2/src/contrib/vaidya/src/java" />
-          <root url="file://$USER_HOME$/work/research/materials-dc/hadoop/hadoop-0.20.2/src/mapred" />
-          <root url="file://$USER_HOME$/work/research/materials-dc/hadoop/hadoop-0.20.2/src/contrib/capacity-scheduler/src/test" />
-          <root url="file://$USER_HOME$/work/research/materials-dc/hadoop/hadoop-0.20.2/src/contrib/capacity-scheduler/src/java" />
-          <root url="file://$USER_HOME$/work/research/materials-dc/hadoop/hadoop-0.20.2/src/ant" />
-          <root url="file://$USER_HOME$/work/research/materials-dc/hadoop/hadoop-0.20.2/src/tools" />
-          <root url="file://$USER_HOME$/work/research/materials-dc/hadoop/hadoop-0.20.2/src/contrib/data_join/src/java" />
-          <root url="file://$USER_HOME$/work/research/materials-dc/hadoop/hadoop-0.20.2/src/contrib/data_join/src/test" />
-          <root url="file://$USER_HOME$/work/research/materials-dc/hadoop/hadoop-0.20.2/src/examples" />
-          <root url="file://$USER_HOME$/work/research/materials-dc/hadoop/hadoop-0.20.2/src/contrib/fairscheduler/src/java" />
-          <root url="file://$USER_HOME$/work/research/materials-dc/hadoop/hadoop-0.20.2/src/contrib/fairscheduler/src/test" />
-          <root url="file://$USER_HOME$/work/research/materials-dc/hadoop/hadoop-0.20.2/src/test" />
-          <root url="file://$USER_HOME$/work/research/materials-dc/hadoop/hadoop-0.20.2/src/core" />
-          <root url="file://$USER_HOME$/work/research/materials-dc/hadoop/hadoop-0.20.2/src/contrib/thriftfs/gen-java" />
-          <root url="file://$USER_HOME$/work/research/materials-dc/hadoop/hadoop-0.20.2/src/hdfs" />
-          <root url="file://$USER_HOME$/work/research/materials-dc/hadoop/hadoop-0.20.2/src/contrib/thriftfs/test" />
-          <root url="file://$USER_HOME$/work/research/materials-dc/hadoop/hadoop-0.20.2/src/contrib/eclipse-plugin/src/java" />
-          <root url="file://$USER_HOME$/work/research/materials-dc/hadoop/hadoop-0.20.2/src/contrib/index/src/java" />
-          <root url="file://$USER_HOME$/work/research/materials-dc/hadoop/hadoop-0.20.2/src/contrib/index/src/test" />
-          <root url="file://$USER_HOME$/work/research/materials-dc/hadoop/hadoop-0.20.2/src/contrib/hdfsproxy/src/java" />
-          <root url="file://$USER_HOME$/work/research/materials-dc/hadoop/hadoop-0.20.2/src/contrib/hdfsproxy/src/test" />
-          <root url="file://$USER_HOME$/work/research/materials-dc/hadoop/hadoop-0.20.2/src/contrib/streaming/src/test" />
-          <root url="file://$USER_HOME$/work/research/materials-dc/hadoop/hadoop-0.20.2/src/contrib/streaming/src/java" />
-          <root url="file://$USER_HOME$/work/research/materials-dc/hadoop/hadoop-0.20.2/src/contrib/failmon/src/java" />
-          <root url="file://$USER_HOME$/work/research/materials-dc/hadoop/hadoop-0.20.2/src/benchmarks/gridmix2/src/java" />
+          <root url="file://$USER_HOME$/work/research/materials-dc/hadoop/hadoop-0.21.0/mapred/src/contrib/block_forensics/src/java" />
+          <root url="file://$USER_HOME$/work/research/materials-dc/hadoop/hadoop-0.21.0/hdfs/src/contrib/thriftfs/gen-java" />
+          <root url="file://$USER_HOME$/work/research/materials-dc/hadoop/hadoop-0.21.0/hdfs/src/contrib/thriftfs/src/java" />
+          <root url="file://$USER_HOME$/work/research/materials-dc/hadoop/hadoop-0.21.0/hdfs/src/contrib/thriftfs/test" />
+          <root url="file://$USER_HOME$/work/research/materials-dc/hadoop/hadoop-0.21.0/mapred/src/contrib/raid/src/java" />
+          <root url="file://$USER_HOME$/work/research/materials-dc/hadoop/hadoop-0.21.0/mapred/src/contrib/raid/src/test" />
+          <root url="file://$USER_HOME$/work/research/materials-dc/hadoop/hadoop-0.21.0/mapred/src/contrib/dynamic-scheduler/src/java" />
+          <root url="file://$USER_HOME$/work/research/materials-dc/hadoop/hadoop-0.21.0/mapred/src/contrib/dynamic-scheduler/src/test" />
+          <root url="file://$USER_HOME$/work/research/materials-dc/hadoop/hadoop-0.21.0/mapred/src/test/mapred" />
+          <root url="file://$USER_HOME$/work/research/materials-dc/hadoop/hadoop-0.21.0/common/src/java" />
+          <root url="file://$USER_HOME$/work/research/materials-dc/hadoop/hadoop-0.21.0/mapred/src/test/aop" />
+          <root url="file://$USER_HOME$/work/research/materials-dc/hadoop/hadoop-0.21.0/hdfs/src/test/hdfs" />
+          <root url="file://$USER_HOME$/work/research/materials-dc/hadoop/hadoop-0.21.0/hdfs/src/test/aop" />
+          <root url="file://$USER_HOME$/work/research/materials-dc/hadoop/hadoop-0.21.0/mapred/src/contrib/data_join/src/test" />
+          <root url="file://$USER_HOME$/work/research/materials-dc/hadoop/hadoop-0.21.0/mapred/src/contrib/data_join/src/java" />
+          <root url="file://$USER_HOME$/work/research/materials-dc/hadoop/hadoop-0.21.0/mapred/src/contrib/data_join/src/examples" />
+          <root url="file://$USER_HOME$/work/research/materials-dc/hadoop/hadoop-0.21.0/common/src/test/core" />
+          <root url="file://$USER_HOME$/work/research/materials-dc/hadoop/hadoop-0.21.0/common/src/test/aop" />
+          <root url="file://$USER_HOME$/work/research/materials-dc/hadoop/hadoop-0.21.0/common/src/test/system/java" />
+          <root url="file://$USER_HOME$/work/research/materials-dc/hadoop/hadoop-0.21.0/hdfs/src/test/system/java" />
+          <root url="file://$USER_HOME$/work/research/materials-dc/hadoop/hadoop-0.21.0/hdfs/src/test/system/test" />
+          <root url="file://$USER_HOME$/work/research/materials-dc/hadoop/hadoop-0.21.0/mapred/src/contrib/mumak/src/test" />
+          <root url="file://$USER_HOME$/work/research/materials-dc/hadoop/hadoop-0.21.0/mapred/src/contrib/mumak/src/java" />
+          <root url="file://$USER_HOME$/work/research/materials-dc/hadoop/hadoop-0.21.0/mapred/src/contrib/streaming/src/java" />
+          <root url="file://$USER_HOME$/work/research/materials-dc/hadoop/hadoop-0.21.0/mapred/src/contrib/fairscheduler/src/java" />
+          <root url="file://$USER_HOME$/work/research/materials-dc/hadoop/hadoop-0.21.0/mapred/src/contrib/fairscheduler/src/test" />
+          <root url="file://$USER_HOME$/work/research/materials-dc/hadoop/hadoop-0.21.0/hdfs/src/contrib/hdfsproxy/src/java" />
+          <root url="file://$USER_HOME$/work/research/materials-dc/hadoop/hadoop-0.21.0/hdfs/src/contrib/hdfsproxy/src/test" />
+          <root url="file://$USER_HOME$/work/research/materials-dc/hadoop/hadoop-0.21.0/mapred/src/contrib/gridmix/src/java" />
+          <root url="file://$USER_HOME$/work/research/materials-dc/hadoop/hadoop-0.21.0/mapred/src/contrib/gridmix/src/test" />
+          <root url="file://$USER_HOME$/work/research/materials-dc/hadoop/hadoop-0.21.0/mapred/src/contrib/vaidya/src/java" />
+          <root url="file://$USER_HOME$/work/research/materials-dc/hadoop/hadoop-0.21.0/hdfs/src/test/unit" />
+          <root url="file://$USER_HOME$/work/research/materials-dc/hadoop/hadoop-0.21.0/mapred/src/contrib/capacity-scheduler/src/java" />
+          <root url="file://$USER_HOME$/work/research/materials-dc/hadoop/hadoop-0.21.0/mapred/src/contrib/capacity-scheduler/src/test" />
+          <root url="file://$USER_HOME$/work/research/materials-dc/hadoop/hadoop-0.21.0/hdfs/src/java" />
+          <root url="file://$USER_HOME$/work/research/materials-dc/hadoop/hadoop-0.21.0/hdfs/src/ant" />
+          <root url="file://$USER_HOME$/work/research/materials-dc/hadoop/hadoop-0.21.0/mapred/src/test/system/test" />
+          <root url="file://$USER_HOME$/work/research/materials-dc/hadoop/hadoop-0.21.0/mapred/src/contrib/mrunit/src/java" />
+          <root url="file://$USER_HOME$/work/research/materials-dc/hadoop/hadoop-0.21.0/mapred/src/contrib/mrunit/src/test" />
+          <root url="file://$USER_HOME$/work/research/materials-dc/hadoop/hadoop-0.21.0/mapred/src/test/system/java" />
+          <root url="file://$USER_HOME$/work/research/materials-dc/hadoop/hadoop-0.21.0/mapred/src/test/unit" />
+          <root url="file://$USER_HOME$/work/research/materials-dc/hadoop/hadoop-0.21.0/mapred/src/tools" />
+          <root url="file://$USER_HOME$/work/research/materials-dc/hadoop/hadoop-0.21.0/mapred/src/examples" />
+          <root url="file://$USER_HOME$/work/research/materials-dc/hadoop/hadoop-0.21.0/mapred/src/contrib/index/src/test" />
+          <root url="file://$USER_HOME$/work/research/materials-dc/hadoop/hadoop-0.21.0/mapred/src/java" />
+          <root url="file://$USER_HOME$/work/research/materials-dc/hadoop/hadoop-0.21.0/mapred/src/contrib/index/src/java" />
+          <root url="file://$USER_HOME$/work/research/materials-dc/hadoop/hadoop-0.21.0/mapred/src/contrib/vertica/src/java" />
+          <root url="file://$USER_HOME$/work/research/materials-dc/hadoop/hadoop-0.21.0/common/src/contrib/failmon/src/java" />
+          <root url="file://$USER_HOME$/work/research/materials-dc/hadoop/hadoop-0.21.0/mapred/src/benchmarks/gridmix2/src/java" />
+          <root url="file://$USER_HOME$/work/research/materials-dc/hadoop/hadoop-0.21.0/mapred/src/contrib/vertica/src/test" />
+          <root url="file://$USER_HOME$/work/research/materials-dc/hadoop/hadoop-0.21.0/mapred/src/contrib/eclipse-plugin/src/java" />
+          <root url="file://$USER_HOME$/work/research/materials-dc/hadoop/hadoop-0.21.0/mapred/src/contrib/streaming/src/test" />
         </SOURCES>
       </library>
     </orderEntry>
     <orderEntry type="module-library" exported="" scope="TEST">
       <library>
         <CLASSES>
-          <root url="jar://$MODULE_DIR$/lib_managed/scala_2.8.0/test/junit-3.8.1.jar!/" />
+          <root url="jar://$MODULE_DIR$/lib_managed/scala_2.10.0-SNAPSHOT/test/junit-3.8.1.jar!/" />
         </CLASSES>
         <JAVADOC />
         <SOURCES />
@@ -135,18 +133,18 @@
     <orderEntry type="module-library" exported="" scope="TEST">
       <library>
         <CLASSES>
-          <root url="jar://$MODULE_DIR$/lib_managed/scala_2.8.0/test/scalatest-1.3.jar!/" />
+          <root url="jar://$MODULE_DIR$/lib_managed/scala_2.10.0-SNAPSHOT/test/scalatest-1.3.jar!/" />
         </CLASSES>
         <JAVADOC />
         <SOURCES>
-          <root url="jar://$MODULE_DIR$/lib_managed/scala_2.8.0/test/scalatest-1.3-sources.jar!/" />
+          <root url="jar://$MODULE_DIR$/lib_managed/scala_2.10.0-SNAPSHOT/test/scalatest-1.3-sources.jar!/" />
         </SOURCES>
       </library>
     </orderEntry>
     <orderEntry type="module-library" exported="" scope="TEST">
       <library>
         <CLASSES>
-          <root url="jar://$MODULE_DIR$/lib_managed/scala_2.8.0/test/testng-5.7-jdk15.jar!/" />
+          <root url="jar://$MODULE_DIR$/lib_managed/scala_2.10.0-SNAPSHOT/test/testng-5.7-jdk15.jar!/" />
         </CLASSES>
         <JAVADOC />
         <SOURCES />

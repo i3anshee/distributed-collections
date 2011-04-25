@@ -30,7 +30,7 @@
     <output url="file://$PROJECT_DIR$/out" />
   </component>
   <component name="SvnBranchConfigurationManager">
-    <option name="mySupportsUserInfoFilter" value="true" />
+    <option value="true" name="mySupportsUserInfoFilter" />
   </component>
 </project>
 
