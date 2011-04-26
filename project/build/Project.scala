@@ -26,6 +26,7 @@ class Project(info: ProjectInfo) extends ParentProject(info) with IdeaProject {
   class DistributedCollectionsProject(info: ProjectInfo) extends DefaultProject(info) with IdeaProject with UtilDependencies {
     val dependsOnHadoopBackend = hadoopBackend
     val dependsOnDistributedCollectionsBackendAPI = distributedCollectionsBackendAPI
+    override def mainClass = Some("examples.DistCollTest")
   }
 
   class DistributedCollectionsBackendAPIProject(info: ProjectInfo) extends DefaultProject(info) with IdeaProject with UtilDependencies {

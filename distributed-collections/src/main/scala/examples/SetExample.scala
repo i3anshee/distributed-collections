@@ -1,6 +1,6 @@
 package examples
 
-import scala.collection.distributed.DistSet
+import scala.collection.distributed.DistSetOld
 import java.net.URI
 import collection.mutable.ArrayBuffer
 
@@ -11,9 +11,9 @@ import collection.mutable.ArrayBuffer
 
 object SetExample {
   def main(args: Array[String]) {
-    val ds1 = new DistSet[Long](new URI("./longsTo1k"))
-    val ds2 = new DistSet[Long](new DistSet[Long](new URI("./longsTo1k")).filter(_ > 50).location)
-    val ds2x1024 = new DistSet[Long](new DistSet[Long](new URI("./longsTo1k")).flatMap((v: Long) => for (i <- 0 to 2) yield v * 2L +  i).location)
+    val ds1 = new DistSetOld[Long](new URI("./longsTo1k"))
+    val ds2 = new DistSetOld[Long](new DistSetOld[Long](new URI("./longsTo1k")).filter(_ > 50).location)
+    val ds2x1024 = new DistSetOld[Long](new DistSetOld[Long](new URI("./longsTo1k")).flatMap((v: Long) => for (i <- 0 to 2) yield v * 2L +  i).location)
     val messages = ArrayBuffer[String]()
 
     messages += "Intersection of (0 to 1024) and (50 to 1024) =" + (ds1 intersect ds2 toString())

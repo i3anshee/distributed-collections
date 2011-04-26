@@ -1,6 +1,6 @@
 package examples
 
-import scala.collection.distributed.DistSet
+import scala.collection.distributed.DistSetOld
 import java.net.URI
 import scala.collection.distributed.api.Emitter
 import java.io.Serializable
@@ -19,7 +19,7 @@ class A(val a: Int) extends Serializable {
 
 object LocalCacheTest {
   def main(args: Array[String]) = {
-    val ds1 = new DistSet[Long](new URI("./longsTo1k"))
+    val ds1 = new DistSetOld[Long](new URI("./longsTo1k"))
 
     var booleanFirstTime = true
     var localClass: A = new A(0)

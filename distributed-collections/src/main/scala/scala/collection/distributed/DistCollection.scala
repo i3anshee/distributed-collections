@@ -422,11 +422,11 @@ class DistCollection[A](uri: URI) extends CollectionId {
   // scanLeft
   // scanRight
 
-  def asTraversable(): Traversable[A] = FSAdapter.valuesTraversable[A](location)
+  def asTraversable(): Traversable[A] = FSAdapter.valuesIterable[A](location)
 
   override def toString(): String = {
     val builder = new StringBuilder("[ ")
-    FSAdapter.valuesTraversable[A](location).foreach((v: A) => builder.append(v).append(" "))
+    FSAdapter.valuesIterable[A](location).foreach((v: A) => builder.append(v).append(" "))
     builder.append("]")
     builder.toString
   }
