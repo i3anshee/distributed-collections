@@ -8,11 +8,7 @@ import collection.generic.{GenericCompanion}
 import mrapi.FSAdapter
 import execution.{DCUtil, ExecutionPlan}
 import collection.immutable.GenTraversable
-
-/**
- * User: vjovanovic
- * Date: 4/23/11
- */
+import io.CollectionsIO
 
 trait DistIterable[+T]
   extends GenIterable[T]
@@ -20,16 +16,21 @@ trait DistIterable[+T]
   with DistIterableLike[T, DistIterable[T], Iterable[T]]
   with CollectionId
 {
-
   def seq = FSAdapter.valuesIterable[T](location)
 
   override def companion: GenericCompanion[DistIterable] with GenericDistCompanion[DistIterable] = DistIterable
 
   def stringPrefix = "DistIterable"
 
-  def size = throw new UnsupportedOperationException("Not implemented yet!!!")
+  lazy val sizeLongVal: Long = CollectionsIO.getCollectionMetaData(this).size
 
-  protected[this] def parCombiner = throw new UnsupportedOperationException("Not implemented yet!!!")
+  def size = if (sizeLong > Int.MaxValue) throw new RuntimeException("Size is larger than MAX_INT!!!") else sizeLong.toInt
+
+  def sizeLong = sizeLongVal
+
+  def nonEmpty = size != 0
+
+  override def isEmpty = sizeLong != 0
 
   def groupBy[K, B](keyFunction: (T, Emitter[B]) => K): DistMap[K, GenIterable[B]] = {
     // add a groupBy node to execution plan
@@ -51,16 +52,6 @@ trait DistIterable[+T]
     outDistCollection
   }
 
-  def flatten[B >: T](collections: GenTraversable[DistIterable[B]]) = {
-    val outDistCollection = new DistColl[T](DCUtil.generateNewCollectionURI)
-    val node = ExecutionPlan.addFlattenNode(
-      new FlattenPlanNode(outDistCollection, List(this) ++ collections)
-    )
-    ExecutionPlan.sendToOutput(node, outDistCollection)
-    ExecutionPlan.execute()
-    outDistCollection
-  }
-
   def combineValues[K, B, C](keyFunction: (T, Emitter[B]) => K, op: (C, B) => C): DistMap[K, C] = {
     // add combine node
     val outDistCollection = new DistHashMap[K, C](DCUtil.generateNewCollectionURI)
@@ -74,6 +65,8 @@ trait DistIterable[+T]
 
   def sort[B](by: (T) => Ordered[B]) = throw new UnsupportedOperationException("Not implemented yet!!!")
 
+
+  protected[this] def parCombiner = throw new UnsupportedOperationException("Not implemented yet!!!")
 }
 
 /**$factoryInfo

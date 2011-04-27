@@ -11,7 +11,7 @@ import immutable.GenIterable
 trait DistIterableLike[+T, +Repr <: DistIterable[T], +Sequential <: Iterable[T] with GenIterableLike[T, Sequential]]
   extends GenIterableLike[T, Repr]
   with HasNewRemoteBuilder[T, Repr]
-  with DistProcessable[T, Repr] {
+  with DistProcessable[T] {
   self: DistIterableLike[T, Repr, Sequential] =>
 
   protected[this] def newRemoteBuilder: RemoteBuilder[T, Repr]
@@ -20,9 +20,7 @@ trait DistIterableLike[+T, +Repr <: DistIterable[T], +Sequential <: Iterable[T] 
 
   def hasDefiniteSize = true
 
-  def nonEmpty = size != 0
-
-  def iterator = throw new UnsupportedOperationException("Not implemented yet!!!")
+  def canEqual(other: Any) = true
 
   def mkString(start: String, sep: String, end: String): String = seq.mkString(start, sep, end)
 
@@ -46,12 +44,35 @@ trait DistIterableLike[+T, +Repr <: DistIterable[T], +Sequential <: Iterable[T] 
   }
 
   def groupBySeq[K](f: (T) => K): DistMap[K, GenIterable[T]] = groupBy((v: T, em: Emitter[T]) => {
-    em.emit(v); f(v)
+    em.emit(v);
+    f(v)
   })
 
-  def foreach[U](f: (T) => U) = null
+  def foldRight[B](z: B)(op: (T, B) => B) = seq.foldRight(z)(op)
+
+  def foldLeft[B](z: B)(op: (B, T) => B) = seq.foldLeft(z)(op)
+
+  def :\[B](z: B)(op: (T, B) => B) = foldLeft(b)(op)
+
+  def /:[B](z: B)(op: (B, T) => B) = foldRight(b)(op)
+
+  def fold[A1 >: T](z: A1)(op: (A1, A1) => A1) = if (!isEmpty) op(reduce(op), z) else z
+
+  def reduceOption[A1 >: T](op: (A1, A1) => A1) = throw new UnsupportedOperationException("Not implemented yet!!!")
+
+  def reduce[A1 >: T](op: (A1, A1) => A1) = if (isEmpty)
+    throw new UnsupportedOperationException("empty.reduce")
+  else
+    combineValues((v: T, emitter: Emitter[T]) => {
+      emitter.emit(v);
+      1
+    }, op).asTraversable().head._2
+
+  def foreach[U](f: (T) => U) = seq.foreach(f)
 
   def groupBy[K](f: (T) => K): DistMap[K, Repr] = throw new UnsupportedOperationException("Not implemented yet!!!")
+
+  def iterator = throw new UnsupportedOperationException("Not implemented yet!!!")
 
   def zipAll[B, A1 >: T, That](that: collection.GenIterable[B], thisElem: A1, thatElem: B)(implicit bf: CanBuildFrom[Repr, (A1, B), That]) = throw new UnsupportedOperationException("Not implemented yet!!!")
 
@@ -97,27 +118,13 @@ trait DistIterableLike[+T, +Repr <: DistIterable[T], +Sequential <: Iterable[T] 
 
   def aggregate[B](z: B)(seqop: (B, T) => B, combop: (B, B) => B) = throw new UnsupportedOperationException("Not implemented yet!!!")
 
-  def foldRight[B](z: B)(op: (T, B) => B) = throw new UnsupportedOperationException("Not implemented yet!!!")
-
-  def foldLeft[B](z: B)(op: (B, T) => B) = throw new UnsupportedOperationException("Not implemented yet!!!")
-
-  def :\[B](z: B)(op: (T, B) => B) = throw new UnsupportedOperationException("Not implemented yet!!!")
-
-  def /:[B](z: B)(op: (B, T) => B) = throw new UnsupportedOperationException("Not implemented yet!!!")
-
-  def fold[A1 >: T](z: A1)(op: (A1, A1) => A1) = throw new UnsupportedOperationException("Not implemented yet!!!")
-
-  def reduceOption[A1 >: T](op: (A1, A1) => A1) = throw new UnsupportedOperationException("Not implemented yet!!!")
-
-  def reduce[A1 >: T](op: (A1, A1) => A1) = throw new UnsupportedOperationException("Not implemented yet!!!")
+  def flatMap[B, That](f: (T) => GenTraversableOnce[B])(implicit bf: CanBuildFrom[Repr, B, That]) = throw new UnsupportedOperationException("Not implemented yet!!!")
 
   def partition(pred: (T) => Boolean) = throw new UnsupportedOperationException("Not implemented yet!!!")
 
   def filterNot(pred: (T) => Boolean) = throw new UnsupportedOperationException("Not implemented yet!!!")
 
   def ++[B >: T, That](that: GenTraversableOnce[B])(implicit bf: CanBuildFrom[Repr, B, That]) = throw new UnsupportedOperationException("Not implemented yet!!!")
-
-  def flatMap[B, That](f: (T) => GenTraversableOnce[B])(implicit bf: CanBuildFrom[Repr, B, That]) = throw new UnsupportedOperationException("Not implemented yet!!!")
 
   def collect[B, That](pf: PartialFunction[T, B])(implicit bf: CanBuildFrom[Repr, B, That]) = throw new UnsupportedOperationException("Not implemented yet!!!")
 

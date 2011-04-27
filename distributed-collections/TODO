@@ -14,7 +14,16 @@
 
   // Plan:
   // 1. Move flatten to the new interface with remote builder
-  // 2. Introduce method groupBySeq
   // 3. Test what has been done and commit
   // 4. introduce parallelDo with multiple outputs
   // 5. introduce gbsc() method
+
+
+    // Possible combinations of operations
+  //  {[do | flatten]}
+  //  groupBySortCombine
+  //  groupBySort
+  //  groupByCombine
+  //  groupBy
+  //  Sort
+  //  {do}

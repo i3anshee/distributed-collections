@@ -18,18 +18,12 @@ with CollectionId
 with Serializable {
   def location = uri
 
-
   override def companion: GenericCompanion[DistHashSet] with GenericDistCompanion[DistHashSet] = DistHashSet
 
+  //TODO (VJ) optimize the reading from dfs
+  override def seq: HashSet[T] = HashSet.empty ++ super.seq
+
   override def empty: DistHashSet[T] = throw new UnsupportedOperationException("Not implemented yet!!")
-
-  override def seq = throw new UnsupportedOperationException("Not implemented yet!!")
-
-  override def size = throw new UnsupportedOperationException("Not implemented yet!!")
-
-  def diff(that: GenSet[T]) = throw new UnsupportedOperationException("Not implemented yet!!")
-
-  def canEqual(that: Any) = throw new UnsupportedOperationException("Not implemented yet!!")
 }
 
 object DistHashSet extends DistSetFactory[DistHashSet] {

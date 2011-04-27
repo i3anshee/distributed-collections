@@ -17,8 +17,6 @@ class DistHashMap[K, +V](uri: URI)
 
   override def empty: DistHashMap[K, V] = throw new UnsupportedOperationException("Not implemented yet!!")
 
-  //  protected[this] override def newRemoteBuilder= HashMapCombiner[K, V]
-
   override def seq = throw new UnsupportedOperationException("Not implemented yet!!")
 
   def -(k: K) = throw new UnsupportedOperationException("Not implemented yet!!")
@@ -27,9 +25,6 @@ class DistHashMap[K, +V](uri: URI)
 
   def get(k: K) = throw new UnsupportedOperationException("Not implemented yet!!")
 
-  override def size = throw new UnsupportedOperationException("Not implemented yet!!")
-
-  def canEqual(that: Any) = throw new UnsupportedOperationException("Not implemented yet!!")
 }
 
 object DistHashMap extends DistMapFactory[DistHashMap] {
