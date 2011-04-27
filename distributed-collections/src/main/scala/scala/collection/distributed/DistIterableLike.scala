@@ -50,11 +50,11 @@ trait DistIterableLike[+T, +Repr <: DistIterable[T], +Sequential <: Iterable[T] 
 
   def foldRight[B](z: B)(op: (T, B) => B) = seq.foldRight(z)(op)
 
+  def :\[B](z: B)(op: (T, B) => B): B = foldRight(z)(op)
+
   def foldLeft[B](z: B)(op: (B, T) => B) = seq.foldLeft(z)(op)
 
-  def :\[B](z: B)(op: (T, B) => B) = foldLeft(b)(op)
-
-  def /:[B](z: B)(op: (B, T) => B) = foldRight(b)(op)
+  def /:[B](z: B)(op: (B, T) => B): B = foldLeft(z)(op)
 
   def fold[A1 >: T](z: A1)(op: (A1, A1) => A1) = if (!isEmpty) op(reduce(op), z) else z
 
@@ -66,7 +66,35 @@ trait DistIterableLike[+T, +Repr <: DistIterable[T], +Sequential <: Iterable[T] 
     combineValues((v: T, emitter: Emitter[T]) => {
       emitter.emit(v);
       1
-    }, op).asTraversable().head._2
+    }, op).toTraversable.head._2
+
+  def reduceRightOption[B >: T](op: (T, B) => B) = seq.reduceRightOption(op)
+
+  def reduceLeftOption[B >: T](op: (B, T) => B) = seq.reduceLeftOption(op)
+
+  def reduceRight[B >: T](op: (T, B) => B) = seq.reduceRight(op)
+
+  def toMap[K, V](implicit ev: <:<[T, (K, V)]) = seq.toMap
+
+  def toSet[A1 >: T] = seq.toSet
+
+  def toSeq = seq.toSeq
+
+  def toIterable = seq.toIterable
+
+  def toTraversable = seq.toTraversable
+
+  def toBuffer[A1 >: T] = seq.toBuffer
+
+  def toIterator = iterator
+
+  def toStream = seq.toStream
+
+  def toIndexedSeq[A1 >: T] = seq.toIndexedSeq
+
+  def toList = seq.toList
+
+  def toArray[A1 >: T](implicit evidence$1: ClassManifest[A1]) = seq.toArray(evidence$1)
 
   def foreach[U](f: (T) => U) = seq.foreach(f)
 
@@ -110,12 +138,6 @@ trait DistIterableLike[+T, +Repr <: DistIterable[T], +Sequential <: Iterable[T] 
 
   def count(p: (T) => Boolean) = 0
 
-  def reduceRightOption[B >: T](op: (T, B) => B) = throw new UnsupportedOperationException("Not implemented yet!!!")
-
-  def reduceLeftOption[B >: T](op: (B, T) => B) = throw new UnsupportedOperationException("Not implemented yet!!!")
-
-  def reduceRight[B >: T](op: (T, B) => B) = throw new UnsupportedOperationException("Not implemented yet!!!")
-
   def aggregate[B](z: B)(seqop: (B, T) => B, combop: (B, B) => B) = throw new UnsupportedOperationException("Not implemented yet!!!")
 
   def flatMap[B, That](f: (T) => GenTraversableOnce[B])(implicit bf: CanBuildFrom[Repr, B, That]) = throw new UnsupportedOperationException("Not implemented yet!!!")
@@ -133,28 +155,6 @@ trait DistIterableLike[+T, +Repr <: DistIterable[T], +Sequential <: Iterable[T] 
   def scanLeft[B, That](z: B)(op: (B, T) => B)(implicit bf: CanBuildFrom[Repr, B, That]) = throw new UnsupportedOperationException("Not implemented yet!!!")
 
   def scan[B >: T, That](z: B)(op: (B, B) => B)(implicit cbf: CanBuildFrom[Repr, B, That]) = throw new UnsupportedOperationException("Not implemented yet!!!")
-
-  def toMap[K, V](implicit ev: <:<[T, (K, V)]) = throw new UnsupportedOperationException("Not implemented yet!!!")
-
-  def toSet[A1 >: T] = throw new UnsupportedOperationException("Not implemented yet!!!")
-
-  def toSeq = throw new UnsupportedOperationException("Not implemented yet!!!")
-
-  def toIterable = throw new UnsupportedOperationException("Not implemented yet!!!")
-
-  def toTraversable = throw new UnsupportedOperationException("Not implemented yet!!!")
-
-  def toBuffer[A1 >: T] = throw new UnsupportedOperationException("Not implemented yet!!!")
-
-  def toIterator = throw new UnsupportedOperationException("Not implemented yet!!!")
-
-  def toStream = throw new UnsupportedOperationException("Not implemented yet!!!")
-
-  def toIndexedSeq[A1 >: T] = throw new UnsupportedOperationException("Not implemented yet!!!")
-
-  def toList = throw new UnsupportedOperationException("Not implemented yet!!!")
-
-  def toArray[A1 >: T](implicit evidence$1: ClassManifest[A1]) = throw new UnsupportedOperationException("Not implemented yet!!!")
 
   def copyToArray[B >: T](xs: Array[B], start: Int, len: Int) = throw new UnsupportedOperationException("Not implemented yet!!!")
 
