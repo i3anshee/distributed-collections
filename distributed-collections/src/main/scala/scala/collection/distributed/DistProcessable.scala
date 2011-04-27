@@ -1,15 +1,14 @@
 package scala.collection.distributed
 
 import api.{DistContext, Emitter}
-import collection.immutable.GenIterable
-import collection.immutable.GenTraversable
+import collection.immutable.{GenMap, GenIterable, GenTraversable}
 
 /**
  * User: vjovanovic
  * Date: 4/25/11
  */
 
-trait DistProcessable[+T] {
+trait DistProcessable[+T, Repr] {
 
   def parallelDo[B](parOperation: (T, Emitter[B], DistContext) => Unit): DistIterable[B]
 

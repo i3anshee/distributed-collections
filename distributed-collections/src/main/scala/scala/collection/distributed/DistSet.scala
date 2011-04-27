@@ -9,22 +9,23 @@ import collection.generic.GenericCompanion
  */
 
 trait DistSet[T] extends GenSet[T]
-     with GenericDistTemplate[T, DistSet]
-     with DistIterable[T]
-     with DistSetLike[T, DistSet[T], Set[T]]
-  {
+with GenericDistTemplate[T, DistSet]
+with DistIterable[T]
+with DistSetLike[T, DistSet[T], Set[T]] {
   self =>
-    override def empty: DistSet[T] = throw new UnsupportedOperationException("")
+  override def empty: DistSet[T] = throw new UnsupportedOperationException("")
 
-    //protected[this] override def newCombiner: Combiner[T, ParSet[T]] = ParSet.newCombiner[T]
+  //protected[this] override def newCombiner: Combiner[T, ParSet[T]] = ParSet.newCombiner[T]
 
-    override def companion: GenericCompanion[DistSet] with GenericDistCompanion[DistSet] = DistSet
+  override def companion: GenericCompanion[DistSet] with GenericDistCompanion[DistSet] = DistSet
 
-    override def stringPrefix = "DistSet"
-  }
+  override def seq = super.seq.toSet
 
-  object DistSet extends DistSetFactory[DistSet] {
-    implicit def canBuildFrom[T]: CanDistBuildFrom[Coll, T, DistSet[T]] = new GenericDistBuildFrom[T]
+  override def stringPrefix = "DistSet"
+}
 
-    def newRemoteBuilder[T]: RemoteBuilder[T, DistSet[T]] = new DistSetRemoteBuilder[T]
-  }
+object DistSet extends DistSetFactory[DistSet] {
+  implicit def canBuildFrom[T]: CanDistBuildFrom[Coll, T, DistSet[T]] = new GenericDistBuildFrom[T]
+
+  def newRemoteBuilder[T]: RemoteBuilder[T, DistSet[T]] = new DistSetRemoteBuilder[T]
+}

@@ -36,7 +36,7 @@ class DistCollection[A](uri: URI) extends CollectionId {
 
   def groupBy[K, B](keyFunction: (A, Emitter[B]) => K): DistMap[K, Iterable[B]] = {
     // add a groupBy node to execution plan
-    val outDistCollection = new DistMap[K, Iterable[B]](DCUtil.generateNewCollectionURI)
+    val outDistCollection = new DistHashMap[K, Iterable[B]](DCUtil.generateNewCollectionURI)
 
     val node = ExecutionPlan.addPlanNode(this, new GroupByPlanNode[A, B, K](outDistCollection, keyFunction))
     ExecutionPlan.sendToOutput(node, outDistCollection)
@@ -80,7 +80,7 @@ class DistCollection[A](uri: URI) extends CollectionId {
    * @return A map from keys to ${coll}s such that the following invariant holds:
    */
   def groupBy[K](keyFunction: A => K): DistMap[K, Iterable[A]] =
-    groupBy((el, emitter) => {
+    groupBy((el: A, emitter: Emitter[A]) => {
       emitter.emit(el)
       keyFunction(el)
     })

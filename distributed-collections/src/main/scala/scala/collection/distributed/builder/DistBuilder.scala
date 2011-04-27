@@ -2,11 +2,6 @@ package scala.collection.distributed.builder
 
 import scala.collection.distributed.DistCollection
 
-/**
- * User: vjovanovic
- * Date: 4/12/11
- */
-
 /**The base trait of all distributed builders.
  *  A builder lets one construct a collection out of other distributed collections by enforcing constraints (for sets and maps)
  *

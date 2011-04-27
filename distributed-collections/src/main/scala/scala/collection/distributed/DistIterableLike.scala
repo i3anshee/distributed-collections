@@ -3,18 +3,15 @@ package scala.collection.distributed
 import api.Emitter
 import scala.collection.generic.{CanBuildFrom}
 import scala._
-import collection.{GenTraversableOnce, GenIterable, GenIterableLike}
-import mrapi.FSAdapter
+import collection.immutable
+import collection.{GenTraversableOnce, GenIterableLike}
+import immutable.GenIterable
 
-/**
- * User: vjovanovic
- * Date: 4/12/11
- */
 
 trait DistIterableLike[+T, +Repr <: DistIterable[T], +Sequential <: Iterable[T] with GenIterableLike[T, Sequential]]
   extends GenIterableLike[T, Repr]
   with HasNewRemoteBuilder[T, Repr]
-  with DistProcessable[T] {
+  with DistProcessable[T, Repr] {
   self: DistIterableLike[T, Repr, Sequential] =>
 
   protected[this] def newRemoteBuilder: RemoteBuilder[T, Repr]
@@ -48,15 +45,21 @@ trait DistIterableLike[+T, +Repr <: DistIterable[T], +Sequential <: Iterable[T] 
     rb.result(parallelDo((el: T, em: Emitter[T]) => if (p(el)) em.emit(el)))
   }
 
+  def groupBySeq[K](f: (T) => K): DistMap[K, GenIterable[T]] = groupBy((v: T, em: Emitter[T]) => {
+    em.emit(v); f(v)
+  })
+
   def foreach[U](f: (T) => U) = null
 
-  def zipAll[B, A1 >: T, That](that: GenIterable[B], thisElem: A1, thatElem: B)(implicit bf: CanBuildFrom[Repr, (A1, B), That]) = throw new UnsupportedOperationException("Not implemented yet!!!")
+  def groupBy[K](f: (T) => K): DistMap[K, Repr] = throw new UnsupportedOperationException("Not implemented yet!!!")
+
+  def zipAll[B, A1 >: T, That](that: collection.GenIterable[B], thisElem: A1, thatElem: B)(implicit bf: CanBuildFrom[Repr, (A1, B), That]) = throw new UnsupportedOperationException("Not implemented yet!!!")
 
   def zipWithIndex[A1 >: T, That](implicit bf: CanBuildFrom[Repr, (A1, Int), That]) = throw new UnsupportedOperationException("Not implemented yet!!!")
 
-  def zip[A1 >: T, B, That](that: GenIterable[B])(implicit bf: CanBuildFrom[Repr, (A1, B), That]) = throw new UnsupportedOperationException("Not implemented yet!!!")
+  def zip[A1 >: T, B, That](that: collection.GenIterable[B])(implicit bf: CanBuildFrom[Repr, (A1, B), That]) = throw new UnsupportedOperationException("Not implemented yet!!!")
 
-  def sameElements[A1 >: T](that: GenIterable[A1]) = throw new UnsupportedOperationException("Not implemented yet!!!")
+  def sameElements[A1 >: T](that: collection.GenIterable[A1]) = throw new UnsupportedOperationException("Not implemented yet!!!")
 
   def drop(n: Int) = throw new UnsupportedOperationException("Not implemented yet!!!")
 
@@ -108,8 +111,6 @@ trait DistIterableLike[+T, +Repr <: DistIterable[T], +Sequential <: Iterable[T] 
 
   def reduce[A1 >: T](op: (A1, A1) => A1) = throw new UnsupportedOperationException("Not implemented yet!!!")
 
-  def groupBy[K](f: (T) => K) = throw new UnsupportedOperationException("Not implemented yet!!!")
-
   def partition(pred: (T) => Boolean) = throw new UnsupportedOperationException("Not implemented yet!!!")
 
   def filterNot(pred: (T) => Boolean) = throw new UnsupportedOperationException("Not implemented yet!!!")
@@ -159,6 +160,5 @@ trait DistIterableLike[+T, +Repr <: DistIterable[T], +Sequential <: Iterable[T] 
   def exists(pred: (T) => Boolean) = throw new UnsupportedOperationException("Not implemented yet!!!")
 
   def forall(pred: (T) => Boolean) = throw new UnsupportedOperationException("Not implemented yet!!!")
-
 
 }

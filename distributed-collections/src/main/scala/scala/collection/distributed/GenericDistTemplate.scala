@@ -24,3 +24,12 @@ trait GenericDistTemplate[+A, +CC[X] <: DistIterable[X]]
   def genericRemoteBuilder[B]: RemoteBuilder[B, CC[B]] = companion.newRemoteBuilder[B]
 
 }
+
+trait GenericDistMapTemplate[K, +V, +CC[X, Y] <: DistMap[X, Y]] extends GenericDistTemplate[(K, V), DistIterable]
+{
+  protected[this] override def newRemoteBuilder: RemoteBuilder[(K, V), CC[K, V]] = mapCompanion.newRemoteBuilder[K, V]
+
+  def mapCompanion: GenericDistMapCompanion[CC]
+
+  def genericMapRemoteBuilder[P, Q]: RemoteBuilder[(P, Q), CC[P, Q]] = mapCompanion.newRemoteBuilder[P, Q]
+}

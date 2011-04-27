@@ -22,7 +22,7 @@ object FSAdapter {
    *
    * TODO Currently it fetches all the elements at once and puts them into a List.
    */
-  def valuesIterable[A](file: URI): Iterable[A] = {
+  def valuesIterable[A](file: URI): scala.collection.immutable.Iterable[A] = {
     val filePart = URI.create(file.toString + "/part-r-00000") // to be replaced with proper utility method
 
     val conf = new Configuration()
@@ -46,7 +46,7 @@ object FSAdapter {
     }
 
     reader.close()
-    result
+    result.toList
   }
 
   def remove[A](file: URI): Boolean = {

@@ -12,16 +12,16 @@ trait DistSetLike[T, +Repr <: DistSetLike[T, Repr, Sequential] with DistSet[T], 
   with DistIterableLike[T, Repr, Sequential] {
   self =>
 
-  def subsetOf(that: GenSet[T]): Boolean = throw new UnsupportedOperationException("Unsupported operation!!!")
+  override def subsetOf(that: GenSet[T]): Boolean = throw new UnsupportedOperationException("Unsupported operation!!!")
 
-  def union(that: GenSet[T]): Repr = throw new UnsupportedOperationException("Unsupported operation!!!")
+  override def union(that: GenSet[T]): Repr = throw new UnsupportedOperationException("Unsupported operation!!!")
 
-  def intersect(that: GenSet[T]): Repr = throw new UnsupportedOperationException("Unsupported operation!!!")
+  override def intersect(that: GenSet[T]): Repr = throw new UnsupportedOperationException("Unsupported operation!!!")
 
-  def contains(elem: T): Boolean = throw new UnsupportedOperationException("Unsupported operation!!!")
+  override def contains(elem: T): Boolean = throw new UnsupportedOperationException("Unsupported operation!!!")
 
-  def +(elem: T): Repr = throw new UnsupportedOperationException("Unsupported operation!!!")
+  override def +(elem: T): Repr = throw new UnsupportedOperationException("Unsupported operation!!!")
 
-  def -(elem: T): Repr = throw new UnsupportedOperationException("Unsupported operation!!!")
+  override def -(elem: T): Repr = throw new UnsupportedOperationException("Unsupported operation!!!")
 
 }

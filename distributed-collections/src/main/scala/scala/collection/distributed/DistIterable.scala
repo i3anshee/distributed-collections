@@ -1,9 +1,9 @@
 package scala.collection.distributed
 
 import api.dag.{CombinePlanNode, FlattenPlanNode, GroupByPlanNode, ParallelDoPlanNode}
-import api.{DistContext, Emitter, CollectionId}
+import api.{DistContext, Emitter}
 import api.CollectionId
-import collection.GenIterable
+import collection.immutable.GenIterable
 import collection.generic.{GenericCompanion}
 import mrapi.FSAdapter
 import execution.{DCUtil, ExecutionPlan}
@@ -31,21 +31,21 @@ trait DistIterable[+T]
 
   protected[this] def parCombiner = throw new UnsupportedOperationException("Not implemented yet!!!")
 
-   def parallelDo[B](parOperation: (T, Emitter[B], DistContext) => Unit): DistIterable[B] = {
-    // add a parallel do node
-    val outDistCollection = new DistColl[B](DCUtil.generateNewCollectionURI)
+  def groupBy[K, B](keyFunction: (T, Emitter[B]) => K): DistMap[K, GenIterable[B]] = {
+    // add a groupBy node to execution plan
+    val outDistCollection = new DistHashMap[K, GenIterable[B]](DCUtil.generateNewCollectionURI)
 
-    val node = ExecutionPlan.addPlanNode(this, new ParallelDoPlanNode(outDistCollection, parOperation))
+    val node = ExecutionPlan.addPlanNode(this, new GroupByPlanNode[T, B, K](outDistCollection, keyFunction))
     ExecutionPlan.sendToOutput(node, outDistCollection)
     ExecutionPlan.execute()
     outDistCollection
   }
 
-  def groupBy[K, B](keyFunction: (T, Emitter[B]) => K): DistMap[K, GenIterable[B]] = {
-    // add a groupBy node to execution plan
-    val outDistCollection = new DistMap[K, GenIterable[B]](DCUtil.generateNewCollectionURI)
+   def parallelDo[B](parOperation: (T, Emitter[B], DistContext) => Unit): DistIterable[B] = {
+    // add a parallel do node
+    val outDistCollection = new DistColl[B](DCUtil.generateNewCollectionURI)
 
-    val node = ExecutionPlan.addPlanNode(this, new GroupByPlanNode[T, B, K](outDistCollection, keyFunction))
+    val node = ExecutionPlan.addPlanNode(this, new ParallelDoPlanNode(outDistCollection, parOperation))
     ExecutionPlan.sendToOutput(node, outDistCollection)
     ExecutionPlan.execute()
     outDistCollection
@@ -63,7 +63,7 @@ trait DistIterable[+T]
 
   def combineValues[K, B, C](keyFunction: (T, Emitter[B]) => K, op: (C, B) => C): DistMap[K, C] = {
     // add combine node
-    val outDistCollection = new DistMap[K, C](DCUtil.generateNewCollectionURI)
+    val outDistCollection = new DistHashMap[K, C](DCUtil.generateNewCollectionURI)
 
     val node = ExecutionPlan.addPlanNode(this, new CombinePlanNode[T, K, B, C](outDistCollection, keyFunction, op))
     ExecutionPlan.sendToOutput(node, outDistCollection)
