@@ -162,7 +162,6 @@ class MapCombineShuffleReduceBuilder {
 
     // set combiner
     if (combine.isDefined) {
-      HadoopJob.dfsSerialize(job, "distcoll.mapper.groupBy", combine.get.keyFunction)
       HadoopJob.dfsSerialize(job, "distcoll.mapreduce.combine", combine.get.op)
       println("Combine!!")
     }

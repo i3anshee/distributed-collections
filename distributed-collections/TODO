@@ -1,29 +1,8 @@
-// investigate implicits for receiver (value.emit i value.recordNumber) (investigate typed implicits)
-  // investigate smr
-  // investigate
-  // new interface
+// investigate implicits for receiver (value.emit and value.recordNumber)
+
+// new interface
 //  def parallelDo[B, C, D, E, F](parOperation: (T, Emitter[B], DistContext) => Unit): (Repr, Repr, Repr, Repr, Repr)
 //  def parallelDo[B, C, D, E, F](parOperation: (T with Emitter[T], Emitter[B], DistContext) => Unit): (Repr, Repr, Repr, Repr, Repr)
 
-  // last two are implicits also need the implicit builder
-//  def gbsc[K, B, S, C](keyFunction: (T, Emitter[B]) => K)(by: (T) => Ordered[B])(op: (C, B) => C)
-
-//  def flatten[T]()
-
-
-
   // Plan:
-  // 1. Move flatten to the new interface with remote builder
-  // 3. Test what has been done and commit
   // 4. introduce parallelDo with multiple outputs
-  // 5. introduce gbsc() method
-
-
-    // Possible combinations of operations
-  //  {[do | flatten]}
-  //  groupBySortCombine
-  //  groupBySort
-  //  groupByCombine
-  //  groupBy
-  //  Sort
-  //  {do}

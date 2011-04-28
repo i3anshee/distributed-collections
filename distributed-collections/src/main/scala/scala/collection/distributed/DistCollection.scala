@@ -1,6 +1,6 @@
 package scala.collection.distributed
 
-import api.dag.{CombinePlanNode, FlattenPlanNode, ParallelDoPlanNode, GroupByPlanNode}
+import api.dag.{FlattenPlanNode, ParallelDoPlanNode, GroupByPlanNode}
 import api.{DistContext, CollectionId, Emitter}
 import builder.{DistCollectionBuilderFactory, DistCanBuildFrom}
 import java.net.URI
@@ -58,16 +58,8 @@ class DistCollection[A](uri: URI) extends CollectionId {
     parallelDo((a: A, emitter: Emitter[B], context: DistContext) => parOperation(a, emitter))
   }
 
-  def combineValues[K, B, C](keyFunction: (A, Emitter[B]) => K, op: (C, B) => C): DistCollection[Pair[K, C]] = {
-    // add combine node
-    val outDistCollection = new DistCollection[Pair[K, C]](DCUtil.generateNewCollectionURI)
-
-    val node = ExecutionPlan.addPlanNode(this, new CombinePlanNode[A, K, B, C](outDistCollection, keyFunction, op))
-    ExecutionPlan.sendToOutput(node, outDistCollection)
-
-    ExecutionPlan.execute()
-    outDistCollection
-  }
+  def combineValues[K, B, C](keyFunction: (A, Emitter[B]) => K, op: (C, B) => C): DistCollection[Pair[K, C]] =
+    throw new UnsupportedOperationException("Not supported!!!")
 
   /**Partitions this $coll into a map of ${coll}s according to some discriminator function.
    *

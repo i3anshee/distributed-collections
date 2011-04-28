@@ -11,3 +11,9 @@ import java.io.Serializable
 trait CollectionId extends Serializable {
   def location:URI
 }
+
+object CollectionId {
+  def apply(uri: URI): CollectionId = new CollectionId{
+    def location = uri
+  }
+}
