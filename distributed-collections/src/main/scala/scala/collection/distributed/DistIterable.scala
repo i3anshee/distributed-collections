@@ -1,13 +1,12 @@
 package scala.collection.distributed
 
+import api._
 import api.dag._
-import api.{DistContext, Emitter}
-import api.CollectionId
-import collection.immutable.{GenIterable, GenTraversable}
 import collection.generic.{GenericCompanion}
 import mrapi.FSAdapter
 import execution.{DCUtil, ExecutionPlan}
-import io.CollectionsIO
+import _root_.io.CollectionsIO
+import collection.immutable.{GenSeq, GenIterable, GenTraversable}
 
 trait DistIterable[+T]
   extends GenIterable[T]
@@ -62,34 +61,35 @@ trait DistIterable[+T]
   }
 
   def sgbr[S, K, T1, T2, That](by: (T) => Ordered[S] = nullOrdered,
-                               keyFunction: (T, Emitter[T1]) => K = nullKey,
-                               reduceOp: (T2, T1) => T2 = nullReduce)
+                               key: (T, Emitter[T1]) => K = nullKey,
+                               reduce: (T2, T1) => T2 = nullReduce)
                               (implicit sgbrResult: ToSGBRColl[T, K, T1, T2, That]): That = {
 
-    if (by == nullOrdered && keyFunction == nullKey)
+    if (by == nullOrdered && key == nullKey)
       throw new RuntimeException("At least one parameter must be specified!!")
 
-    if (keyFunction == nullKey && reduceOp != nullReduce)
+    if (key == nullKey && reduce != nullReduce)
       throw new RuntimeException("In order to reduce, key function must be specified.")
 
     val result = sgbrResult.result(DCUtil.generateNewCollectionURI)
 
     var input: CollectionId = this
     var output = CollectionId(DCUtil.generateNewCollectionURI)
+
     if (by != nullOrdered) {
       ExecutionPlan.addPlanNode(input, new SortPlanNode[T, S](output, by))
       input = output
       output = CollectionId(DCUtil.generateNewCollectionURI)
     }
 
-    if (keyFunction != nullKey) {
-      ExecutionPlan.addPlanNode(output, new GroupByPlanNode(input, keyFunction))
+    if (key != nullKey) {
+      ExecutionPlan.addPlanNode(output, new GroupByPlanNode(input, key))
       input = output
       output = CollectionId(DCUtil.generateNewCollectionURI)
     }
 
-    if (reduceOp != nullReduce) {
-      ExecutionPlan.addPlanNode(output, new CombinePlanNode(input, reduceOp))
+    if (reduce != nullReduce) {
+      ExecutionPlan.addPlanNode(output, new CombinePlanNode(input, reduce))
       input = output
       output = CollectionId(DCUtil.generateNewCollectionURI)
     }
@@ -97,6 +97,19 @@ trait DistIterable[+T]
     sgbrResult.result(output.location)
   }
 
+
+  def distDo(distOp: (T, IndexedEmit, DistContext) => Unit, outputs: GenSeq[CollectionId]) = {
+    val outDistColls = outputs.map(id => new DistColl[Any](id.location))
+
+    val node = ExecutionPlan.addPlanNode(this,
+      new DistDoPlanNode(this, distOp, outDistColls)
+    )
+
+    outDistColls.foreach(coll => ExecutionPlan.sendToOutput(node, coll))
+
+    ExecutionPlan.execute()
+    outDistColls
+  }
 
   protected[this] def parCombiner = throw new UnsupportedOperationException("Not implemented yet!!!")
 }

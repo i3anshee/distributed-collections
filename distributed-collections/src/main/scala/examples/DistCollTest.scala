@@ -1,8 +1,8 @@
 package examples
 
 import java.net.URI
-import collection.distributed.{DistSetOld, DistColl}
 import collection.mutable.ArrayBuffer
+import collection.distributed._
 
 /**
  * User: vjovanovic
@@ -11,6 +11,7 @@ import collection.mutable.ArrayBuffer
 
 
 object DistCollTest {
+
   def main(args: Array[String]) = {
 
     println("Starting DistCollTest example!!!")

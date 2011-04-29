@@ -11,7 +11,7 @@ import immutable.GenIterable
 trait DistIterableLike[+T, +Repr <: DistIterable[T], +Sequential <: Iterable[T] with GenIterableLike[T, Sequential]]
   extends GenIterableLike[T, Repr]
   with HasNewRemoteBuilder[T, Repr]
-  with DistProcessable[T] {
+  with RichDistProcessable[T] {
   self: DistIterableLike[T, Repr, Sequential] =>
 
   protected[this] def newRemoteBuilder: RemoteBuilder[T, Repr]
@@ -88,13 +88,21 @@ trait DistIterableLike[+T, +Repr <: DistIterable[T], +Sequential <: Iterable[T] 
 
   def foreach[U](f: (T) => U) = seq.foreach(f)
 
+  def reduce[A1 >: T](op: (A1, A1) => A1) = if (isEmpty)
+    throw new UnsupportedOperationException("empty.reduce")
+  else
+    sgbr(key = (v: T, emitter: Emitter[T]) => {
+      emitter.emit(v);
+      1
+    },
+      reduceOp = op).toTraversable.head._2
+
   def groupBy[K](f: (T) => K): DistMap[K, Repr] = throw new UnsupportedOperationException("Not implemented yet!!!")
 
   def iterator = throw new UnsupportedOperationException("Not implemented yet!!!")
 
   def reduceOption[A1 >: T](op: (A1, A1) => A1) = throw new UnsupportedOperationException("Not implemented yet!!!")
 
-  def reduce[A1 >: T](op: (A1, A1) => A1) = throw new UnsupportedOperationException("Not implemented yet!!")
 
   def zipAll[B, A1 >: T, That](that: collection.GenIterable[B], thisElem: A1, thatElem: B)(implicit bf: CanBuildFrom[Repr, (A1, B), That]) = throw new UnsupportedOperationException("Not implemented yet!!!")
 
