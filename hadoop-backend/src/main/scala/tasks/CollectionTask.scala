@@ -45,7 +45,7 @@ trait CollectionTask {
   }
 
   // TODO (VJ) cleanup. Tie the emitter and context in the function
-  def parallelDo(elems: Traversable[AnyRef], emitter: EmiterImpl, context: DistContext,
+  def parallelDo(elems: Traversable[AnyRef], emitter: EmitterImpl, context: DistContext,
                  parTask: Option[(AnyRef, Emitter[AnyRef], DistContext) => Unit]): TraversableOnce[AnyRef] = {
     if (parTask.isDefined) {
       elems.foreach((el) => {

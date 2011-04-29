@@ -1,6 +1,6 @@
 package scala.collection.distributed.api.dag
 
-import collection.distributed.api.{IndexedEmit, DistContext, CollectionId}
+import collection.distributed.api.{IndexedEmitter, DistContext, CollectionId}
 import collection.immutable.GenSeq
 
 /**
@@ -8,7 +8,7 @@ import collection.immutable.GenSeq
  * Date: 4/29/11
  */
 
-class DistDoPlanNode[T](id: CollectionId, val distOP: (T, IndexedEmit, DistContext) => Unit, val outputs: GenSeq[CollectionId])
+class DistDoPlanNode[T](id: CollectionId, val distOP: (T, IndexedEmitter, DistContext) => Unit, val outputs: GenSeq[CollectionId])
 extends PlanNode(id) {
 
 }

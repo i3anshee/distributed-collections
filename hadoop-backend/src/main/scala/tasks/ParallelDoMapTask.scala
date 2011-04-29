@@ -34,7 +34,7 @@ class ParallelDoMapTask extends DistributedCollectionsMapper[NullWritable, Bytes
     if (parTask.isEmpty && groupBy.isEmpty) {
       context.write(randomKey, v)
     } else {
-      val emitter: EmiterImpl = new EmiterImpl
+      val emitter: EmitterImpl = new EmitterImpl
 
       // apply parallel do
       val emitted = parallelDo(ArrayBuffer(value), emitter, distContext, parTask)

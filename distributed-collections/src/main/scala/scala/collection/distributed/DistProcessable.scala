@@ -6,11 +6,11 @@ import collection.immutable.{GenSeq, GenIterable, GenTraversable}
 
 
 /**
- * Base interface for collection operations based on shared nothing processing frameworks like (Hadoop, Google MapReduce and Dryad).
+ * Base trait for collection operations based on shared nothing processing frameworks (Hadoop, Google MapReduce and Dryad).
  */
 trait DistProcessable[+T] {
 
-  def distDo(distOp: (T, IndexedEmit, DistContext) => Unit, outputs: GenSeq[CollectionId]): GenSeq[DistIterable[Any]]
+  def distDo(distOp: (T, UntypedEmitter, DistContext) => Unit, outputs: GenSeq[CollectionId]): GenSeq[DistIterable[Any]]
 
 
   def sgbr[S, K, T1, T2, That](by: (T) => Ordered[S] = nullOrdered,

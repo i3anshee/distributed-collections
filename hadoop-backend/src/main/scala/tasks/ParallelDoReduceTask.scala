@@ -59,7 +59,7 @@ class ParallelDoReduceTask extends Reducer[BytesWritable, BytesWritable, NullWri
         })
       } else {
         // parallel do
-        val emitter = new EmiterImpl
+        val emitter = new EmitterImpl
         distContext.recordNumber = new RecordNumber()
         val result = parallelDo(buffer, emitter, distContext, parTask)
 

@@ -29,27 +29,6 @@ trait DistIterable[+T]
 
   override def isEmpty = sizeLong != 0
 
-  def groupBy[K, B](keyFunction: (T, Emitter[B]) => K): DistMap[K, GenIterable[B]] = {
-    // add a groupBy node to execution plan
-    val outDistCollection = new DistHashMap[K, GenIterable[B]](DCUtil.generateNewCollectionURI)
-
-    val node = ExecutionPlan.addPlanNode(this, new GroupByPlanNode[T, B, K](outDistCollection, keyFunction))
-    ExecutionPlan.sendToOutput(node, outDistCollection)
-    ExecutionPlan.execute()
-    outDistCollection
-  }
-
-  def parallelDo[B](parOperation: (T, Emitter[B], DistContext) => Unit): DistIterable[B] = {
-    // add a parallel do node
-    val outDistCollection = new DistColl[B](DCUtil.generateNewCollectionURI)
-
-    val node = ExecutionPlan.addPlanNode(this, new ParallelDoPlanNode(outDistCollection, parOperation))
-    ExecutionPlan.sendToOutput(node, outDistCollection)
-    ExecutionPlan.execute()
-    outDistCollection
-  }
-
-
   def flatten[B >: T](collections: GenTraversable[DistIterable[B]]): DistIterable[T] = {
     val outDistColl = new DistColl[T](DCUtil.generateNewCollectionURI)
     val node = ExecutionPlan.addFlattenNode(
@@ -98,15 +77,10 @@ trait DistIterable[+T]
   }
 
 
-  def distDo(distOp: (T, IndexedEmit, DistContext) => Unit, outputs: GenSeq[CollectionId]) = {
+  def distDo(distOp: (T, UntypedEmitter, DistContext) => Unit, outputs: GenSeq[CollectionId]) = {
     val outDistColls = outputs.map(id => new DistColl[Any](id.location))
-
-    val node = ExecutionPlan.addPlanNode(this,
-      new DistDoPlanNode(this, distOp, outDistColls)
-    )
-
+    val node = ExecutionPlan.addPlanNode(this, new DistDoPlanNode(this, distOp, outDistColls))
     outDistColls.foreach(coll => ExecutionPlan.sendToOutput(node, coll))
-
     ExecutionPlan.execute()
     outDistColls
   }

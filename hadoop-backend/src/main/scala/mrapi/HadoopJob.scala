@@ -43,7 +43,7 @@ object HadoopJob extends AbstractJobStrategy {
       job.waitForCompletion(true)
 
       // fetch collection sizes and write them to DFS
-      storeCollectionsMetaData(job, mscrBuilder.output.head)
+      mscrBuilder.output.foreach(out => storeCollectionsMetaData(job, out))
 
       // de-serialize global cache
       // TODO(VJ)
@@ -71,7 +71,7 @@ object HadoopJob extends AbstractJobStrategy {
         case value: InputPlanNode =>
           mscrBuilder.input += value
 
-        case value: ParallelDoPlanNode[_, _] =>
+        case value: DistDoPlanNode[_] =>
           if (mapPhase)
             mscrBuilder.mapParallelDo = Some(value)
           else
@@ -85,16 +85,22 @@ object HadoopJob extends AbstractJobStrategy {
           mscrBuilder.combine = Some(value)
           mapPhase = false
 
+        case value: SortPlanNode[_, _, _, _] =>
+          mscrBuilder.combine = Some(value)
+          mapPhase = false
+
         case value: OutputPlanNode =>
           mscrBuilder.output += value
 
         case value: FlattenPlanNode =>
           mscrBuilder.flatten = Some(value)
           value.collections.foreach((col) => {
-            // TODO (VJ) fix this cast
+
+            // TODO (VJ) fix this cast (will not work with views)
             val inputNode = dag.getPlanNode(col).get.asInstanceOf[InputPlanNode]
             mscrBuilder.input += inputNode
             queue.dequeueFirst(_ == inputNode)
+
           })
       }
       node = node.get.outEdges.headOption
@@ -144,7 +150,7 @@ class MapCombineShuffleReduceBuilder {
     // setting mapper and reducer classes and serializing closures
 
     if (mapParallelDo.isDefined) {
-      // serialize parallel do operation
+      // serialize list of operation chains
       HadoopJob.dfsSerialize(job, "distcoll.mapper.do", mapParallelDo.get.parOperation)
       println("Map parallel do!!")
     }
