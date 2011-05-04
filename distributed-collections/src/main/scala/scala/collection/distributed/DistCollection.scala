@@ -24,35 +24,11 @@ class DistCollection[A](uri: URI) extends CollectionId {
 
   override def location = uri
 
-  def parallelDo[B](parOperation: (A, Emitter[B], DistContext) => Unit): DistCollection[B] = {
-    // add a parallel do node
-    val outDistCollection = new DistCollection[B](DCUtil.generateNewCollectionURI)
+  def parallelDo[B](parOperation: (A, Emitter[B], DistContext) => Unit): DistCollection[B] = throw new UnsupportedOperationException("Unsupported operation exception!!!")
 
-    val node = ExecutionPlan.addPlanNode(this, new ParallelDoPlanNode(outDistCollection, parOperation))
-    ExecutionPlan.sendToOutput(node, outDistCollection)
-    ExecutionPlan.execute()
-    outDistCollection
-  }
+  def groupBy[K, B](keyFunction: (A, Emitter[B]) => K): DistMap[K, Iterable[B]] = throw new UnsupportedOperationException("Unsupported operation exception!!!")
 
-  def groupBy[K, B](keyFunction: (A, Emitter[B]) => K): DistMap[K, Iterable[B]] = {
-    // add a groupBy node to execution plan
-    val outDistCollection = new DistHashMap[K, Iterable[B]](DCUtil.generateNewCollectionURI)
-
-    val node = ExecutionPlan.addPlanNode(this, new GroupByPlanNode[A, B, K](outDistCollection, keyFunction))
-    ExecutionPlan.sendToOutput(node, outDistCollection)
-    ExecutionPlan.execute()
-    outDistCollection
-  }
-
-  def flatten[B >: A](collections: Traversable[DistCollection[B]]): DistCollection[A] = {
-    val outDistCollection = new DistCollection[A](DCUtil.generateNewCollectionURI)
-    val node = ExecutionPlan.addFlattenNode(
-      new FlattenPlanNode(outDistCollection, List(this) ++ collections)
-    )
-    ExecutionPlan.sendToOutput(node, outDistCollection)
-    ExecutionPlan.execute()
-    outDistCollection
-  }
+  def flatten[B >: A](collections: Traversable[DistCollection[B]]): DistCollection[A] = throw new UnsupportedOperationException("Unsupported operation exception!!!")
 
   def parallelDo[B](parOperation: (A, Emitter[B]) => Unit): DistCollection[B] = {
     parallelDo((a: A, emitter: Emitter[B], context: DistContext) => parOperation(a, emitter))

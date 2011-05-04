@@ -34,25 +34,25 @@ class ParallelDoMapTask extends DistributedCollectionsMapper[NullWritable, Bytes
     if (parTask.isEmpty && groupBy.isEmpty) {
       context.write(randomKey, v)
     } else {
-      val emitter: EmitterImpl = new EmitterImpl
-
-      // apply parallel do
-      val emitted = parallelDo(ArrayBuffer(value), emitter, distContext, parTask)
-
-      // apply group by
-      if (groupBy.isDefined) {
-        emitted.foreach((el) => {
-          val key = groupBy.get(el, emitter)
-          emitter.getBuffer.foreach((v: AnyRef) => {
-            context.write(new BytesWritable(serializeElement(key)), new BytesWritable(serializeElement(v)))
-          })
-          emitter.clear
-        })
-      } else {
-        emitted.foreach((v: AnyRef) => {
-          context.write(randomKey, new BytesWritable(serializeElement(v)))
-        })
-      }
+//      val emitter: EmitterImpl = new EmitterImpl
+//
+//      // apply parallel do
+//      val emitted = parallelDo(ArrayBuffer(value), emitter, distContext, parTask)
+//
+//      // apply group by
+//      if (groupBy.isDefined) {
+//        emitted.foreach((el) => {
+//          val key = groupBy.get(el, emitter)
+//          emitter.getBuffer.foreach((v: AnyRef) => {
+//            context.write(new BytesWritable(serializeElement(key)), new BytesWritable(serializeElement(v)))
+//          })
+//          emitter.clear
+//        })
+//      } else {
+//        emitted.foreach((v: AnyRef) => {
+//          context.write(randomKey, new BytesWritable(serializeElement(v)))
+//        })
+//      }
     }
   }
 }

@@ -59,15 +59,15 @@ class ParallelDoReduceTask extends Reducer[BytesWritable, BytesWritable, NullWri
         })
       } else {
         // parallel do
-        val emitter = new EmitterImpl
-        distContext.recordNumber = new RecordNumber()
-        val result = parallelDo(buffer, emitter, distContext, parTask)
-
-        // write results to output
-        result.foreach((v: AnyRef) => {
-          context.getCounter("collections", "current").increment(1)
-          context.write(NullWritable.get, new BytesWritable(serializeElement(v)))
-        })
+//        val emitter = new EmitterImpl
+//        distContext.recordNumber = new RecordNumber()
+//        val result = parallelDo(buffer, emitter, distContext, parTask)
+//
+//        // write results to output
+//        result.foreach((v: AnyRef) => {
+//          context.getCounter("collections", "current").increment(1)
+//          context.write(NullWritable.get, new BytesWritable(serializeElement(v)))
+//        })
       }
     }
   }

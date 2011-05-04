@@ -31,10 +31,7 @@ trait DistIterable[+T]
 
   def flatten[B >: T](collections: GenTraversable[DistIterable[B]]): DistIterable[T] = {
     val outDistColl = new DistColl[T](DCUtil.generateNewCollectionURI)
-    val node = ExecutionPlan.addFlattenNode(
-      new FlattenPlanNode(outDistColl, List(this) ++ collections)
-    )
-    ExecutionPlan.sendToOutput(node, outDistColl)
+    val node = ExecutionPlan.addFlattenNode(new FlattenPlanNode(List(this) ++ collections), outDistColl)
     ExecutionPlan.execute()
     outDistColl
   }
@@ -56,19 +53,20 @@ trait DistIterable[+T]
     var output = CollectionId(DCUtil.generateNewCollectionURI)
 
     if (by != nullOrdered) {
-      ExecutionPlan.addPlanNode(input, new SortPlanNode[T, S](output, by))
+      ExecutionPlan.addPlanNode(input, new SortPlanNode[T, S](by), output)
       input = output
       output = CollectionId(DCUtil.generateNewCollectionURI)
     }
 
     if (key != nullKey) {
-      ExecutionPlan.addPlanNode(output, new GroupByPlanNode(input, key))
+      ExecutionPlan.addPlanNode(input, GroupByPlanNode(key), output)
       input = output
       output = CollectionId(DCUtil.generateNewCollectionURI)
     }
 
+    // TODO (VJ) check what happens in runtime
     if (reduce != nullReduce) {
-      ExecutionPlan.addPlanNode(output, new CombinePlanNode(input, reduce))
+      ExecutionPlan.addPlanNode(input, new CombinePlanNode(reduce), output)
       input = output
       output = CollectionId(DCUtil.generateNewCollectionURI)
     }
@@ -79,8 +77,8 @@ trait DistIterable[+T]
 
   def distDo(distOp: (T, UntypedEmitter, DistContext) => Unit, outputs: GenSeq[CollectionId]) = {
     val outDistColls = outputs.map(id => new DistColl[Any](id.location))
-    val node = ExecutionPlan.addPlanNode(this, new DistDoPlanNode(this, distOp, outDistColls))
-    outDistColls.foreach(coll => ExecutionPlan.sendToOutput(node, coll))
+    val node = ExecutionPlan.addPlanNode(this, new DistDoPlanNode[T](distOp, outDistColls), outDistColls)
+
     ExecutionPlan.execute()
     outDistColls
   }

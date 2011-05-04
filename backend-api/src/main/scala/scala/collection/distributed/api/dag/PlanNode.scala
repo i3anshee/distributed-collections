@@ -1,24 +1,32 @@
 package scala.collection.distributed.api.dag
 
-import scala.collection.distributed.api.CollectionId
-import java.net.URI
+import collection.distributed.api.{UniqueId, CollectionId}
+import collection.mutable
 
 /**
  * User: vjovanovic
  * Date: 3/21/11
  */
 
-abstract class PlanNode(val id: CollectionId) {
-  var inEdges: Set[PlanNode] = Set()
-  var outEdges: Set[PlanNode] = Set()
+abstract case class PlanNode extends UniqueId {
+  type EdgeData = CollectionId
 
-  def addInEdge(planNode: PlanNode): PlanNode = {
-    inEdges += planNode
-    this
+  var inEdges: mutable.Map[PlanNode, EdgeData] = new mutable.HashMap()
+  var outEdges: mutable.Map[PlanNode, EdgeData] = new mutable.HashMap()
+
+  def disconnect(that: PlanNode) {
+    that.disconnect(this)
+    inEdges.remove(that)
+    outEdges.remove(that)
   }
 
-  def addOutEdge(planNode: PlanNode): PlanNode = {
-    outEdges += planNode
-    this
+  def connect(inNode: PlanNode, ed: EdgeData) {
+    outEdges.put(inNode, ed)
+    inNode.inEdges.put(this, ed)
+  }
+
+  def disconnect() {
+    outEdges.keys.foreach(v => v.disconnect(this))
+    inEdges.keys.foreach(v => v.disconnect(this))
   }
 }

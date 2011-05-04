@@ -5,7 +5,7 @@ import java.net.URI
 import org.apache.hadoop.fs.Path
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.filecache.DistributedCache
-import scala.collection.distributed.api.{DistContext, Emitter}
+import collection.distributed.api.{UntypedEmitter, DistContext, Emitter}
 
 /**
  * User: vjovanovic
@@ -46,15 +46,15 @@ trait CollectionTask {
 
   // TODO (VJ) cleanup. Tie the emitter and context in the function
   def parallelDo(elems: Traversable[AnyRef], emitter: EmitterImpl, context: DistContext,
-                 parTask: Option[(AnyRef, Emitter[AnyRef], DistContext) => Unit]): TraversableOnce[AnyRef] = {
-    if (parTask.isDefined) {
-      elems.foreach((el) => {
-        parTask.get(el, emitter, context)
-      })
-      val newElems = emitter.getBuffer
-      emitter.clear
-      newElems
-    } else
+                 parTask: Option[(AnyRef, UntypedEmitter, DistContext) => Unit]): TraversableOnce[AnyRef] = {
+//    if (parTask.isDefined) {
+//      elems.foreach((el) => {
+//        parTask.get(el, emitter, context)
+//      })
+//      val newElems = emitter.getBuffer
+//      emitter.clear
+//      newElems
+//    } else
       elems
   }
 }

@@ -1,12 +1,8 @@
 package scala.collection.distributed.api.dag
 
-import scala.collection.distributed.api.CollectionId
+import collection.distributed.api.{CollectionId}
+import java.net.URI
 
-/**
- * User: vjovanovic
- * Date: 3/21/11
- */
-
-case class OutputPlanNode(override val id: CollectionId) extends PlanNode(id) {
-
+case class OutputPlanNode(uri: URI) extends PlanNode with CollectionId {
+  def location = uri
 }

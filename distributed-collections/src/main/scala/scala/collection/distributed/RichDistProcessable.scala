@@ -20,12 +20,12 @@ trait RichDistProcessable[+T] extends DistProcessable[T] {
       rs(9).asInstanceOf[DistIterable[T10]])
   }
 
-  def distDo[T](distOp: (T, Emitter[T], DistContext) => Unit): DistIterable[T] =
-    distDo(distOp.asInstanceOf[(Any, IndexedEmitter, DistContext) => Unit],
-      GenSeq(CollectionId(DCUtil.generateNewCollectionURI)))(0).asInstanceOf[DistIterable[T]]
+  def distDo[B](distOp: (T, Emitter[B], DistContext) => Unit): DistIterable[B] =
+    distDo(distOp,
+      GenSeq(CollectionId(DCUtil.generateNewCollectionURI)))(0).asInstanceOf[DistIterable[B]]
 
-  def distDo[T1, T2](distOp: (T, Emitter2[T1, T2], DistContext) => Unit): DistIterable[T] = {
-    val collections = distDo(distOp, GenSeq(CollectionId(DCUtil.generateNewCollectionURI)))
+  def distDo[T1, T2](distOp: (T, Emitter2[T1, T2], DistContext) => Unit): (DistIterable[T1], DistIterable[T2]) = {
+    val rs = distDo(distOp, GenSeq(CollectionId(DCUtil.generateNewCollectionURI), CollectionId(DCUtil.generateNewCollectionURI)))
     (rs(0).asInstanceOf[DistIterable[T1]], rs(1).asInstanceOf[DistIterable[T2]])
   }
 

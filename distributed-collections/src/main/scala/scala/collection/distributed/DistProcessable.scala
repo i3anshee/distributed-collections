@@ -24,7 +24,9 @@ trait DistProcessable[+T] {
 
   protected[this] val nullKey = (el: T, em: Emitter[Dummy2]) => Dummy1
 
-  protected[this] val nullReduce = (ag: Dummy3, v: Dummy2) => Dummy3
+  //  protected[this] val nullReduce = (ag: Dummy3, v: Dummy2) => Dummy3
+
+  protected[this] def nullReduce[D] = (ag: Dummy3, v: D) => Dummy3
 }
 
 trait ToSGBRColl[-T, -K, -T1, -T2, +To] {

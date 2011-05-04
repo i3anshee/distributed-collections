@@ -1,12 +1,10 @@
 package scala.collection.distributed.api.dag
 
-import scala.collection.distributed.api.{DistContext, CollectionId, Emitter}
+import collection.distributed.api.{DistContext, Emitter}
 
 /**
  * User: vjovanovic
  * Date: 3/29/11
  */
 
-case class ParallelDoPlanNode[A, B](override val id: CollectionId, parOperation: (A, Emitter[B], DistContext) => Unit) extends PlanNode(id) {
-
-}
+case class ParallelDoPlanNode[A, B](parOperation: (A, Emitter[B], DistContext) => Unit) extends PlanNode

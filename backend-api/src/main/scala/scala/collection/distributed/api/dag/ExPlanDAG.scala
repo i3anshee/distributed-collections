@@ -1,21 +1,16 @@
 package scala.collection.distributed.api.dag
 
-import scala.collection.distributed.api.CollectionId
+import scala.collection.immutable
+import scala.collection.mutable
+import collection.distributed.api.{UniqueId, CollectionId}
 
-/**
- * User: vjovanovic
- * Date: 4/1/11
- */
+class ExPlanDAG(val inputNodes: immutable.Set[InputPlanNode] = Set[InputPlanNode]()) {
 
-class ExPlanDAG {
-  var inputNodes = Set[InputPlanNode]()
-  var outputNodes = Set[OutputPlanNode]()
-
-  def addInputNode(inputPlanNode: InputPlanNode) = {
-    inputNodes += inputPlanNode
+  def addInputNode(inputPlanNode: InputPlanNode): ExPlanDAG = {
+    new ExPlanDAG(inputNodes + inputPlanNode)
   }
 
-  def getPlanNode(id: CollectionId): Option[PlanNode] = {
+  def getPlanNode(id: UniqueId): Option[PlanNode] = {
     val queue = new scala.collection.mutable.Queue[PlanNode]() ++= inputNodes
 
     var res: Option[PlanNode] = None
@@ -23,8 +18,26 @@ class ExPlanDAG {
       val node = queue.dequeue
       if (node.id == id) res = Some(node)
 
-      queue ++= node.outEdges
+      queue ++= node.outEdges.keys
     }
     res
   }
+
+  def getPlanNode(id: CollectionId): Option[PlanNode] = {
+    val queue = new mutable.Queue[PlanNode]() ++= inputNodes
+
+    var res: Option[PlanNode] = None
+    while (res.isEmpty && !queue.isEmpty) {
+      val node = queue.dequeue
+      node match {
+        case v: PlanNode with CollectionId =>
+          if (v.location == id.location) res = Some(node)
+        case _ => None
+      }
+
+      queue ++= node.outEdges.keys
+    }
+    res
+  }
+
 }
