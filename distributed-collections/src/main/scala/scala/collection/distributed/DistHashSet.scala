@@ -16,6 +16,8 @@ with GenericDistTemplate[T, DistHashSet]
 with DistSetLike[T, DistHashSet[T], HashSet[T]]
 with CollectionId
 with Serializable {
+
+
   def location = uri
 
   override def companion: GenericCompanion[DistHashSet] with GenericDistCompanion[DistHashSet] = DistHashSet

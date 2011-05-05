@@ -10,21 +10,27 @@ import collection.immutable.{GenSeq, GenIterable, GenTraversable}
  */
 trait DistProcessable[+T] {
 
-  def distDo(distOp: (T, UntypedEmitter, DistContext) => Unit, outputs: GenSeq[CollectionId]): GenSeq[DistIterable[Any]]
+  // TODO (VJ) make this working (for now just the graph contains type information)
+  val elemType: Manifest[_] = manifest[Any]
+
+  def distDo(distOp: (T, UntypedEmitter, DistContext) => Unit, outputs: GenSeq[CollectionId], types: GenSeq[Manifest[_]]): GenSeq[DistIterable[Any]]
 
 
   def sgbr[S, K, T1, T2, That](by: (T) => Ordered[S] = nullOrdered,
                                key: (T, Emitter[T1]) => K = nullKey,
                                reduceOp: (T2, T1) => T2 = nullReduce)
-                              (implicit sgbrResult: ToSGBRColl[T, K, T1, T2, That]): That
+                              (implicit sgbrResult: ToSGBRColl[T, K, T1, T2, That]//,
+//                               km:Manifest[K],
+//                               sm:Manifest[S],
+//                               t1m:Manifest[T1],
+//                               t2m: Manifest[T2]
+                                ): That
 
   def flatten[B >: T](collections: GenTraversable[DistIterable[B]]): DistIterable[T]
 
   protected[this] val nullOrdered = (el: T) => null
 
   protected[this] val nullKey = (el: T, em: Emitter[Dummy2]) => Dummy1
-
-  //  protected[this] val nullReduce = (ag: Dummy3, v: Dummy2) => Dummy3
 
   protected[this] def nullReduce[D] = (ag: Dummy3, v: D) => Dummy3
 }

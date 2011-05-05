@@ -3,8 +3,10 @@ package scala.collection.distributed
 import api._
 import collection.immutable.{GenIterable, GenSeq}
 import execution.DCUtil
+import collection.immutable
 
 trait RichDistProcessable[+T] extends DistProcessable[T] {
+
   def distDo[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10]
   (distOp: (T, Emitter10[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10], DistContext) => Unit):
   (DistIterable[T1], DistIterable[T2], DistIterable[T3], DistIterable[T4],
@@ -12,7 +14,10 @@ trait RichDistProcessable[+T] extends DistProcessable[T] {
     DistIterable[T9], DistIterable[T10]) = {
 
     val collections = (1 to 10).map(v => CollectionId(DCUtil.generateNewCollectionURI))
-    val rs = distDo(distOp, collections)
+    // TODO (VJ) working manifests
+    val types = immutable.GenSeq[Manifest[Any]](manifest[Any], manifest[Any], manifest[Any], manifest[Any], manifest[Any],
+      manifest[Any], manifest[Any], manifest[Any], manifest[Any], manifest[Any])
+    val rs = distDo(distOp, collections, types)
 
     (rs(0).asInstanceOf[DistIterable[T1]], rs(1).asInstanceOf[DistIterable[T2]], rs(2).asInstanceOf[DistIterable[T3]],
       rs(3).asInstanceOf[DistIterable[T4]], rs(4).asInstanceOf[DistIterable[T5]], rs(5).asInstanceOf[DistIterable[T6]],
@@ -22,10 +27,12 @@ trait RichDistProcessable[+T] extends DistProcessable[T] {
 
   def distDo[B](distOp: (T, Emitter[B], DistContext) => Unit): DistIterable[B] =
     distDo(distOp,
-      GenSeq(CollectionId(DCUtil.generateNewCollectionURI)))(0).asInstanceOf[DistIterable[B]]
+      GenSeq(CollectionId(DCUtil.generateNewCollectionURI)),
+      immutable.GenSeq[Manifest[Any]](manifest[Any]))(0).asInstanceOf[DistIterable[B]]
 
   def distDo[T1, T2](distOp: (T, Emitter2[T1, T2], DistContext) => Unit): (DistIterable[T1], DistIterable[T2]) = {
-    val rs = distDo(distOp, GenSeq(CollectionId(DCUtil.generateNewCollectionURI), CollectionId(DCUtil.generateNewCollectionURI)))
+    val rs = distDo(distOp, GenSeq(CollectionId(DCUtil.generateNewCollectionURI), CollectionId(DCUtil.generateNewCollectionURI)),
+    immutable.GenSeq[Manifest[Any]](manifest[Any], manifest[Any]))
     (rs(0).asInstanceOf[DistIterable[T1]], rs(1).asInstanceOf[DistIterable[T2]])
   }
 

@@ -1,6 +1,6 @@
 package scala.collection.distributed
 
-import api.dag.{FlattenPlanNode, ParallelDoPlanNode, GroupByPlanNode}
+import api.dag.{FlattenPlanNode, GroupByPlanNode}
 import api.{DistContext, CollectionId, Emitter}
 import builder.{DistCollectionBuilderFactory, DistCanBuildFrom}
 import java.net.URI

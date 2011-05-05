@@ -4,8 +4,7 @@ import java.net.URI
 
 class DistColl[T](uri: URI)
   extends DistIterable[T]
-  with GenericDistTemplate[T, DistColl]
-{
+  with GenericDistTemplate[T, DistColl] {
   self =>
 
   override def companion = DistColl
