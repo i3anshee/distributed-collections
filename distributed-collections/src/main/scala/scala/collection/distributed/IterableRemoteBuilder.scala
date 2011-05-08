@@ -46,7 +46,7 @@ class DistSetRemoteBuilder[Elem] extends RemoteBuilder[Elem, DistSet[Elem]] {
       new DistHashSet[Elem](collection.location)
     else
       new DistHashSet[Elem](
-        collection.groupBy(_.hashCode).parallelDo((pair: (Int, GenTraversable[Elem]), emitter: Emitter[Elem]) => {
+        collection.groupBy(_.hashCode).distDo((pair: (Int, GenTraversable[Elem]), emitter: Emitter[Elem]) => {
           val existing = scala.collection.mutable.HashSet[Elem]()
           pair._2.foreach((el) =>
             if (!existing.contains(el)) {
@@ -82,15 +82,15 @@ class DistMapRemoteBuilder[K, V] extends RemoteBuilder[(K, V), DistMap[K, V]] {
    * If uniqueness of elements is not preserved applies additional operations on the set.
    */
   def result(collection: DistIterable[(K, V)]): DistHashMap[K, V] = {
-    if (elementsUnique)
+//    if (elementsUnique)
       new DistHashMap[K, V](collection.location)
-    else
-      new DistHashMap[K, V](
-        collection.groupBy((el: (K, V), em: Emitter[V]) => {
-          em.emit(el._2);
-          el._1
-        }).parallelDo((pair: (K, GenTraversable[V]), em: Emitter[(K, V)]) => em.emit((pair._1, pair._2.head))).location
-      )
+//    else
+//      new DistHashMap[K, V](
+//        collection.sgbr(key = (el: (K, V), em: Emitter[V]) => {
+//          em.emit(el._2)
+//          el._1
+//        }).distDo((pair: (K, GenTraversable[V]), em: Emitter[(K, V)]) => em.emit((pair._1, pair._2.head))).location
+//      )
   }
 
   def uniquenessPreserved = {

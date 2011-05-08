@@ -2,42 +2,53 @@ package scala.collection.distributed.api.dag
 
 import scala.collection.immutable
 import scala.collection.mutable
-import collection.distributed.api.{UniqueId, CollectionId}
+import collection.distributed.api.{ReifiedDistCollection, UniqueId}
 
-class ExPlanDAG(val inputNodes: immutable.Set[InputPlanNode] = Set[InputPlanNode]()) {
+class ExPlanDAG(val inputNodes: mutable.Set[InputPlanNode] = mutable.Set[InputPlanNode]()) extends Traversable[PlanNode]
+with Serializable{
 
-  def addInputNode(inputPlanNode: InputPlanNode): ExPlanDAG = {
-    new ExPlanDAG(inputNodes + inputPlanNode)
-  }
+  def addInputNode(inputPlanNode: InputPlanNode) = inputNodes.add(inputPlanNode)
 
-  def getPlanNode(id: UniqueId): Option[PlanNode] = {
-    val queue = new scala.collection.mutable.Queue[PlanNode]() ++= inputNodes
+  def getPlanNode(uid: UniqueId): Option[PlanNode] = find(_.id == uid.id)
 
-    var res: Option[PlanNode] = None
-    while (res.isEmpty && !queue.isEmpty) {
+  def getPlanNode(id: ReifiedDistCollection): Option[PlanNode] = this.find(_.outEdges.contains(id))
+
+  def foreach[U](f: (PlanNode) => U) = {
+    val queue = (new mutable.Queue[PlanNode]() ++= inputNodes)
+    val visited = new mutable.HashSet[PlanNode]
+    while (!queue.isEmpty) {
       val node = queue.dequeue
-      if (node.id == id) res = Some(node)
-
-      queue ++= node.outEdges.keys
-    }
-    res
-  }
-
-  def getPlanNode(id: CollectionId): Option[PlanNode] = {
-    val queue = new mutable.Queue[PlanNode]() ++= inputNodes
-
-    var res: Option[PlanNode] = None
-    while (res.isEmpty && !queue.isEmpty) {
-      val node = queue.dequeue
-      node match {
-        case v: PlanNode with CollectionId =>
-          if (v.location == id.location) res = Some(node)
-        case _ => None
+      if (!visited.contains(node)) {
+        visited += node
+        f(node)
       }
-
-      queue ++= node.outEdges.keys
+      queue ++= node.children
     }
-    res
+  }
+
+  override def toString = {
+    // not using Traversable because the traversal order is special
+    var newQueue = new mutable.Queue[PlanNode]() ++= inputNodes
+
+    val visited = new mutable.HashSet[PlanNode]()
+    val sb = new StringBuilder("BFS = [\n")
+    while (!newQueue.isEmpty) {
+      val queue = newQueue
+      newQueue = new mutable.Queue[PlanNode]()
+      sb.append("\n")
+      while (!queue.isEmpty) {
+        val node = queue.dequeue
+        if (!visited(node)) {
+          sb.append(node.toString()).append(", ")
+          newQueue ++= node.children
+          visited.add(node)
+        }
+
+      }
+      sb.append("\n")
+    }
+    sb.append("]")
+    sb.toString
   }
 
 }

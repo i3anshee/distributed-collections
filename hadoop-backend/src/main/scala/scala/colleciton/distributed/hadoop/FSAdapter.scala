@@ -1,4 +1,4 @@
-package mrapi
+package scala.colleciton.distributed.hadoop
 
 import java.net.URI
 import org.apache.hadoop.conf.Configuration
@@ -20,7 +20,6 @@ object FSAdapter {
    * Returns an Iterable containing all values from the collection.
    * This operation does not include map and reduce operations but is executed only on master node.
    *
-   * TODO Currently it fetches all the elements at once and puts them into a List.
    */
   def valuesIterable[A](file: URI): scala.collection.immutable.Iterable[A] = {
     val filePart = URI.create(file.toString + "/part-r-00000") // to be replaced with proper utility method
@@ -72,7 +71,6 @@ object FSAdapter {
     // write elements to file
     var writer: Option[SequenceFile.Writer] = None
     try {
-
       // write length to metadata
       FileSystem.create(fs, meta, new FsPermission(FsAction.READ_WRITE, FsAction.READ, FsAction.READ))
         .write(serializeElement(new CollectionMetaData(t.size)));

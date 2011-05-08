@@ -1,60 +1,58 @@
 package execution
 
-import scala.collection.distributed.DistCollection
 import java.util.UUID
 import java.net.URI
 import scala.collection.distributed.api.dag._
-import collection.distributed.api.{UniqueId, CollectionId}
-import collection.{GenSeq, mutable}
+import collection.distributed.api.{ReifiedDistCollection}
+import collection.{GenTraversable, GenSeq, mutable}
+import mutable.ArrayBuffer
 
-// TODO (VJ) make thread safe
 object ExecutionPlan {
   var exPlanDAG: ExPlanDAG = new ExPlanDAG()
   var globalCache = new mutable.HashMap[String, Any]()
 
-  def addPlanNode(collectionId: CollectionId, newPlanNode: PlanNode, out: GenSeq[CollectionId]): PlanNode = {
-    // find output node
-    var existingNode = exPlanDAG.getPlanNode(collectionId)
-    if (existingNode.isEmpty) {
-      val inputNode = new InputPlanNode(collectionId.location)
-      existingNode = Some(inputNode)
-      exPlanDAG.addInputNode(inputNode)
-    } else {
-      existingNode.get.disconnect()
-    }
+  def addPlanNode(inputs: GenSeq[ReifiedDistCollection], newPlanNode: PlanNode, output: GenSeq[ReifiedDistCollection]): PlanNode = {
+    copy(inputs).foreach(input => findOrCreateParent(input).connect(input, newPlanNode))
+    output.foreach(v => newPlanNode.outEdges.put(ReifiedDistCollection.copy(v), new ArrayBuffer))
 
-    existingNode.get.connect(newPlanNode, collectionId)
-    out.foreach(outId => {
-      newPlanNode.connect(new OutputPlanNode(outId.location), outId)
-    })
     newPlanNode
   }
 
-  def addPlanNode(collectionId: CollectionId, newPlanNode: PlanNode, out: CollectionId): PlanNode =
-    addPlanNode(collectionId, newPlanNode, List(out))
+  def addPlanNode(input: ReifiedDistCollection, newPlanNode: PlanNode, out: ReifiedDistCollection): PlanNode =
+    addPlanNode(List(input), newPlanNode, List(out))
 
-  def addFlattenNode(newFlattenPlanNode: FlattenPlanNode, outId: CollectionId) = {
-    newFlattenPlanNode.collections.foreach((collection: CollectionId) => {
-      var existingNode = exPlanDAG.getPlanNode(collection)
-      if (existingNode.isEmpty) {
-        val inputNode = new InputPlanNode(collection.location)
-        existingNode = Some(inputNode)
-        exPlanDAG.addInputNode(inputNode)
-      } else
-        existingNode.get.disconnect()
+  def execute(outputs: ReifiedDistCollection*): Unit =
+    execute(outputs)
 
-      existingNode.get.connect(newFlattenPlanNode, collection)
-      newFlattenPlanNode.connect(new OutputPlanNode(outId.location), outId)
+  def execute(outputs: GenTraversable[ReifiedDistCollection]): Unit = {
+
+    // attach outputs that need to be saved
+    outputs.foreach(output => {
+      exPlanDAG.getPlanNode(output).get.connect(output, new OutputPlanNode(output))
     })
 
-    newFlattenPlanNode
-  }
+    println(ExecutionPlan.toString)
 
-  def execute(): Unit = {
     JobExecutor.execute(exPlanDAG, globalCache)
     exPlanDAG = new ExPlanDAG()
   }
 
+  private[this] def findOrCreateParent(input: ReifiedDistCollection): PlanNode = {
+    var existingNode = exPlanDAG.getPlanNode(input)
+
+    // if there is no node add input
+    if (existingNode.isEmpty) {
+      val inputNode = new InputPlanNode(input)
+      existingNode = Some(inputNode)
+      exPlanDAG.addInputNode(inputNode)
+    }
+
+    existingNode.get
+  }
+
+  private[this] def copy(input: GenSeq[ReifiedDistCollection]): GenSeq[ReifiedDistCollection] = input.map(v => ReifiedDistCollection.copy(v))
+
+  override def toString = exPlanDAG.toString
 }
 
 /**

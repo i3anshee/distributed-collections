@@ -1,9 +1,9 @@
 package examples
 
-import scala.collection.distributed.DistSetOld
 import java.net.URI
 import scala.collection.distributed.api.Emitter
 import java.io.Serializable
+import collection.distributed.{DistHashSet, DistSetOld}
 
 /**
  * User: vjovanovic
@@ -19,14 +19,14 @@ class A(val a: Int) extends Serializable {
 
 object LocalCacheTest {
   def main(args: Array[String]) = {
-    val ds1 = new DistSetOld[Long](new URI("./longsTo1k"))
+    val ds1 = new DistHashSet[Long](new URI("./longsTo1k"))
 
     var booleanFirstTime = true
     var localClass: A = new A(0)
     var localByte = 2.byteValue
     var localInt = 2.intValue
     var localDouble = 2.doubleValue
-    ds1.parallelDo((v: Long, emitter: Emitter[Long]) => {
+    ds1.distDo((v: Long, emitter: Emitter[Long]) => {
       if (booleanFirstTime) {
         booleanFirstTime = false
         if (!(localClass == new A(0))) throw new RuntimeException("Should be A(0)!!!")

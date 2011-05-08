@@ -3,7 +3,7 @@ package scala.collection.distributed
 import api._
 import api.dag._
 import collection.generic.{GenericCompanion}
-import mrapi.FSAdapter
+import scala.colleciton.distributed.hadoop.FSAdapter
 import execution.{DCUtil, ExecutionPlan}
 import _root_.io.CollectionsIO
 import collection.immutable.{GenSeq, GenIterable, GenTraversable}
@@ -12,7 +12,7 @@ trait DistIterable[+T]
   extends GenIterable[T]
   with GenericDistTemplate[T, DistIterable]
   with DistIterableLike[T, DistIterable[T], Iterable[T]]
-  with CollectionId {
+  with ReifiedDistCollection {
   def seq = FSAdapter.valuesIterable[T](location)
 
   override def companion: GenericCompanion[DistIterable] with GenericDistCompanion[DistIterable] = DistIterable
@@ -32,65 +32,61 @@ trait DistIterable[+T]
 
   def flatten[B >: T](collections: GenTraversable[DistIterable[B]]): DistIterable[T] = {
     val outDistColl = new DistColl[T](DCUtil.generateNewCollectionURI)
-
-    // TODO (VJ) dist collection
-    val node = ExecutionPlan.addFlattenNode(new FlattenPlanNode(List(this) ++ collections, elemType), outDistColl)
-    ExecutionPlan.execute()
+    val allCollections = List(this) ++ collections
+    ExecutionPlan.addPlanNode(allCollections, new FlattenPlanNode(allCollections, elemType), List(outDistColl))
+    //    ExecutionPlan.execute(outDistColl)
     outDistColl
   }
 
-  def sgbr[S, K, T1, T2, That](by: (T) => Ordered[S] = nullOrdered,
-                               key: (T, Emitter[T1]) => K = nullKey,
+  def sgbr[S, K, T1, T2, That](by: (T) => Ordered[S] = NullOrdered,
+                               key: (T, Emitter[T1]) => K = NullKey,
                                reduce: (T2, T1) => T2 = nullReduce)
-                              (implicit sgbrResult: ToSGBRColl[T, K, T1, T2, That] //,
-                               //                               km:Manifest[K],
-                               //                               sm:Manifest[S],
-                               //                               t1m:Manifest[T1],
-                               //                               t2m: Manifest[T2]
-                                ): That = {
+                              (implicit sgbrResult: ToSGBRColl[T, K, T1, T2, That]): That = {
+    // TODO (VJ) implicit type information (consult with Alex)
     val km = manifest[Any]
     val sm = manifest[Any]
     val t1m = manifest[Any]
     val t2m = manifest[Any]
-    if (by == nullOrdered && key == nullKey)
+    val kvp = manifest[(Any, Any)]
+
+    if (by == NullOrdered && key == NullKey)
       throw new RuntimeException("At least one parameter must be specified!!")
 
-    if (key == nullKey && reduce != nullReduce)
+    if (key == NullKey && reduce != nullReduce)
       throw new RuntimeException("In order to reduce, key function must be specified.")
 
     val result = sgbrResult.result(DCUtil.generateNewCollectionURI)
 
-    var input: CollectionId = this
-    var output = CollectionId(DCUtil.generateNewCollectionURI)
+    var input: ReifiedDistCollection = this
 
-    if (by != nullOrdered) {
+    if (by != NullOrdered) {
+      var output = ReifiedDistCollection(DCUtil.generateNewCollectionURI, elemType)
       ExecutionPlan.addPlanNode(input, new SortPlanNode[T, S](by, sm), output)
       input = output
-      output = CollectionId(DCUtil.generateNewCollectionURI)
     }
 
-    if (key != nullKey) {
+    if (key != NullKey) {
+      var output = ReifiedDistCollection(DCUtil.generateNewCollectionURI, kvp)
       ExecutionPlan.addPlanNode(input, GroupByPlanNode(key, km), output)
       input = output
-      output = CollectionId(DCUtil.generateNewCollectionURI)
     }
 
-    // TODO (VJ) check what happens in runtime
-    if (reduce != nullReduce) {
+    if (reduce != NullReduce) {
+      var output = ReifiedDistCollection(DCUtil.generateNewCollectionURI, kvp)
       ExecutionPlan.addPlanNode(input, new CombinePlanNode(reduce), output)
       input = output
-      output = CollectionId(DCUtil.generateNewCollectionURI)
     }
 
-    sgbrResult.result(output.location)
+    sgbrResult.result(input.location)
+    //    ExecutionPlan.execute(input)
   }
 
 
-  def distDo(distOp: (T, UntypedEmitter, DistContext) => Unit, outputs: GenSeq[CollectionId], types: GenSeq[Manifest[_]]) = {
-    val outDistColls = outputs.map(id => new DistColl[Any](id.location))
-    val node = ExecutionPlan.addPlanNode(this, new DistDoPlanNode[T](distOp, outDistColls), outDistColls)
+  def distDo(distOp: (T, UntypedEmitter, DistContext) => Unit, outputs: GenSeq[(CollectionId, Manifest[_])]) = {
+    val outDistColls = outputs.map(out => new DistColl[Any](out._1.location))
+    val node = ExecutionPlan.addPlanNode(List(this), new DistDoPlanNode[T](distOp), outDistColls)
 
-    ExecutionPlan.execute()
+    //    ExecutionPlan.execute(outDistColls)
     outDistColls
   }
 

@@ -19,7 +19,7 @@ trait DistSetLike[T, +Repr <: DistSetLike[T, Repr, Sequential] with DistSet[T], 
 
   def +(elem: T): Repr = {
     var alreadyAdded = false
-    newRemoteBuilder.result(parallelDo((el: T, em: Emitter[T]) => {
+    newRemoteBuilder.result(distDo((el: T, em: Emitter[T]) => {
       if (!alreadyAdded) {
         em.emit(elem)
         alreadyAdded = true

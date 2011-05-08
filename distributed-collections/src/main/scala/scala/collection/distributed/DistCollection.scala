@@ -5,7 +5,7 @@ import api.{DistContext, CollectionId, Emitter}
 import builder.{DistCollectionBuilderFactory, DistCanBuildFrom}
 import java.net.URI
 import execution.{DCUtil, ExecutionPlan}
-import mrapi.FSAdapter
+import scala.colleciton.distributed.hadoop.FSAdapter
 import io.CollectionsIO
 
 /**

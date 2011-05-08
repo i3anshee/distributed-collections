@@ -1,13 +1,15 @@
 package scala.collection.distributed.api.dag
 
 import collection.immutable.GenSeq
-import collection.distributed.api.{UniqueId, DistContext, UntypedEmitter, CollectionId}
 import collection.mutable
+import collection.distributed.api._
+import mutable.{Buffer, ArrayBuffer}
 
 case class DistDoPlanNode[T](distOP: (T, UntypedEmitter, DistContext) => Unit,
-                             outputs: GenSeq[CollectionId],
-                             inEdges: mutable.Map[PlanNode, CollectionId] = new mutable.HashMap[PlanNode, CollectionId],
-                             outEdges: mutable.Map[PlanNode, CollectionId] = new mutable.HashMap[PlanNode, CollectionId],
+                             inEdges: mutable.Buffer[(PlanNode, ReifiedDistCollection)] = new ArrayBuffer,
+                             outEdges: mutable.Map[ReifiedDistCollection, mutable.Buffer[PlanNode]] = new mutable.HashMap,
                              uniqueId: Long = UniqueId()) extends PlanNode {
-  def copyUnconnected() = copy(inEdges = mutable.HashMap(), outEdges = mutable.HashMap())
+  def copyUnconnected() = copy(inEdges = new ArrayBuffer, outEdges = new mutable.HashMap)
+
+  override def nodeType = "DO"
 }

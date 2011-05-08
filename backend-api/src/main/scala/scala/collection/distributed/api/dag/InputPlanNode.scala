@@ -1,13 +1,15 @@
 package scala.collection.distributed.api.dag
 
 import java.net.URI
-import collection.distributed.api.{UniqueId, CollectionId}
 import collection.mutable
+import mutable.{ArrayBuffer, Buffer}
+import collection.distributed.api.{ReifiedDistCollection, UniqueId, CollectionId}
 
-case class InputPlanNode(uri: URI,
-                         inEdges: mutable.Map[PlanNode, CollectionId] = new mutable.HashMap[PlanNode, CollectionId],
-                         outEdges: mutable.Map[PlanNode, CollectionId] = new mutable.HashMap[PlanNode, CollectionId],
-                         uniqueId: Long = UniqueId()) extends PlanNode with CollectionId {
-  def location = uri
-  def copyUnconnected() = copy(inEdges = mutable.HashMap(), outEdges = mutable.HashMap())
+case class InputPlanNode(collection: ReifiedDistCollection,
+                         inEdges: mutable.Buffer[(PlanNode, ReifiedDistCollection)] = new ArrayBuffer,
+                         outEdges: mutable.Map[ReifiedDistCollection, mutable.Buffer[PlanNode]] = new mutable.HashMap,
+                         uniqueId: Long = UniqueId()) extends PlanNode {
+  def copyUnconnected() = copy(inEdges = new ArrayBuffer, outEdges = new mutable.HashMap)
+
+  override def nodeType = "I"
 }

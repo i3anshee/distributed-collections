@@ -1,41 +1,46 @@
 package scala.collection.distributed.api.dag
 
-import collection.distributed.api.{UniqueId, CollectionId}
 import collection.mutable
-import java.net.URI
+import collection.distributed.api.{ReifiedDistCollection, UniqueId, CollectionId}
+import mutable.ArrayBuffer
 
-abstract class PlanNode extends UniqueId  {
-  type EdgeData = CollectionId
+case class EdgeData(coll: CollectionId, manifest: Manifest[_])
 
-  val inEdges: mutable.Map[PlanNode, EdgeData]
-  val outEdges: mutable.Map[PlanNode, EdgeData]
+abstract class PlanNode extends UniqueId {
+
+  val inEdges: mutable.Buffer[(PlanNode, ReifiedDistCollection)]
+  val outEdges: mutable.Map[ReifiedDistCollection, mutable.Buffer[PlanNode]]
+
   protected[this] val uniqueId: Long
 
-  def disconnect(that: PlanNode) {
-    that.disconnect(this)
-    inEdges.remove(that)
-    outEdges.remove(that)
-  }
-
-  def connect(inNode: PlanNode, ed: EdgeData) {
-    outEdges.put(inNode, ed)
-    inNode.inEdges.put(this, ed)
-  }
-
-  def disconnect() {
-    outEdges.keys.foreach(v => v.disconnect(this))
-    inEdges.keys.foreach(v => v.disconnect(this))
-  }
-
   def copyUnconnected(): PlanNode
-}
 
-object PlanNode {
-  def main(args: Array[String]) {
-    val node = InputPlanNode(new URI("www.google.com"))
+  def disconnect(that: PlanNode): Unit = {
+    val exists = (children.exists(_ == that) || inEdges.contains(that))
+    outEdges.values.foreach(_ filterNot (_ == that))
+    val remaining = inEdges.filter(_._1 == that)
+    inEdges.clear()
+    inEdges ++= remaining
 
-    val copy = node.copy(new URI("www.yahoo.com"))
+    if (exists)
+      that.disconnect(this)
 
-    println("nodeId=" + node.id + "copyId=" + copy.id)
   }
+
+  def connect(toOutput: ReifiedDistCollection, node: PlanNode) {
+    outEdges.put(toOutput, outEdges.getOrElse(toOutput, new ArrayBuffer[PlanNode]) += node)
+    node.inEdges += ((this, toOutput))
+  }
+
+  def children: Iterable[PlanNode] = outEdges.values.flatMap(v => v)
+
+  def predecessors: Iterable[PlanNode] = inEdges.map(_._1)
+
+  def disconnect(): Unit = (predecessors ++ children).foreach(_.disconnect(this))
+
+  override def toString = nodeType + "(" + id + ")->" +
+    children.map(node => "" + node.nodeType + "(" + node.id + ")").mkString("[", ",", "]")
+
+  def nodeType: String
+
 }

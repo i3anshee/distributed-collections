@@ -10,29 +10,32 @@ import collection.immutable.{GenSeq, GenIterable, GenTraversable}
  */
 trait DistProcessable[+T] {
 
-  // TODO (VJ) make this working (for now just the graph contains type information)
-  val elemType: Manifest[_] = manifest[Any]
+  def distDo(distOp: (T, UntypedEmitter, DistContext) => Unit, outputs: GenSeq[(CollectionId, Manifest[_])]): GenSeq[DistIterable[Any]]
 
-  def distDo(distOp: (T, UntypedEmitter, DistContext) => Unit, outputs: GenSeq[CollectionId], types: GenSeq[Manifest[_]]): GenSeq[DistIterable[Any]]
-
-
-  def sgbr[S, K, T1, T2, That](by: (T) => Ordered[S] = nullOrdered,
-                               key: (T, Emitter[T1]) => K = nullKey,
+  def sgbr[S, K, T1, T2, That](by: (T) => Ordered[S] = NullOrdered,
+                               key: (T, Emitter[T1]) => K = NullKey,
                                reduceOp: (T2, T1) => T2 = nullReduce)
-                              (implicit sgbrResult: ToSGBRColl[T, K, T1, T2, That]//,
-//                               km:Manifest[K],
-//                               sm:Manifest[S],
-//                               t1m:Manifest[T1],
-//                               t2m: Manifest[T2]
-                                ): That
+                              (implicit sgbrResult: ToSGBRColl[T, K, T1, T2, That]): That
+
+  //,
+  //                               km:Manifest[K],
+  //                               sm:Manifest[S],
+  //                               t1m:Manifest[T1],
+  //                               t2m: Manifest[T2]
+
 
   def flatten[B >: T](collections: GenTraversable[DistIterable[B]]): DistIterable[T]
 
-  protected[this] val nullOrdered = (el: T) => null
 
-  protected[this] val nullKey = (el: T, em: Emitter[Dummy2]) => Dummy1
 
-  protected[this] def nullReduce[D] = (ag: Dummy3, v: D) => Dummy3
+
+  protected[this] val NullOrdered = (el: T) => null
+
+  protected[this] val NullKey = (el: T, em: Emitter[Dummy2]) => Dummy1
+
+  protected[this] val NullReduce = (ag: Dummy3, v: Dummy2) => Dummy3
+
+  protected[this] def nullReduce[D] = NullReduce.asInstanceOf[(Dummy3, D) => Dummy3]
 }
 
 trait ToSGBRColl[-T, -K, -T1, -T2, +To] {
@@ -44,7 +47,7 @@ object ToSGBRColl {
 
   implicit def sortGroupBy[T, K, T1]: ToSGBRColl[T, K, T1, Dummy3, DistMap[K, GenIterable[T1]]] = new ToGBColl[T, K, T1]
 
-  implicit def sortGroupByCombine[T, K, T1, T2]: ToSGBRColl[T, K, T1, T2, DistMap[K, T2]] = new ToGBRColl[T, K, T1, T2]
+  implicit def sortGroupByCombine[T, K, T1, T2 ]: ToSGBRColl[T, K, T1, T2, DistMap[K, T2]] = new ToGBRColl[T, K, T1, T2]
 }
 
 class ToSColl[T] extends ToSGBRColl[T, Dummy1, Dummy2, Dummy3, DistIterable[T]] {

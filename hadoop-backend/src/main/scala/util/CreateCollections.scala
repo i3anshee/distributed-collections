@@ -1,6 +1,6 @@
 package util
 
-import mrapi.FSAdapter
+import scala.colleciton.distributed.hadoop.FSAdapter
 import java.net.URI
 
 /**

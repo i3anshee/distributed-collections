@@ -1,12 +1,15 @@
 package scala.collection.distributed.api.dag
 
-import collection.distributed.api.{UniqueId, CollectionId, Emitter}
 import collection.mutable
+import mutable.{ArrayBuffer, Buffer}
+import collection.distributed.api.{ReifiedDistCollection, UniqueId, CollectionId, Emitter}
 
 case class GroupByPlanNode[A, B, K](keyFunction: (A, Emitter[B]) => K,
                                     kmf: Manifest[_],
-                                    inEdges: mutable.Map[PlanNode, CollectionId] = new mutable.HashMap[PlanNode, CollectionId],
-                                    outEdges: mutable.Map[PlanNode, CollectionId] = new mutable.HashMap[PlanNode, CollectionId],
+                                    inEdges: mutable.Buffer[(PlanNode, ReifiedDistCollection)] = new ArrayBuffer,
+                                    outEdges: mutable.Map[ReifiedDistCollection, mutable.Buffer[PlanNode]] = new mutable.HashMap,
                                     uniqueId: Long = UniqueId()) extends PlanNode {
-  def copyUnconnected() = copy(inEdges = mutable.HashMap(), outEdges = mutable.HashMap())
+  def copyUnconnected() = copy(inEdges = new ArrayBuffer, outEdges = new mutable.HashMap)
+
+  override def nodeType = "GB"
 }

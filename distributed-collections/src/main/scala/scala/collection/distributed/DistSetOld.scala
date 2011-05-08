@@ -58,11 +58,13 @@ class DistSetOld[A](uri: URI) extends DistCollection[A](uri) {
    * @return a new set consisting of all elements that are both in this
    *  set and in the given set `that`.
    */
-  def intersect(that: DistSetOld[A]): DistSetOld[A] = null /*ensureSet(flatten(List(that)).
-    groupBy((el: (A), em: Emitter[A]) => {
-    em.emit(el);
-    el
-  }).parallelDo((el: (A, Iterable[A]), em: Emitter[A]) => if (el._2.size > 1) el._2.foreach(em.emit(_))))*/
+  def intersect(that: DistSetOld[A]): DistSetOld[A] = null
+
+  /*ensureSet(flatten(List(that)).
+groupBy((el: (A), em: Emitter[A]) => {
+em.emit(el);
+el
+}).parallelDo((el: (A, Iterable[A]), em: Emitter[A]) => if (el._2.size > 1) el._2.foreach(em.emit(_))))*/
 
   /**Computes the intersection between this set and another set.
    *
@@ -111,8 +113,7 @@ class DistSetOld[A](uri: URI) extends DistCollection[A](uri) {
       groupBy((el: (A, Boolean), em: Emitter[Boolean]) => {
       em.emit(el._2)
       el._1
-    }).
-      parallelDo((el: (A, Iterable[Boolean]), em: Emitter[A]) => if (el._2.size == 1 && el._2.head == true) em.emit(el._1)).location)
+    }).distDo((el: (A, Iterable[Boolean]), em: Emitter[A]) => if (el._2.size == 1 && el._2.head == true) em.emit(el._1)).location)
 
   /**The difference of this set and another set.
    *
@@ -132,17 +133,5 @@ class DistSetOld[A](uri: URI) extends DistCollection[A](uri) {
   //def subsetOf(that: DistSetOld[A]): Boolean = throw new UnsupportedOperationException("Unsupported operation!!!")
 
 
-  private def ensureSet[B](collection: DistCollection[B]): DistSetOld[B] = {
-    val result = collection.groupBy(_.hashCode)
-      .parallelDo((pair: (Int, scala.Traversable[B]), emitter: Emitter[B]) => {
-      val existing = scala.collection.mutable.HashSet[B]()
-      pair._2.foreach((el) =>
-        if (!existing.contains(el)) {
-          existing += el
-          emitter.emit(el)
-        }
-      )
-    })
-    new DistSetOld[B](result.location)
-  }
+  private[this] def ensureSet[B](collection: DistCollection[B]): DistSetOld[B] = throw new UnsupportedOperationException
 }

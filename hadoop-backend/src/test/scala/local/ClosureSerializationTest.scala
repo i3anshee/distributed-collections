@@ -33,7 +33,7 @@ class ClosureSerializationTest extends TestNGSuite with ShouldMatchers {
     val deserializedFunction = ois.readObject
 
 
-    val deserializedResult = deserializedFunction.asInstanceOf[(Int) => Int] (5)
+    val deserializedResult = deserializedFunction.asInstanceOf[(Int) => Int](5)
 
     initialResult should equal(deserializedResult)
 

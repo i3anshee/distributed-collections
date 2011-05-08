@@ -3,7 +3,7 @@ package execution
 import scala.collection.distributed.api.dag.ExPlanDAG
 import scala.collection.distributed.api.AbstractJobStrategy
 import collection.mutable
-import mrapi.HadoopJob
+import scala.colleciton.distributed.hadoop.HadoopJob
 
 /**
  * User: vjovanovic
