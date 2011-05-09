@@ -3,11 +3,11 @@ package scala.colleciton.distributed.hadoop
 import java.net.URI
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.{FileSystem, Path}
-import org.apache.hadoop.mapreduce.Job
 import org.apache.hadoop.io.{NullWritable, SequenceFile, BytesWritable}
 import java.io.{ObjectOutputStream, ByteArrayOutputStream, ObjectInputStream, ByteArrayInputStream}
 import scala.collection.distributed.api.io.CollectionMetaData
 import org.apache.hadoop.fs.permission.{FsAction, FsPermission}
+import org.apache.hadoop.mapred.JobConf
 
 /**
  * User: vjovanovic
@@ -53,8 +53,8 @@ object FSAdapter {
     true
   }
 
-  def writeToFile(job: Job, path: Path, bytes: Array[Byte]) = {
-    val file = path.getFileSystem(job.getConfiguration).create(path, true)
+  def writeToFile(job: JobConf, path: Path, bytes: Array[Byte]) = {
+    val file = path.getFileSystem(job).create(path, true)
     file.write(bytes)
     file.close()
   }

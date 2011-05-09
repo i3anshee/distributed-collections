@@ -5,7 +5,7 @@ import scala.collection.mutable
 import collection.distributed.api.{ReifiedDistCollection, UniqueId}
 
 class ExPlanDAG(val inputNodes: mutable.Set[InputPlanNode] = mutable.Set[InputPlanNode]()) extends Traversable[PlanNode]
-with Serializable{
+with Serializable {
 
   def addInputNode(inputPlanNode: InputPlanNode) = inputNodes.add(inputPlanNode)
 

@@ -17,16 +17,7 @@ trait DistProcessable[+T] {
                                reduceOp: (T2, T1) => T2 = nullReduce)
                               (implicit sgbrResult: ToSGBRColl[T, K, T1, T2, That]): That
 
-  //,
-  //                               km:Manifest[K],
-  //                               sm:Manifest[S],
-  //                               t1m:Manifest[T1],
-  //                               t2m: Manifest[T2]
-
-
   def flatten[B >: T](collections: GenTraversable[DistIterable[B]]): DistIterable[T]
-
-
 
 
   protected[this] val NullOrdered = (el: T) => null
@@ -36,6 +27,7 @@ trait DistProcessable[+T] {
   protected[this] val NullReduce = (ag: Dummy3, v: Dummy2) => Dummy3
 
   protected[this] def nullReduce[D] = NullReduce.asInstanceOf[(Dummy3, D) => Dummy3]
+
 }
 
 trait ToSGBRColl[-T, -K, -T1, -T2, +To] {

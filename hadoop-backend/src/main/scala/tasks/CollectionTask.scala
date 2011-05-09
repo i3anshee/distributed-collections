@@ -28,7 +28,7 @@ trait CollectionTask {
     ois.readObject()
   }
 
-  def deserializeOperation[T](conf: Configuration, name: String): Option[T] = {
+  def deserializeFromCache[T](conf: Configuration, name: String): Option[T] = {
     // find the file in the node local cache
     val opFileURI = conf.get(name)
     if (opFileURI == null)

@@ -1,14 +1,14 @@
 package scala.colleciton.distributed.hadoop
 
 import collection.distributed.api.dag._
-import org.apache.hadoop.mapreduce.Job
+
 import collection.mutable
 import org.apache.hadoop.io.{NullWritable, BytesWritable}
 import org.apache.hadoop.fs.Path
-import org.apache.hadoop.mapreduce.lib.input.FileInputFormat
+import org.apache.hadoop.mapred.{SequenceFileInputFormat, JobConf, FileInputFormat}
 
 class GreedyMSCRBuilder extends MSCRBuilder {
-  // new builder interface
+
   val mapperDAG: ExPlanDAG = new ExPlanDAG()
   val reduceDAG: ExPlanDAG = new ExPlanDAG()
 
@@ -45,13 +45,12 @@ class GreedyMSCRBuilder extends MSCRBuilder {
     buildRemainingDAG(refinedDAG, visited)
   }
 
-
-  def configure(job: Job) =
+  def configure(job: JobConf) =
     if (!mapperDAG.isEmpty) {
-      HadoopJob.dfsSerialize(job, "distcoll.mapperDAG", mapperDAG)
+      HadoopJob.dfsSerialize(job, "distribted-collections.mapDAG", mapperDAG)
 
       if (!reduceDAG.isEmpty) {
-        HadoopJob.dfsSerialize(job, "distcoll.reduceDAG", reduceDAG)
+        HadoopJob.dfsSerialize(job, "distribted-collections.reduceDAG", reduceDAG)
       }
 
       // setting input and output and intermediate types
@@ -64,14 +63,19 @@ class GreedyMSCRBuilder extends MSCRBuilder {
       mapperDAG.inputNodes.foreach((in) => FileInputFormat.addInputPath(job, new Path(in.collection.location.toString)))
       FileInputFormat.setInputPathFilter(job, classOf[MetaPathFilter])
 
-      val outputDAG = if (reduceDAG.isEmpty) mapperDAG else reduceDAG
-      val outputNodes = outputDAG.flatMap(_ match {
-        case v: OutputPlanNode => List(v)
-        case _ => List[OutputPlanNode]()
-      })
       QuickTypeFixScalaI0.setJobClassesBecause210SnapshotWillNot(job, false, !reduceDAG.isEmpty, outputNodes.toArray)
     }
 
+  def outputNodes: Traversable[OutputPlanNode] = {
+    val outputDAG = if (reduceDAG.isEmpty) mapperDAG else reduceDAG
+    outputDAG.flatMap(_ match {
+      case v: OutputPlanNode => List(v)
+      case _ => List[OutputPlanNode]()
+    })
+  }
+
+
+  def outputs = outputNodes.map(_.collection)
 
   def feasible(node: PlanNode, matches: (PlanNode) => (Boolean, Boolean), visited: mutable.Set[PlanNode]): Boolean = {
     val (take, continue) = matches(node)

@@ -10,8 +10,8 @@ import java.io.{ByteArrayOutputStream, ObjectOutputStream}
 import org.apache.hadoop.fs.{PathFilter, FileSystem, Path}
 import collection.distributed.api.{AbstractJobStrategy}
 import org.apache.hadoop.conf.Configuration
-import org.apache.hadoop.mapreduce.Job
-
+import org.apache.hadoop.mapred.jobcontrol.Job
+import org.apache.hadoop.mapred.{JobClient, JobConf}
 
 object HadoopJob extends AbstractJobStrategy {
 
@@ -20,11 +20,11 @@ object HadoopJob extends AbstractJobStrategy {
     executeInternal(optimizedDag)
   }
 
-  private def executeInternal(dag: ExPlanDAG) = {
+  private def executeInternal(dag: ExPlanDAG): Unit = if (!dag.isEmpty) {
 
     // extract first builder and dag
     val mscrBuilder = new GreedyMSCRBuilder
-    val remainingExPlan = mscrBuilder.build(dag)
+    val remainingPlan = mscrBuilder.build(dag)
 
     // TODO (VJ) remove
     println("\n\nmapperGraph => " + mscrBuilder.mapperDAG.toString)
@@ -32,47 +32,39 @@ object HadoopJob extends AbstractJobStrategy {
 
     // execute builder
     val config: Configuration = new Configuration
-    val job = new Job(config, "TODO (VJ)")
+    val job = new JobConf(config)
 
     mscrBuilder.configure(job)
 
-    // serialize global cache
-//     dfsSerialize(job, "global.cache", globalCache.toMap)
-
-    //    job.waitForCompletion(true)
+    JobClient.runJob(job)
 
     // fetch collection sizes and write them to DFS
-    //    mscrBuilder.output.foreach(out => storeCollectionsMetaData(job, out))
+    mscrBuilder.outputNodes.foreach(out => storeCollectionsMetaData(job, out))
 
-    // de-serialize global cache
-    // TODO(VJ)
-
-    // recurse over rest of the dag
-    //    executeInternal(remainingExPlan)
+    executeInternal(remainingPlan)
   }
 
 
-  def storeCollectionsMetaData(job: Job, outputPlanNode: OutputPlanNode) = {
-    val size = job.getCounters.findCounter("collections", "current").getValue
-    // write metadata
-    val metaDataPath = new Path(outputPlanNode.collection.location.toString, "META")
-    val baos = new ByteArrayOutputStream()
-    val oos = new ObjectOutputStream(baos)
-    oos.writeObject(new CollectionMetaData(size))
-    oos.flush()
-    oos.close()
-    FSAdapter.writeToFile(job, metaDataPath, baos.toByteArray)
+  def storeCollectionsMetaData(job: JobConf, outputPlanNode: OutputPlanNode) = {
+    //    val size = job.getCounters.findCounter("collections", "current").getValue
+    //    // write metadata
+    //    val metaDataPath = new Path(outputPlanNode.collection.location.toString, "META")
+    //    val baos = new ByteArrayOutputStream()
+    //    val oos = new ObjectOutputStream(baos)
+    //    oos.writeObject(new CollectionMetaData(size))
+    //    oos.flush()
+    //    oos.close()
+    //    FSAdapter.writeToFile(job, metaDataPath, baos.toByteArray)
   }
 
 
   private def optimizePlan(dag: ExPlanDAG): ExPlanDAG = {
-    // TODO (VJ) introduce optimizations
+    // TODO (VJ) introduce sink flattens as the only optimization for now
     dag
   }
 
-  def dfsSerialize(job: Job, key: String, data: AnyRef) = {
+  def dfsSerialize(conf: JobConf, key: String, data: AnyRef) = {
     // place the closure in distributed cache
-    val conf = job.getConfiguration
     val fs = FileSystem.get(conf)
     val hdfsPath = tmpPath()
     val hdfsos = fs.create(hdfsPath)

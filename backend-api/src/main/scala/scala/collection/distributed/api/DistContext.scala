@@ -1,6 +1,5 @@
 package scala.collection.distributed.api
 
-import scala.collection.mutable
 import scala.collection.immutable
 
 /**
@@ -8,6 +7,6 @@ import scala.collection.immutable
  * Date: 4/7/11
  */
 
-class DistContext(val globalCache: immutable.Map[String, Any]) {
+class DistContext() {
   var recordNumber: RecordNumber = new RecordNumber()
 }
