@@ -89,6 +89,31 @@ object FSAdapter {
     fs.setPermission(meta, new FsPermission(FsAction.READ, FsAction.READ, FsAction.READ))
   }
 
+//  def listFiles(job: JobConf, dir: Path, regex:String): List[String] {
+//    vaconf = new Configuration() // takes default conf
+//        FileSystem fs = FileSystem.get(conf);
+//        Path dir = new Path("/dir");
+//        FileStatus[] stats = fs.listStatus(dir);
+//        foreach(FileStatus stat : stats)
+//        {
+//            stat.getPath().toUri().getPath(); // gives directory name
+//            stat.getModificationTime();
+//            stat.getReplication();
+//            stat.getBlockSize();
+//            stat.getOwner();
+//            stat.getGroup();
+//            stat.getPermission().toString();
+//        }
+
+//  }
+
+  def rename(conf: JobConf, from: Path, to: Path) {
+    val fs = FileSystem.get(conf)
+    fs.rename(from, to)
+    fs.close
+  }
+
+
   private def serializeElement(value: Any): Array[Byte] = {
     val baos = new ByteArrayOutputStream()
     val oos = new ObjectOutputStream(baos)

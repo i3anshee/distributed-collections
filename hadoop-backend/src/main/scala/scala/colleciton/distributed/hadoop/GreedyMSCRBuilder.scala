@@ -3,29 +3,39 @@ package scala.colleciton.distributed.hadoop
 import collection.distributed.api.dag._
 
 import collection.mutable
+import mutable.{ArrayBuffer, Buffer, HashMap}
 import org.apache.hadoop.io.{NullWritable, BytesWritable}
 import org.apache.hadoop.fs.Path
-import org.apache.hadoop.mapred.{SequenceFileInputFormat, JobConf, FileInputFormat}
+import org.apache.hadoop.mapred.{FileOutputFormat, SequenceFileInputFormat, JobConf, FileInputFormat}
+import scala.util.Random
+import java.net.URI
+import java.util.UUID
 
-class GreedyMSCRBuilder extends MSCRBuilder {
+class GreedyMSCRBuilder extends JobBuilder {
 
-  val mapperDAG: ExPlanDAG = new ExPlanDAG()
+  val mapDAG: ExPlanDAG = new ExPlanDAG()
   val reduceDAG: ExPlanDAG = new ExPlanDAG()
+
+  val tempFileToURI: mutable.Map[String, URI] = new HashMap
+  val outputDir = new Path("./tmp/" + Math.abs(Random.nextInt))
+
+  // add input to combine node
+  val combinedInputs: Buffer[URI] = new ArrayBuffer
+  val intermediateOutputs: Buffer[URI] = new ArrayBuffer
 
   def build(dag: ExPlanDAG) = {
 
     val matches = (n: PlanNode) => n match {
       case v: GroupByPlanNode[_, _, _] => (true, false)
-      case v: OutputPlanNode => (false, false)
       case v: CombinePlanNode[_, _, _, _] => throw new RuntimeException("Should never be reached !!!")
       case _ => (true, true)
     }
 
-    // collect mapper phase (stopping after groupBy and flatten)
+    // collect mapper phase (stopping after groupBy)
     val startingNodes = new mutable.Queue() ++ dag.inputNodes
     val visited = new mutable.HashSet[PlanNode]
 
-    startingNodes.foreach((node: PlanNode) => buildDag(node, mapperDAG, visited, matches))
+    startingNodes.foreach((node: PlanNode) => buildDag(node, mapDAG, visited, matches))
 
     val refinedDAG = buildRemainingDAG(dag, visited)
 
@@ -42,15 +52,45 @@ class GreedyMSCRBuilder extends MSCRBuilder {
 
     startingNodes.foreach((node: PlanNode) => buildDag(node, reduceDAG, visited, matches))
 
+    // temporary fields for outputs
+    val outputURIs = outputNodes(reduceDAG).map(_.collection.location) ++ (outputNodes(mapDAG).map(_.collection.location).toSet -- reduceDAG.inputNodes.map(_.collection.location))
+    val intermediateURIs = outputNodes(mapDAG).map(_.collection.location).toSet.intersect(reduceDAG.inputNodes.map(_.collection.location))
+
+    val combinedInputs = reduceDAG.filter(_ match {
+      case v: CombinePlanNode[_, _, _, _] => true
+      case _ => false
+    }).map(_.inEdges.head.asInstanceOf[InputPlanNode].collection.location)
+
+    // if mapper has an output node that is matched by reduce than there is not temporary file (and the collector is set to default)
+    println("Output")
+    outputURIs.foreach(v => println(v.toString))
+    println("Intermediate")
+    intermediateURIs.foreach(v => println(v.toString))
+    println("Combined")
+    combinedInputs.foreach(v => println(v.toString))
+
+    this.combinedInputs ++= combinedInputs
+    this.intermediateOutputs ++= intermediateURIs
+    outputURIs.foreach(v => this.tempFileToURI.put(getTempFileName, v))
+
+
     buildRemainingDAG(refinedDAG, visited)
   }
 
   def configure(job: JobConf) =
-    if (!mapperDAG.isEmpty) {
-      HadoopJob.dfsSerialize(job, "distribted-collections.mapDAG", mapperDAG)
+    if (!mapDAG.isEmpty) {
+      HadoopJob.dfsSerialize(job, "distribted-collections.mapDAG", mapDAG)
+      HadoopJob.dfsSerialize(job, "distribted-collections.intermediateOutputs", intermediateOutputs)
+      HadoopJob.dfsSerialize(job, "distribted-collections.tempFileToURI", tempFileToURI)
 
       if (!reduceDAG.isEmpty) {
         HadoopJob.dfsSerialize(job, "distribted-collections.reduceDAG", reduceDAG)
+      }
+
+      if (!combinedInputs.isEmpty) {
+        // serialize combined inputs
+        HadoopJob.dfsSerialize(job, "distribted-collections.combinedInputs", combinedInputs)
+        // set a job class
       }
 
       // setting input and output and intermediate types
@@ -60,19 +100,27 @@ class GreedyMSCRBuilder extends MSCRBuilder {
       job.setOutputValueClass(classOf[BytesWritable])
 
       // set the input and output files for the job
-      mapperDAG.inputNodes.foreach((in) => FileInputFormat.addInputPath(job, new Path(in.collection.location.toString)))
+      mapDAG.inputNodes.foreach((in) => FileInputFormat.addInputPath(job, new Path(in.collection.location.toString)))
       FileInputFormat.setInputPathFilter(job, classOf[MetaPathFilter])
+      FileOutputFormat.setOutputPath(job, outputDir)
 
-      QuickTypeFixScalaI0.setJobClassesBecause210SnapshotWillNot(job, false, !reduceDAG.isEmpty, outputNodes.toArray)
+      QuickTypeFixScalaI0.setJobClassesBecause210SnapshotWillNot(job, false, !reduceDAG.isEmpty, tempFileToURI.keys.toArray)
     }
 
-  def outputNodes: Traversable[OutputPlanNode] = {
-    val outputDAG = if (reduceDAG.isEmpty) mapperDAG else reduceDAG
-    outputDAG.flatMap(_ match {
-      case v: OutputPlanNode => List(v)
-      case _ => List[OutputPlanNode]()
-    })
+
+  def postRun(job: JobConf) = {
+    // rename mapper files to part files
+//    tempFileToURI.foreach(v => )
+
+    //tempFileToURI.foreach(v => FSAdapter.rename(job, new OutputtempFileToURI))
   }
+
+  def outputNodes(dag: ExPlanDAG) = dag.flatMap(_ match {
+    case v: OutputPlanNode => List(v)
+    case _ => List[OutputPlanNode]()
+  })
+
+  def outputNodes: Traversable[OutputPlanNode] = outputNodes(if (reduceDAG.isEmpty) mapDAG else reduceDAG)
 
 
   def outputs = outputNodes.map(_.collection)
@@ -87,15 +135,6 @@ class GreedyMSCRBuilder extends MSCRBuilder {
     else
       false
   }
-
-  def connectDownwards(node: PlanNode, newDAG: ExPlanDAG, copiedNode: PlanNode) =
-    node.outEdges.foreach(outputs => {
-      outputs._2.foreach(node => {
-        val child = newDAG.getPlanNode(node)
-        if (child.isDefined)
-          copiedNode.connect(outputs._1, child.get)
-      })
-    })
 
   def buildRemainingDAG(dag: ExPlanDAG, visited: mutable.Set[PlanNode]): ExPlanDAG = {
     val refinedDAG = new ExPlanDAG()
@@ -116,7 +155,7 @@ class GreedyMSCRBuilder extends MSCRBuilder {
           refinedDAG.getPlanNode(edge._1).get.connect(edge._2, nodeCopy)
         })
 
-        connectDownwards(node, refinedDAG, nodeCopy)
+        refinedDAG.connectDownwards(nodeCopy, node)
       }
     })
     refinedDAG
@@ -132,20 +171,10 @@ class GreedyMSCRBuilder extends MSCRBuilder {
           val copiedNode = v.copyUnconnected
           newDAG.addInputNode(copiedNode)
 
-          connectDownwards(v, newDAG, copiedNode)
+          newDAG.connectDownwards(copiedNode, v)
         case _ => // copy the node to newDAG with all connections
-          val copiedNode = node.copyUnconnected
-
-          // connect upwards
-          node.inEdges.foreach(node => {
-            val parent = newDAG.getPlanNode(node._1)
-            if (parent.isDefined)
-              parent.get.connect(node._2, copiedNode)
-          })
-
-          connectDownwards(node, newDAG, copiedNode)
+          newDAG.connect(node.copyUnconnected, node)
       }
-
 
       if (continue)
         node.children.foreach(node => {
@@ -173,4 +202,6 @@ class GreedyMSCRBuilder extends MSCRBuilder {
       })
     }
   }
+
+  private[this] def getTempFileName = UUID.randomUUID.toString.replaceAll("-", "")
 }

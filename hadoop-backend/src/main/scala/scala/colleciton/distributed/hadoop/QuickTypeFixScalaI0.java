@@ -1,10 +1,9 @@
 package scala.colleciton.distributed.hadoop;
 
+import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.BytesWritable;
 import org.apache.hadoop.io.NullWritable;
-import org.apache.hadoop.mapred.JobConf;
-import org.apache.hadoop.mapred.SequenceFileInputFormat;
-import org.apache.hadoop.mapred.SequenceFileOutputFormat;
+import org.apache.hadoop.mapred.*;
 import org.apache.hadoop.mapred.lib.MultipleOutputs;
 import scala.collection.distributed.api.dag.OutputPlanNode;
 import tasks.DistributedCollectionsCombine;
@@ -18,7 +17,7 @@ import java.io.IOException;
  * Date: 4/23/11
  */
 public class QuickTypeFixScalaI0 {
-    static void setJobClassesBecause210SnapshotWillNot(JobConf job, boolean setCombiner, boolean setReducer, OutputPlanNode[] outputs) throws IOException {
+    public static void setJobClassesBecause210SnapshotWillNot(JobConf job, boolean setCombiner, boolean setReducer, String[] outputs) throws IOException {
         job.setInputFormat(SequenceFileInputFormat.class);
         job.setOutputFormat(SequenceFileOutputFormat.class);
         job.setMapperClass(DistributedCollectionsMap.class);
@@ -31,10 +30,14 @@ public class QuickTypeFixScalaI0 {
             job.setCombinerClass(DistributedCollectionsCombine.class);
         }
 
-        for (OutputPlanNode output : outputs) {
+        for (String output : outputs) {
             MultipleOutputs.addNamedOutput(job,
-                    output.collection().location().toString(), SequenceFileOutputFormat.class,
+                     output, SequenceFileOutputFormat.class,
                     NullWritable.class, BytesWritable.class);
         }
+    }
+
+    public static void hadoopOut(MultipleOutputs output, String name, Reporter rep, NullWritable k, BytesWritable v) throws IOException {
+        output.getCollector(name, rep).collect(k, v);
     }
 }

@@ -5,6 +5,9 @@ import collection.distributed.api.dag.ExPlanDAG
 import org.apache.hadoop.io.{BytesWritable, NullWritable}
 import java.util.Iterator
 import org.apache.hadoop.mapred._
+import lib.MultipleOutputs
+import collection.JavaConversions._
+import colleciton.distributed.hadoop.QuickTypeFixScalaI0
 
 /**
  * User: vjovanovic
@@ -16,32 +19,27 @@ class DistributedCollectionsReduce extends MapReduceBase with Reducer[BytesWrita
   var distContext: DistContext = null
   var reduceDAG: ExPlanDAG = null
 
+  var output: MultipleOutputs = null
+
   override def configure(job: JobConf) = {
     super.configure(job)
 
     reduceDAG = deserializeFromCache(job, "distribted-collections.reduceDAG").get
+    output = new MultipleOutputs(job)
   }
 
   override def close = {
   }
 
-  def reduce(key: BytesWritable, values: Iterator[BytesWritable], output: OutputCollector[NullWritable, BytesWritable], reporter: Reporter) = {}
+  def reduce(key: BytesWritable, values: Iterator[BytesWritable], doNotUseThisOutput: OutputCollector[NullWritable, BytesWritable], reporter: Reporter) = {
+    output.getNamedOutputs.foreach(v => QuickTypeFixScalaI0.hadoopOut(output, v, reporter, NullWritable.get, new BytesWritable("A".getBytes)))
+  }
 }
 
 //  var isGroupBy: Boolean = false
 //  var parTask: Option[(AnyRef, Emitter[AnyRef], DistContext) => Unit] = None
 //  var foldTask: Option[(AnyRef, Any) => AnyRef] = None
 //  var distContext: DistContext = new DistContext(immutable.Map[String, Any]())
-//
-//  override def setup(context: Reducer[BytesWritable, BytesWritable, NullWritable, BytesWritable]#Context) {
-//    super.setup(context)
-//
-//    val conf = context.getConfiguration
-//
-//    isGroupBy = conf.get("distcoll.mapper.groupBy") != null
-//    foldTask = deserializeOperation(conf, "distcoll.mapreduce.combine")
-//    parTask = deserializeOperation(conf, "distcoll.reducer.do")
-//  }
 //
 //  override def reduce(key: BytesWritable, values: Iterable[BytesWritable], context: Reducer[BytesWritable, BytesWritable, NullWritable, BytesWritable]#Context) = {
 //
@@ -72,7 +70,7 @@ class DistributedCollectionsReduce extends MapReduceBase with Reducer[BytesWrita
 //        })
 //      } else {
 //        // parallel do
-////        val emitter = new EmitterImpl
+////        val emitter = new BufferEmitter
 ////        distContext.recordNumber = new RecordNumber()
 ////        val result = parallelDo(buffer, emitter, distContext, parTask)
 ////

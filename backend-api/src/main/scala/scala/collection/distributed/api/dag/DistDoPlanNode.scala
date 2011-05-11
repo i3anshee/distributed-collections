@@ -7,9 +7,9 @@ import mutable.{Buffer, ArrayBuffer}
 
 case class DistDoPlanNode[T](distOP: (T, UntypedEmitter, DistContext) => Unit,
                              inEdges: mutable.Buffer[(PlanNode, ReifiedDistCollection)] = new ArrayBuffer,
-                             outEdges: mutable.Map[ReifiedDistCollection, mutable.Buffer[PlanNode]] = new mutable.HashMap,
+                             outEdges: mutable.LinkedHashMap[ReifiedDistCollection, mutable.Buffer[PlanNode]] = new mutable.LinkedHashMap,
                              uniqueId: Long = UniqueId()) extends PlanNode {
-  def copyUnconnected() = copy(inEdges = new ArrayBuffer, outEdges = new mutable.HashMap)
+  def copyUnconnected() = copy(inEdges = new ArrayBuffer, outEdges = new mutable.LinkedHashMap)
 
   override def nodeType = "DO"
 }

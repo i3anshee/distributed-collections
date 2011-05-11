@@ -27,7 +27,7 @@ object HadoopJob extends AbstractJobStrategy {
     val remainingPlan = mscrBuilder.build(dag)
 
     // TODO (VJ) remove
-    println("\n\nmapperGraph => " + mscrBuilder.mapperDAG.toString)
+    println("\n\nmapperGraph => " + mscrBuilder.mapDAG.toString)
     println("\n\reducerGraph => " + mscrBuilder.reduceDAG.toString)
 
     // execute builder
@@ -37,6 +37,7 @@ object HadoopJob extends AbstractJobStrategy {
     mscrBuilder.configure(job)
 
     JobClient.runJob(job)
+    mscrBuilder.postRun(job)
 
     // fetch collection sizes and write them to DFS
     mscrBuilder.outputNodes.foreach(out => storeCollectionsMetaData(job, out))

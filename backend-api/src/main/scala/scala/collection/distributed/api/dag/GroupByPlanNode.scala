@@ -7,9 +7,9 @@ import collection.distributed.api.{ReifiedDistCollection, UniqueId, CollectionId
 case class GroupByPlanNode[A, B, K](keyFunction: (A, Emitter[B]) => K,
                                     kmf: Manifest[_],
                                     inEdges: mutable.Buffer[(PlanNode, ReifiedDistCollection)] = new ArrayBuffer,
-                                    outEdges: mutable.Map[ReifiedDistCollection, mutable.Buffer[PlanNode]] = new mutable.HashMap,
+                                    outEdges: mutable.LinkedHashMap[ReifiedDistCollection, mutable.Buffer[PlanNode]] = new mutable.LinkedHashMap,
                                     uniqueId: Long = UniqueId()) extends PlanNode {
-  def copyUnconnected() = copy(inEdges = new ArrayBuffer, outEdges = new mutable.HashMap)
+  def copyUnconnected() = copy(inEdges = new ArrayBuffer, outEdges = new mutable.LinkedHashMap)
 
   override def nodeType = "GB"
 }

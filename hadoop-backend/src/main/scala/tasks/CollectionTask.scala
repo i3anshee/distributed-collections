@@ -13,20 +13,8 @@ import org.apache.hadoop.filecache.DistributedCache
 
 trait CollectionTask {
 
-  // TODO (VJ) add different serialization policies
-  def serializeElement(value: Any): Array[Byte] = {
-    val baos = new ByteArrayOutputStream()
-    val oos = new ObjectOutputStream(baos)
-    oos.writeObject(value)
-    oos.flush()
-    baos.toByteArray
-  }
 
-  def deserializeElement(bytes: Array[Byte]): AnyRef = {
-    val bais = new ByteArrayInputStream(bytes)
-    val ois = new ObjectInputStream(bais)
-    ois.readObject()
-  }
+
 
   def deserializeFromCache[T](conf: Configuration, name: String): Option[T] = {
     // find the file in the node local cache

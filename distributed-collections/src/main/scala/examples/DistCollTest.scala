@@ -21,18 +21,14 @@ object DistCollTest {
 
     val ds1 = new DistColl[Long](new URI("./longsTo1k"))
     val ds2 = new DistColl[Int](new URI("./intsTo1k"))
-    val ds3 = new DistHashMap[Long, GenIterable[Int]](new URI("./stringsTo1k"))
-    val ds4 = new DistHashMap[Long, GenIterable[Int]](new URI("./stringsTo1k"))
-    val map: DistMap[Long, GenIterable[Int]] = ds1.filter(_ > 0).flatten(ds2).sgbr(key = (l: Long, em: Emitter[Int]) => {
-      em.emit(l.toInt); l
-    })
 
-    val out1 = map.flatten(ds3, ds4.filter(_._1 < 1))
+//    val map: DistMap[Long, GenIterable[Int]] = ds1.filter(_ > 0).flatten(ds2.map(_.toLong)).sgbr(key = (l: Long, em: Emitter[Int]) => {
+//      em.emit(l.toInt); l
+//    })
 
-    // attaches to the map
-    val out2 = map.filter(_._1 > 0)
+    val map: DistIterable[Long] = ds1.filter(_ > 50).flatten(ds2.map(_.toLong))
 
-    ExecutionPlan.execute(out1, out2)
+    ExecutionPlan.execute(map)
 //    val ds1 = new DistColl[Long](new URI("./longsTo1k"))
 //    val ds2 = new DistColl[Long](new DistColl[Long](new URI("./longsTo1k")).filter(_ > 50).location)
 //    val messages = ArrayBuffer[String]()

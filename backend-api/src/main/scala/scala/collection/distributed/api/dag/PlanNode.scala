@@ -1,15 +1,13 @@
 package scala.collection.distributed.api.dag
 
 import collection.mutable
-import collection.distributed.api.{ReifiedDistCollection, UniqueId, CollectionId}
+import collection.distributed.api.{ReifiedDistCollection, UniqueId}
 import mutable.ArrayBuffer
 
-case class EdgeData(coll: CollectionId, manifest: Manifest[_])
-
-abstract class PlanNode extends UniqueId {
+trait PlanNode extends UniqueId {
 
   val inEdges: mutable.Buffer[(PlanNode, ReifiedDistCollection)]
-  val outEdges: mutable.Map[ReifiedDistCollection, mutable.Buffer[PlanNode]]
+  val outEdges: mutable.LinkedHashMap[ReifiedDistCollection, mutable.Buffer[PlanNode]]
 
   protected[this] val uniqueId: Long
 
@@ -24,7 +22,6 @@ abstract class PlanNode extends UniqueId {
 
     if (exists)
       that.disconnect(this)
-
   }
 
   def connect(toOutput: ReifiedDistCollection, node: PlanNode) {
