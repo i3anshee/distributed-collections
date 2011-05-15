@@ -22,9 +22,9 @@ class IterableRemoteBuilder[Elem] extends RemoteBuilder[Elem, DistIterable[Elem]
 }
 
 
-class DistCollRemoteBuilder[Elem] extends RemoteBuilder[Elem, DistColl[Elem]] {
+class DistCollRemoteBuilder[Elem] extends RemoteBuilder[Elem, DistCollection[Elem]] {
 
-  def result(collection: DistIterable[Elem]) = new DistColl(collection.location)
+  def result(collection: DistIterable[Elem]) = new DistCollection(collection.location)
 
   def uniquenessPreserved = {}
 

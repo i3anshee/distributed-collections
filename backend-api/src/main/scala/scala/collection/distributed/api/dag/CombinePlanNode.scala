@@ -6,7 +6,7 @@ import collection.distributed.api.{ReifiedDistCollection, UniqueId, CollectionId
 ;
 
 
-case class CombinePlanNode[A, K, B, C](op: (C, B) => C,
+case class CombinePlanNode[T1, T2 >: T1](op: Iterable[T1] => T2 ,
                                        inEdges: mutable.Buffer[(PlanNode, ReifiedDistCollection)] = new ArrayBuffer,
                                        outEdges: mutable.LinkedHashMap[ReifiedDistCollection, mutable.Buffer[PlanNode]] = new mutable.LinkedHashMap,
                                        uniqueId: Long = UniqueId()) extends PlanNode {

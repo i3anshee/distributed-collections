@@ -11,7 +11,7 @@ import org.apache.hadoop.fs.{PathFilter, FileSystem, Path}
 import collection.distributed.api.{AbstractJobStrategy}
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.mapred.jobcontrol.Job
-import org.apache.hadoop.mapred.{JobClient, JobConf}
+import org.apache.hadoop.mapred.{RunningJob, JobClient, JobConf}
 
 object HadoopJob extends AbstractJobStrategy {
 
@@ -36,35 +36,19 @@ object HadoopJob extends AbstractJobStrategy {
 
     mscrBuilder.configure(job)
 
-    JobClient.runJob(job)
-    mscrBuilder.postRun(job)
+    val runningJob = JobClient.runJob(job)
 
-    // fetch collection sizes and write them to DFS
-    mscrBuilder.outputNodes.foreach(out => storeCollectionsMetaData(job, out))
+    mscrBuilder.postRun(job, runningJob)
 
     executeInternal(remainingPlan)
   }
-
-
-  def storeCollectionsMetaData(job: JobConf, outputPlanNode: OutputPlanNode) = {
-    //    val size = job.getCounters.findCounter("collections", "current").getValue
-    //    // write metadata
-    //    val metaDataPath = new Path(outputPlanNode.collection.location.toString, "META")
-    //    val baos = new ByteArrayOutputStream()
-    //    val oos = new ObjectOutputStream(baos)
-    //    oos.writeObject(new CollectionMetaData(size))
-    //    oos.flush()
-    //    oos.close()
-    //    FSAdapter.writeToFile(job, metaDataPath, baos.toByteArray)
-  }
-
 
   private def optimizePlan(dag: ExPlanDAG): ExPlanDAG = {
     // TODO (VJ) introduce sink flattens as the only optimization for now
     dag
   }
 
-  def dfsSerialize(conf: JobConf, key: String, data: AnyRef) = {
+  def dfsSerialize(conf: JobConf, key: String, data: AnyRef): URI = {
     // place the closure in distributed cache
     val fs = FileSystem.get(conf)
     val hdfsPath = tmpPath()
@@ -77,6 +61,7 @@ object HadoopJob extends AbstractJobStrategy {
     val serializedDataURI = hdfsPath.toUri();
     conf.set(key, serializedDataURI.toString)
     DistributedCache.addCacheFile(serializedDataURI, conf)
+    serializedDataURI
   }
 
   private def tmpPath(): Path = {

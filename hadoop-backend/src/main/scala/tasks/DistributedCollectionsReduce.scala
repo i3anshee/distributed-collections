@@ -1,13 +1,16 @@
 package tasks
 
-import collection.distributed.api.DistContext
-import collection.distributed.api.dag.ExPlanDAG
-import org.apache.hadoop.io.{BytesWritable, NullWritable}
+import dag._
 import java.util.Iterator
 import org.apache.hadoop.mapred._
 import lib.MultipleOutputs
-import collection.JavaConversions._
-import colleciton.distributed.hadoop.QuickTypeFixScalaI0
+import org.apache.hadoop.io.{Writable, BytesWritable, NullWritable}
+import collection.distributed.api.dag.{InputPlanNode, OutputPlanNode, ExPlanDAG}
+import java.net.URI
+import collection.mutable
+import org.apache.hadoop.fs.Path
+import collection.distributed.api.{ReifiedDistCollection, DistContext}
+import java.io.{ByteArrayInputStream, ObjectInputStream}
 
 /**
  * User: vjovanovic
@@ -19,67 +22,67 @@ class DistributedCollectionsReduce extends MapReduceBase with Reducer[BytesWrita
   var distContext: DistContext = null
   var reduceDAG: ExPlanDAG = null
 
-  var output: MultipleOutputs = null
+  var reduceRuntimeDAG: RuntimeDAG = null
+  var intermediateOutputs: Traversable[URI] = null
+  var workingDir: Path = null
+  var tempFileToURI: mutable.Map[String, URI] = null
+  var intermediateToByte: mutable.Map[URI, Byte] = new mutable.HashMap
+  val byteToNode: mutable.Map[Byte, RuntimePlanNode] = new mutable.HashMap
+
+  var multipleOutputs: MultipleOutputs = null
+  var initialized = false
 
   override def configure(job: JobConf) = {
     super.configure(job)
 
     reduceDAG = deserializeFromCache(job, "distribted-collections.reduceDAG").get
-    output = new MultipleOutputs(job)
+    tempFileToURI = deserializeFromCache(job, "distribted-collections.tempFileToURI").get
+    intermediateToByte = deserializeFromCache(job, "distribted-collections.intermediateToByte").get
+
+
+    multipleOutputs = new MultipleOutputs(job)
+
+    distContext = new DistContext
+
   }
 
-  override def close = {
-  }
+  override def close = multipleOutputs.close
 
   def reduce(key: BytesWritable, values: Iterator[BytesWritable], doNotUseThisOutput: OutputCollector[NullWritable, BytesWritable], reporter: Reporter) = {
-    output.getNamedOutputs.foreach(v => QuickTypeFixScalaI0.hadoopOut(output, v, reporter, NullWritable.get, new BytesWritable("A".getBytes)))
+    if (!initialized) {
+      // create a dag
+      reduceRuntimeDAG = buildRuntimeDAG(reduceDAG, multipleOutputs, tempFileToURI.map(v => (v._2, v._1)), reporter)
+      reduceRuntimeDAG.initialize
+
+      byteToNode ++= intermediateToByte.map(v => (v._2, reduceRuntimeDAG.getPlanNode((ReifiedDistCollection(v._1, manifest[Any]))).get))
+
+      initialized = true
+    }
+
+    val collKeyPair = deserializeElement[(Byte, Any)](key.getBytes)
+    byteToNode(collKeyPair._1).execute(null, distContext, collKeyPair._2, values)
+  }
+
+  def deserializeElement[T](bytes: Array[Byte]): T = {
+    val bais = new ByteArrayInputStream(bytes)
+    val ois = new ObjectInputStream(bais)
+    ois.readObject().asInstanceOf[T]
+  }
+
+  def buildRuntimeDAG(plan: ExPlanDAG, outputs: MultipleOutputs, tempFileToURI: mutable.Map[URI, String], reporter: Reporter): RuntimeDAG = {
+    val runtimeDAG = new RuntimeDAG
+    plan.foreach(node => node match {
+      case v: InputPlanNode =>
+        val copiedNode = new ReduceInputRuntimePlanNode(v)
+        runtimeDAG.addInputNode(copiedNode)
+        runtimeDAG.connect(copiedNode, v)
+
+      case v: OutputPlanNode =>
+        runtimeDAG.connect(new OutputRuntimePlanNode(v, outputs.getCollector(tempFileToURI(v.collection.location), reporter).asInstanceOf[OutputCollector[Writable, Writable]]), v)
+
+      case _ => // copy the node to runtimeDAG with all connections
+        runtimeDAG.connect(new RuntimeComputationNode(node), node)
+    })
+    runtimeDAG
   }
 }
-
-//  var isGroupBy: Boolean = false
-//  var parTask: Option[(AnyRef, Emitter[AnyRef], DistContext) => Unit] = None
-//  var foldTask: Option[(AnyRef, Any) => AnyRef] = None
-//  var distContext: DistContext = new DistContext(immutable.Map[String, Any]())
-//
-//  override def reduce(key: BytesWritable, values: Iterable[BytesWritable], context: Reducer[BytesWritable, BytesWritable, NullWritable, BytesWritable]#Context) = {
-//
-//    if (foldTask.isEmpty && parTask.isEmpty)
-//      if (isGroupBy) {
-//        // TODO fix this mess when multiple collection format is known
-//        // make a collection of elements and write it
-//        context.getCounter("collections", "current").increment(1)
-//        context.write(NullWritable.get, new BytesWritable(serializeElement(
-//          (deserializeElement(key.getBytes), values.map((bytes: BytesWritable) => deserializeElement(bytes.getBytes))))))
-//      } else {
-//        values.foreach((v: BytesWritable) => {
-//          context.getCounter("collections", "current").increment(1)
-//          context.write(NullWritable.get, v)
-//        })
-//      }
-//    else {
-//      var buffer: Traversable[AnyRef] = values.map((v: BytesWritable) => deserializeElement(v.getBytes()))
-//
-//      // combine reduce part
-//      if (foldTask.isDefined) {
-//        buffer = ArrayBuffer(buffer.reduceLeft(foldTask.get))
-//        // write results to output
-//        buffer.foreach((v: AnyRef) => {
-//          context.getCounter("collections", "current").increment(1)
-//          context.write(NullWritable.get,
-//            new BytesWritable(serializeElement((deserializeElement(key.getBytes), v))))
-//        })
-//      } else {
-//        // parallel do
-////        val emitter = new BufferEmitter
-////        distContext.recordNumber = new RecordNumber()
-////        val result = parallelDo(buffer, emitter, distContext, parTask)
-////
-////        // write results to output
-////        result.foreach((v: AnyRef) => {
-////          context.getCounter("collections", "current").increment(1)
-////          context.write(NullWritable.get, new BytesWritable(serializeElement(v)))
-////        })
-//      }
-//    }
-//  }
-//}

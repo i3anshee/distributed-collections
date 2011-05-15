@@ -1,13 +1,14 @@
 package scala.colleciton.distributed.hadoop;
 
-import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.io.BytesWritable;
+ import org.apache.hadoop.io.BytesWritable;
 import org.apache.hadoop.io.NullWritable;
-import org.apache.hadoop.mapred.*;
+import org.apache.hadoop.mapred.JobConf;
+import org.apache.hadoop.mapred.Reporter;
+import org.apache.hadoop.mapred.SequenceFileInputFormat;
+import org.apache.hadoop.mapred.SequenceFileOutputFormat;
 import org.apache.hadoop.mapred.lib.MultipleOutputs;
-import scala.collection.distributed.api.dag.OutputPlanNode;
 import tasks.DistributedCollectionsCombine;
-import tasks.DistributedCollectionsMap;
+import tasks.DistributedCollectionsMapRunner;
 import tasks.DistributedCollectionsReduce;
 
 import java.io.IOException;
@@ -20,7 +21,7 @@ public class QuickTypeFixScalaI0 {
     public static void setJobClassesBecause210SnapshotWillNot(JobConf job, boolean setCombiner, boolean setReducer, String[] outputs) throws IOException {
         job.setInputFormat(SequenceFileInputFormat.class);
         job.setOutputFormat(SequenceFileOutputFormat.class);
-        job.setMapperClass(DistributedCollectionsMap.class);
+        job.setMapRunnerClass(DistributedCollectionsMapRunner.class);
 
         if (setReducer) {
             job.setReducerClass(DistributedCollectionsReduce.class);

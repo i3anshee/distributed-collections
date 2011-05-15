@@ -19,24 +19,29 @@ object DistCollTest {
 
     println("Starting DistCollTest example!!!")
 
-    val ds1 = new DistColl[Long](new URI("./longsTo1k"))
-    val ds2 = new DistColl[Int](new URI("./intsTo1k"))
+    val ds1 = new DistCollection[Long](new URI("./longsTo1k"))
+    val ds2 = new DistCollection[Int](new URI("./intsTo1k"))
 
-//    val map: DistMap[Long, GenIterable[Int]] = ds1.filter(_ > 0).flatten(ds2.map(_.toLong)).sgbr(key = (l: Long, em: Emitter[Int]) => {
-//      em.emit(l.toInt); l
-//    })
+    //    val map = ds1.filter(_ > 0).flatten(ds2.map(_.toLong)).groupBySort((l: Long, em: Emitter[Int]) => {
+    //      em.emit(l.toInt); l
+    //    }).filter(_._2.size > 100)
+    //
+    //    val b = ds1.filter(_ > 1000)
+    val b = ds1.groupBySort((v: Long, emitter: Emitter[Long]) => {
+      emitter.emit(v);
+      1
+    }).combine((it: Iterable[Long]) => it.reduce(_ + _)).filter(_._2 > 100).map(_._2)
 
-    val map: DistIterable[Long] = ds1.filter(_ > 50).flatten(ds2.map(_.toLong))
+    val c = ds1.flatten(ds2.map(_.toLong)).filter(_ < 10)
 
-    ExecutionPlan.execute(map)
-//    val ds1 = new DistColl[Long](new URI("./longsTo1k"))
-//    val ds2 = new DistColl[Long](new DistColl[Long](new URI("./longsTo1k")).filter(_ > 50).location)
-//    val messages = ArrayBuffer[String]()
-//
-//    messages += "(0 to 1024) map ((_ + 1).toString) =" + (ds1.map((v: Long) => v + 1).toString)
-//
-//    println("Ending DistCollTest example!!!")
-//    messages.foreach(println)
+    val d = c.flatten(b)
+
+    ExecutionPlan.execute(d)
+
+    println(b.toString)
+    println(c.toString)
+    println(b.size)
+    println(c.size)
     0
   }
 }

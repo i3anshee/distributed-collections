@@ -13,9 +13,6 @@ import org.apache.hadoop.filecache.DistributedCache
 
 trait CollectionTask {
 
-
-
-
   def deserializeFromCache[T](conf: Configuration, name: String): Option[T] = {
     // find the file in the node local cache
     val opFileURI = conf.get(name)

@@ -12,58 +12,19 @@ trait DistProcessable[+T] {
 
   def distDo(distOp: (T, UntypedEmitter, DistContext) => Unit, outputs: GenSeq[(CollectionId, Manifest[_])]): GenSeq[DistIterable[Any]]
 
-  def sgbr[S, K, T1, T2, That](by: (T) => Ordered[S] = NullOrdered,
-                               key: (T, Emitter[T1]) => K = NullKey,
-                               reduceOp: (T2, T1) => T2 = nullReduce)
-                              (implicit sgbrResult: ToSGBRColl[T, K, T1, T2, That]): That
+  def groupBySort[S, K, K1 <: K,  T1](key: (T, Emitter[T1]) => K, by: (K1) => Ordered[S] = nullOrdered[Any]): DistMap[K, GenIterable[T1]] with DistCombinable[K, T1]
 
   def flatten[B >: T](collections: GenTraversable[DistIterable[B]]): DistIterable[T]
 
-
   protected[this] val NullOrdered = (el: T) => null
 
-  protected[this] val NullKey = (el: T, em: Emitter[Dummy2]) => Dummy1
-
-  protected[this] val NullReduce = (ag: Dummy3, v: Dummy2) => Dummy3
-
-  protected[this] def nullReduce[D] = NullReduce.asInstanceOf[(Dummy3, D) => Dummy3]
+  protected[this] def nullOrdered[K] = NullOrdered.asInstanceOf[(K) => Ordered[K]]
 
 }
 
-trait ToSGBRColl[-T, -K, -T1, -T2, +To] {
-  def result(uri: URI): To
+trait DistCombinable[K, +T] {
+  def combine[T1 >: T](combine: (Iterable[T]) => T1): DistMap[K, T1]
+//  def combine[T1 <: T](combine: (Iterable[T]) => T1): DistMap[K, T1] = apply[T1]
 }
-
-object ToSGBRColl {
-  implicit def sortOnly[T]: ToSGBRColl[T, Dummy1, Dummy2, Dummy3, DistIterable[T]] = new ToSColl[T]
-
-  implicit def sortGroupBy[T, K, T1]: ToSGBRColl[T, K, T1, Dummy3, DistMap[K, GenIterable[T1]]] = new ToGBColl[T, K, T1]
-
-  implicit def sortGroupByCombine[T, K, T1, T2 ]: ToSGBRColl[T, K, T1, T2, DistMap[K, T2]] = new ToGBRColl[T, K, T1, T2]
-}
-
-class ToSColl[T] extends ToSGBRColl[T, Dummy1, Dummy2, Dummy3, DistIterable[T]] {
-  def result(uri: URI): DistIterable[T] = new DistColl[T](uri)
-}
-
-class ToGBColl[T, K, T1] extends ToSGBRColl[T, K, T1, Dummy3, DistMap[K, GenIterable[T1]]] {
-  def result(uri: URI): DistMap[K, GenIterable[T1]] = new DistHashMap[K, GenIterable[T1]](uri)
-}
-
-class ToGBRColl[T, K, T1, T2] extends ToSGBRColl[T, K, T1, T2, DistMap[K, T2]] {
-  def result(uri: URI): DistMap[K, T2] = new DistHashMap[K, T2](uri)
-}
-
-trait Dummy1
-
-object Dummy1 extends Dummy1
-
-trait Dummy2
-
-object Dummy2 extends Dummy2
-
-trait Dummy3
-
-object Dummy3 extends Dummy3
 
 

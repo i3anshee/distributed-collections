@@ -2,7 +2,7 @@ package scala.colleciton.distributed.hadoop
 
 import collection.distributed.api.dag.{OutputPlanNode, ExPlanDAG}
 import collection.distributed.api.ReifiedDistCollection
-import org.apache.hadoop.mapred.JobConf
+import org.apache.hadoop.mapred.{RunningJob, JobConf}
 
 trait JobBuilder {
 
@@ -12,5 +12,5 @@ trait JobBuilder {
 
   def outputs : Traversable[ReifiedDistCollection]
 
-  def postRun(job: JobConf)
+  def postRun(conf: JobConf, runningJob: RunningJob)
 }

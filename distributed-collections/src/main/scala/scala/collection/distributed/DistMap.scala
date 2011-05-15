@@ -19,7 +19,7 @@ trait DistMap[K, +V]
 
   override def stringPrefix = "DistMap"
 
-  override def seq = super.seq.toMap
+  override def seq: Map[K, V] = super.seq.toMap
 }
 
 object DistMap extends DistMapFactory[DistMap] {

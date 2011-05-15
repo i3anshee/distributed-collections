@@ -16,22 +16,24 @@ class OutputRuntimePlanNode(val node: OutputPlanNode, val collector: OutputColle
   val collection = node.collection
 
 
-  override def execute(parent: RuntimePlanNode, context: DistContext, key: Any, value: Any) = {
-    if (key == null)
-      collector.collect(NullWritable.get, new BytesWritable(serializeElement(value)))
-    else
-      collector.collect(new BytesWritable(serializeElement((collection.location, key), manifest[Any])), new BytesWritable(serializeElement(value)))
-
-    println("mapper out " + value)
-  }
+  override def execute(parent: RuntimePlanNode, context: DistContext, key: Any, value: Any) =
+    collector.collect(NullWritable.get, new BytesWritable(serializeElement(value)))
 
 
   def serializeElement(value: Any): Array[Byte] = {
-    val baos = new ByteArrayOutputStream ()
-    val oos = new ObjectOutputStream (baos)
-    oos.writeObject (value)
-    oos.flush ()
+    val baos = new ByteArrayOutputStream()
+    val oos = new ObjectOutputStream(baos)
+    oos.writeObject(value)
+    oos.flush()
     baos.toByteArray
   }
 
+}
+
+class MapOutputRuntimePlanNode(node: OutputPlanNode, collector: OutputCollector[Writable, Writable], val byteId: Byte)
+  extends OutputRuntimePlanNode(node, collector) {
+  override def copyUnconnected() = new MapOutputRuntimePlanNode(node, collector, byteId)
+
+  override def execute(parent: RuntimePlanNode, context: DistContext, key: Any, value: Any) =
+    collector.collect(new BytesWritable(serializeElement((byteId, key))), new BytesWritable(serializeElement(value)))
 }

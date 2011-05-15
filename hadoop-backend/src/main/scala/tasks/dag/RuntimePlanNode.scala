@@ -15,7 +15,7 @@ trait RuntimePlanNode extends PlanNode {
 
   protected[this] var myEmitter: UntypedEmitter = null
 
-  def emitter: UntypedEmitter = {myEmitter}
+  def emitter: UntypedEmitter = myEmitter
 
   def nodeType = node.nodeType
 
@@ -39,6 +39,10 @@ trait RuntimePlanNode extends PlanNode {
 
     case v: DistDoPlanNode[Any] => v.distOP(value, emitter, context)
 
+    case v: CombinePlanNode[Any, Any] =>
+      val (k, it) = value.asInstanceOf[Tuple2[Any, Iterable[Any]]]
+      emitter.emit((k, v.op(it)))
+
     case v: GroupByPlanNode[Any, Any, Any] =>
       val tmpEmitter = new BufferEmitter(1)
       val key = v.keyFunction(value, tmpEmitter)
@@ -51,7 +55,6 @@ trait RuntimePlanNode extends PlanNode {
 class RuntimeUntypedEmitter(val node: RuntimePlanNode, val outputs: Seq[(DistContext, mutable.Buffer[RuntimePlanNode])]) extends UntypedEmitter {
 
   def emit(index: Int, el: Any) = {
-    println("emit " + el)
     val output = outputs(index)
     output._2.foreach(v => v.execute(node, output._1, null, el))
     outputs(index)._1.recordNumber.incrementRecordCounter
@@ -64,7 +67,7 @@ class GroupByRuntimeEmitter(val node: RuntimePlanNode, val outputs: Seq[(DistCon
   def emit(index: Int, el: Any) = {
     val typedEl = el.asInstanceOf[(Any, Any)]
 
-    // TODO (VJ) group by result crosses the barrier once and then it is sparated (optimization)
+    // TODO (VJ) group by result crosses the barrier once and then it is separated (optimization)
     val output = outputs(index)
     output._2.foreach(v => v.execute(node, output._1, typedEl._1, typedEl._2))
     outputs(index)._1.recordNumber.incrementRecordCounter

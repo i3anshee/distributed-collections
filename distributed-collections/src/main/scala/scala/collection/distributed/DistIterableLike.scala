@@ -6,6 +6,7 @@ import scala._
 import collection.immutable
 import collection.{GenTraversableOnce, GenIterableLike}
 import immutable.GenIterable
+import execution.ExecutionPlan
 
 
 trait DistIterableLike[+T, +Repr <: DistIterable[T], +Sequential <: Iterable[T] with GenIterableLike[T, Sequential]]
@@ -27,7 +28,7 @@ trait DistIterableLike[+T, +Repr <: DistIterable[T], +Sequential <: Iterable[T] 
 
   def mkString(sep: String): String = seq.mkString("", sep, "")
 
-  def mkString: String = seq.mkString("")
+  def mkString: String = seq.mkString
 
   override def toString = seq.mkString(stringPrefix + "(", ", ", ")")
 
@@ -44,7 +45,7 @@ trait DistIterableLike[+T, +Repr <: DistIterable[T], +Sequential <: Iterable[T] 
     rb.result(distDo((el: T, em: Emitter[T]) => if (p(el)) em.emit(el)))
   }
 
-  def groupBySeq[K](f: (T) => K): DistMap[K, GenIterable[T]] = sgbr(key = (v: T, em: Emitter[T]) => {
+  def groupBySeq[K](f: (T) => K) = groupBySort((v: T, em: Emitter[T]) => {
     em.emit(v);
     f(v)
   })
@@ -91,12 +92,14 @@ trait DistIterableLike[+T, +Repr <: DistIterable[T], +Sequential <: Iterable[T] 
 
   def reduce[A1 >: T](op: (A1, A1) => A1) = if (isEmpty)
     throw new UnsupportedOperationException("empty.reduce")
-  else
-  sgbr(key = (v: T, emitter: Emitter[T]) => {
-    emitter.emit(v);
-    1
-  },
-  reduceOp = op).toTraversable.head._2
+  else {
+    val result = groupBySort((v: T, emitter: Emitter[T]) => {
+      emitter.emit(v);
+      1
+    }).combine((it: Iterable[T]) => it.reduce(op))
+    ExecutionPlan.execute(result)
+    result.toTraversable.head._2
+    }
 
   def scanRight[B, That](z: B)(op: (T, B) => B)(implicit bf: CanBuildFrom[Repr, B, That]) = throw new UnsupportedOperationException("Not implemented yet!!!")
 

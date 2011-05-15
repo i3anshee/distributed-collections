@@ -1,10 +1,13 @@
 package tasks
 
 import org.apache.hadoop.io.BytesWritable
-import java.lang.Iterable
-import scala.collection.JavaConversions._
 import java.util.Iterator
 import org.apache.hadoop.mapred._
+import java.net.URI
+import collection.distributed.api.dag.CombinePlanNode
+import collection.mutable
+import collection.JavaConversions._
+import java.io.{ByteArrayInputStream, ObjectInputStream, ByteArrayOutputStream, ObjectOutputStream}
 
 /**
  * User: vjovanovic
@@ -12,28 +15,36 @@ import org.apache.hadoop.mapred._
  */
 
 class DistributedCollectionsCombine extends MapReduceBase with Reducer[BytesWritable, BytesWritable, BytesWritable, BytesWritable] with CollectionTask {
+  val byteToNode: mutable.Map[Byte, CombinePlanNode[Any, Any]] = new mutable.HashMap
 
+  override def configure(job: JobConf) = {
+    val intermediateToByte: mutable.Map[URI, Byte] = deserializeFromCache(job, "distribted-collections.intermediateToByte").get
+    val combinedInputs: mutable.Map[URI, CombinePlanNode[Any, Any]] = deserializeFromCache(job, "distribted-collections.combinedInputs").get
+    byteToNode ++= intermediateToByte.map(v => (v._2, combinedInputs(v._1)))
+  }
 
-//  var foldTask: Option[(Any, Any) => Any] = None
-//
-//  override def setup(context: Reducer[BytesWritable, BytesWritable, BytesWritable, BytesWritable]#Context) {
-//    super.setup(context)
-//
-//    val conf = context.getConfiguration
-//
-//    foldTask = deserializeOperation(conf, "distcoll.mapreduce.combine")
-//    if (foldTask.isEmpty) throw new RuntimeException("Combine operation must be declared !!!!")
-//  }
-//
-//  override def reduce(key: BytesWritable, values: Iterable[BytesWritable], context: Reducer[BytesWritable, BytesWritable, BytesWritable, BytesWritable]#Context) = {
-//    // combine reduce part
-//    val buffer: Traversable[AnyRef] = values.map((v: BytesWritable) => deserializeElement(v.getBytes()))
-//    context.write(key, new BytesWritable(serializeElement(buffer.reduceLeft(foldTask.get))))
-//  }
+  def reduce(key: BytesWritable, values: Iterator[BytesWritable], output: OutputCollector[BytesWritable, BytesWritable], reporter: Reporter) = {
+    val collKeyPair = deserializeElement(key.getBytes).asInstanceOf[(Byte, Any)]
 
-  override def close = {}
+    val nodeOp = byteToNode.get(collKeyPair._1)
+    if (nodeOp.isDefined)
+      output.collect(key, new BytesWritable(
+        serializeElement(nodeOp.get.op(values.toIterable.map(v => deserializeElement(v.getBytes).asInstanceOf[Any])))))
+    else
+      values.foreach(v => output.collect(key, v))
+  }
 
-  override def configure(job: JobConf) = {}
+   def serializeElement(value: Any): Array[Byte] = {
+    val baos = new ByteArrayOutputStream()
+    val oos = new ObjectOutputStream(baos)
+    oos.writeObject(value)
+    oos.flush()
+    baos.toByteArray
+  }
 
-  def reduce(key: BytesWritable, values: Iterator[BytesWritable], output: OutputCollector[BytesWritable, BytesWritable], reporter: Reporter) = {}
+  def deserializeElement(bytes: Array[Byte]): AnyRef = {
+    val bais = new ByteArrayInputStream(bytes)
+    val ois = new ObjectInputStream(bais)
+    ois.readObject()
+  }
 }

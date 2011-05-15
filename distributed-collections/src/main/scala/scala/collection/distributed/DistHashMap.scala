@@ -17,8 +17,6 @@ class DistHashMap[K, +V](uri: URI)
 
   override def empty: DistHashMap[K, V] = throw new UnsupportedOperationException("Not implemented yet!!")
 
-  override def seq = throw new UnsupportedOperationException("Not implemented yet!!")
-
   def -(k: K) = throw new UnsupportedOperationException("Not implemented yet!!")
 
   def +[U >: V](kv: (K, U)) = throw new UnsupportedOperationException("Not implemented yet!!")
