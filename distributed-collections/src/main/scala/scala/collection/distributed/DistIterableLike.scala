@@ -1,6 +1,6 @@
 package scala.collection.distributed
 
-import api.Emitter
+import api.{DistContext, Emitter2, Emitter}
 import scala.collection.generic.{CanBuildFrom}
 import scala._
 import collection.immutable
@@ -38,6 +38,11 @@ trait DistIterableLike[+T, +Repr <: DistIterable[T], +Sequential <: Iterable[T] 
     remoteBuilder.result(collection)
   }
 
+  def flatMap[S, That](f: (T) => GenTraversableOnce[S])(implicit bf: CanBuildFrom[Repr, S, That]): That = {
+    val remoteBuilder = bf.asInstanceOf[CanDistBuildFrom[Repr, S, That]](repr)
+    remoteBuilder.result(distDo((el: T, emitter: Emitter[S]) => f(el).foreach((v) => emitter.emit(v))))
+  }
+
   def filter(p: T => Boolean): Repr = {
     val rb = newRemoteBuilder
     rb.uniquenessPreserved
@@ -45,10 +50,71 @@ trait DistIterableLike[+T, +Repr <: DistIterable[T], +Sequential <: Iterable[T] 
     rb.result(distDo((el: T, em: Emitter[T]) => if (p(el)) em.emit(el)))
   }
 
-  def groupBySeq[K](f: (T) => K) = groupBySort((v: T, em: Emitter[T]) => {
+  def filterNot(pred: (T) => Boolean) = filter(!pred(_))
+
+  def groupBySeq[K](f: (T) => K): DistMap[K, immutable.GenIterable[T]] with DistCombinable[K, T] = groupBySort((v: T, em: Emitter[T]) => {
     em.emit(v);
     f(v)
   })
+
+  def reduce[A1 >: T](op: (A1, A1) => A1) = if (isEmpty)
+    throw new UnsupportedOperationException("empty.reduce")
+  else {
+    val result = groupBySort((v: T, emitter: Emitter[T]) => {
+      emitter.emit(v);
+      1
+    }).combine((it: Iterable[T]) => it.reduce(op))
+    ExecutionPlan.execute(result)
+    result.toTraversable.head._2
+  }
+
+  def partition(pred: (T) => Boolean) = {
+    val result = distDo((el: T, emitter: Emitter2[T, T], con: DistContext) => if (pred(el)) emitter.emit1(el) else emitter.emit2(el))
+    val builder = newRemoteBuilder
+    builder.uniquenessPreserved
+    (builder.result(result._1), builder.result(result._2))
+  }
+
+  def collect[B, That](pf: PartialFunction[T, B])(implicit bf: CanBuildFrom[Repr, B, That]) = {
+    val remoteBuilder = bf.asInstanceOf[CanDistBuildFrom[Repr, B, That]](repr)
+    remoteBuilder.result(distDo((el, emitter) => if (pf.isDefinedAt(el)) emitter.emit(pf(el))))
+  }
+
+  def ++[B >: T, That](that: GenTraversableOnce[B])(implicit bf: CanBuildFrom[Repr, B, That]) = {
+    val remoteBuilder = bf.asInstanceOf[CanDistBuildFrom[Repr, T, That]](repr)
+    remoteBuilder.result(this.flatten(that.asInstanceOf[DistIterable[B]]))
+  }
+
+  def reduceOption[A1 >: T](op: (A1, A1) => A1) = if (isEmpty) None else Some(reduce(op))
+
+  def count(p: (T) => Boolean) = 0
+
+  def forall(pred: (T) => Boolean) = {
+    var found = false
+    distDo((el: T, em: Emitter[Boolean], context: DistContext) => if (!found && !pred(el)) {
+      em.emit(true)
+      found = true
+    }
+    ).size > 0
+  }
+
+  def fold[A1 >: T](z: A1)(op: (A1, A1) => A1) = if (!isEmpty) op(reduce(op), z) else z
+
+  // TODO (VJ) implement with global cache
+  def exists(pred: (T) => Boolean) = {
+    var found = false
+    distDo((el: T, em: Emitter[Boolean], context: DistContext) => if (!found && pred(el)) {
+      em.emit(true)
+      found = true
+    }
+    ).size > 0
+  }
+
+
+  // Implemented with seq collection
+
+
+  def toSet[A1 >: T] = seq.toSet
 
   def foldRight[B](z: B)(op: (T, B) => B) = seq.foldRight(z)(op)
 
@@ -58,8 +124,6 @@ trait DistIterableLike[+T, +Repr <: DistIterable[T], +Sequential <: Iterable[T] 
 
   def /:[B](z: B)(op: (B, T) => B): B = foldLeft(z)(op)
 
-  def fold[A1 >: T](z: A1)(op: (A1, A1) => A1) = if (!isEmpty) op(reduce(op), z) else z
-
   def reduceRightOption[B >: T](op: (T, B) => B) = seq.reduceRightOption(op)
 
   def reduceLeftOption[B >: T](op: (B, T) => B) = seq.reduceLeftOption(op)
@@ -67,8 +131,6 @@ trait DistIterableLike[+T, +Repr <: DistIterable[T], +Sequential <: Iterable[T] 
   def reduceRight[B >: T](op: (T, B) => B) = seq.reduceRight(op)
 
   def toMap[K, V](implicit ev: <:<[T, (K, V)]) = seq.toMap
-
-  def toSet[A1 >: T] = seq.toSet
 
   def toSeq = seq.toSeq
 
@@ -90,26 +152,16 @@ trait DistIterableLike[+T, +Repr <: DistIterable[T], +Sequential <: Iterable[T] 
 
   def foreach[U](f: (T) => U) = seq.foreach(f)
 
-  def reduce[A1 >: T](op: (A1, A1) => A1) = if (isEmpty)
-    throw new UnsupportedOperationException("empty.reduce")
-  else {
-    val result = groupBySort((v: T, emitter: Emitter[T]) => {
-      emitter.emit(v);
-      1
-    }).combine((it: Iterable[T]) => it.reduce(op))
-    ExecutionPlan.execute(result)
-    result.toTraversable.head._2
-    }
+  // TODO (VJ) replace with file view type of iterator
+  def iterator = seq.toIterable.iterator
+
+  // Not Implemented Yet
+
+  def groupBy[K](f: (T) => K): DistMap[K, Repr] = throw new UnsupportedOperationException("Not implemented yet!!!")
 
   def scanRight[B, That](z: B)(op: (T, B) => B)(implicit bf: CanBuildFrom[Repr, B, That]) = throw new UnsupportedOperationException("Not implemented yet!!!")
 
   def scanLeft[B, That](z: B)(op: (B, T) => B)(implicit bf: CanBuildFrom[Repr, B, That]) = throw new UnsupportedOperationException("Not implemented yet!!!")
-
-  def groupBy[K](f: (T) => K): DistMap[K, Repr] = throw new UnsupportedOperationException("Not implemented yet!!!")
-
-  def reduceOption[A1 >: T](op: (A1, A1) => A1) = throw new UnsupportedOperationException("Not implemented yet!!!")
-
-  def count(p: (T) => Boolean) = 0
 
   def drop(n: Int) = throw new UnsupportedOperationException("Not implemented yet!!!")
 
@@ -139,22 +191,6 @@ trait DistIterableLike[+T, +Repr <: DistIterable[T], +Sequential <: Iterable[T] 
 
   def aggregate[B](z: B)(seqop: (B, T) => B, combop: (B, B) => B) = throw new UnsupportedOperationException("Not implemented yet!!!")
 
-  def flatMap[B, That](f: (T) => GenTraversableOnce[B])(implicit bf: CanBuildFrom[Repr, B, That]) = throw new UnsupportedOperationException("Not implemented yet!!!")
-
-  def partition(pred: (T) => Boolean) = throw new UnsupportedOperationException("Not implemented yet!!!")
-
-  def filterNot(pred: (T) => Boolean) = throw new UnsupportedOperationException("Not implemented yet!!!")
-
-  def forall(pred: (T) => Boolean) = throw new UnsupportedOperationException("Not implemented yet!!!")
-
-  def ++[B >: T, That](that: GenTraversableOnce[B])(implicit bf: CanBuildFrom[Repr, B, That]) = throw new UnsupportedOperationException("Not implemented yet!!!")
-
-  def find(pred: (T) => Boolean) = throw new UnsupportedOperationException("Not implemented yet!!!")
-
-  def exists(pred: (T) => Boolean) = throw new UnsupportedOperationException("Not implemented yet!!!")
-
-  def collect[B, That](pf: PartialFunction[T, B])(implicit bf: CanBuildFrom[Repr, B, That]) = throw new UnsupportedOperationException("Not implemented yet!!!")
-
   def scan[B >: T, That](z: B)(op: (B, B) => B)(implicit cbf: CanBuildFrom[Repr, B, That]) = throw new UnsupportedOperationException("Not implemented yet!!!")
 
   def zipAll[B, A1 >: T, That](that: collection.GenIterable[B], thisElem: A1, thatElem: B)(implicit bf: CanBuildFrom[Repr, (A1, B), That]) = throw new UnsupportedOperationException("Not implemented yet!!!")
@@ -165,11 +201,11 @@ trait DistIterableLike[+T, +Repr <: DistIterable[T], +Sequential <: Iterable[T] 
 
   def copyToArray[B >: T](xs: Array[B]) = throw new UnsupportedOperationException("Not implemented yet!!!")
 
-  def iterator = throw new UnsupportedOperationException("Not implemented yet!!!")
-
   def zipWithIndex[A1 >: T, That](implicit bf: CanBuildFrom[Repr, (A1, Int), That]) = throw new UnsupportedOperationException("Not implemented yet!!!")
 
   def zip[A1 >: T, B, That](that: collection.GenIterable[B])(implicit bf: CanBuildFrom[Repr, (A1, B), That]) = throw new UnsupportedOperationException("Not implemented yet!!!")
 
   def sameElements[A1 >: T](that: collection.GenIterable[A1]) = throw new UnsupportedOperationException("Not implemented yet!!!")
+
+  def find(pred: (T) => Boolean) = throw new UnsupportedOperationException("Not implemented yet!!!")
 }

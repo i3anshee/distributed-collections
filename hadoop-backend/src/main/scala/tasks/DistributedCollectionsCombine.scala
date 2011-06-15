@@ -27,14 +27,17 @@ class DistributedCollectionsCombine extends MapReduceBase with Reducer[BytesWrit
     val collKeyPair = deserializeElement(key.getBytes).asInstanceOf[(Byte, Any)]
 
     val nodeOp = byteToNode.get(collKeyPair._1)
+
     if (nodeOp.isDefined)
       output.collect(key, new BytesWritable(
-        serializeElement(nodeOp.get.op(values.toIterable.map(v => deserializeElement(v.getBytes).asInstanceOf[Any])))))
+        serializeElement(
+          nodeOp.get.op(values.toIterable.map(v => deserializeElement(v.getBytes).asInstanceOf[Any])))))
     else
       values.foreach(v => output.collect(key, v))
+
   }
 
-   def serializeElement(value: Any): Array[Byte] = {
+  def serializeElement(value: Any): Array[Byte] = {
     val baos = new ByteArrayOutputStream()
     val oos = new ObjectOutputStream(baos)
     oos.writeObject(value)

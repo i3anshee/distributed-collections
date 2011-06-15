@@ -60,6 +60,7 @@ class DistributedCollectionsMapRunner extends MapRunnable[NullWritable, BytesWri
 
       var key: NullWritable = input.createKey
       var value: BytesWritable = input.createValue
+
       while (input.next(key, value)) {
         myInput.execute(null, distContext, null, value.getBytes)
         distContext.recordNumber.incrementRecordCounter

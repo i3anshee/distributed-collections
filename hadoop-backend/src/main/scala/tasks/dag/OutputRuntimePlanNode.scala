@@ -16,8 +16,9 @@ class OutputRuntimePlanNode(val node: OutputPlanNode, val collector: OutputColle
   val collection = node.collection
 
 
-  override def execute(parent: RuntimePlanNode, context: DistContext, key: Any, value: Any) =
+  override def execute(parent: RuntimePlanNode, context: DistContext, key: Any, value: Any) = {
     collector.collect(NullWritable.get, new BytesWritable(serializeElement(value)))
+  }
 
 
   def serializeElement(value: Any): Array[Byte] = {

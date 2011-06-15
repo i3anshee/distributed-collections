@@ -46,7 +46,7 @@ class DistSetRemoteBuilder[Elem] extends RemoteBuilder[Elem, DistSet[Elem]] {
       new DistHashSet[Elem](collection.location)
     else
       new DistHashSet[Elem](
-        collection.groupBy(_.hashCode).distDo((pair: (Int, GenTraversable[Elem]), emitter: Emitter[Elem]) => {
+        collection.groupBySeq(_.hashCode).distDo((pair: (Int, GenTraversable[Elem]), emitter: Emitter[Elem]) => {
           val existing = scala.collection.mutable.HashSet[Elem]()
           pair._2.foreach((el) =>
             if (!existing.contains(el)) {

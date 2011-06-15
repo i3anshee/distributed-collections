@@ -45,6 +45,7 @@ class GreedyMSCRBuilder extends JobBuilder {
 
     startingNodes.foreach((node: PlanNode) => buildDag(node, mapDAG, visited, matches))
 
+
     val remainingDAG = buildRemainingDAG(dag, visited)
 
     visited.clear
@@ -200,7 +201,8 @@ class GreedyMSCRBuilder extends JobBuilder {
           existing.get.connect(edge._2, nodeCopy)
         } else {
           // TODO (VJ) fix
-          remainingDAG.getPlanNode(edge._1).get.connect(edge._2, nodeCopy)
+          val node = remainingDAG.getPlanNode(edge._1)
+          if (node.isDefined) node.get.connect(edge._2, nodeCopy)
         })
 
         remainingDAG.connectDownwards(nodeCopy, node)

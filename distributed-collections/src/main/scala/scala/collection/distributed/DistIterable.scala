@@ -39,7 +39,7 @@ trait DistIterable[+T]
     outDistColl
   }
 
-  def groupBySort[S, K, K1 <: K, T1](key: (T, Emitter[T1]) => K, by: (K1) => Ordered[S] = nullOrdered[Any]): DistMap[K, GenIterable[T1]] with DistCombinable[K, T1] = {
+  def groupBySort[S, K, K1 <: K, T1](key: (T, Emitter[T1]) => K, by: (K1) => Ordered[S] = nullOrdered[K]): DistMap[K, GenIterable[T1]] with DistCombinable[K, T1] = {
     // TODO (VJ) implicit type information (consult with Alex)
     val km = manifest[Any]
     val sm = manifest[Any]

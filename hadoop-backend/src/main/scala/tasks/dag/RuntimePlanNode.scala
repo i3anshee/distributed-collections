@@ -46,7 +46,6 @@ trait RuntimePlanNode extends PlanNode {
     case v: GroupByPlanNode[Any, Any, Any] =>
       val tmpEmitter = new BufferEmitter(1)
       val key = v.keyFunction(value, tmpEmitter)
-
       tmpEmitter.getBuffer(0).foreach(v => emitter.emit((key, v)))
   }
 
@@ -59,7 +58,7 @@ class RuntimeUntypedEmitter(val node: RuntimePlanNode, val outputs: Seq[(DistCon
     output._2.foreach(v => v.execute(node, output._1, null, el))
     outputs(index)._1.recordNumber.incrementRecordCounter
   }
-
+                              ;
 }
 
 class GroupByRuntimeEmitter(val node: RuntimePlanNode, val outputs: Seq[(DistContext, mutable.Buffer[RuntimePlanNode])]) extends UntypedEmitter {

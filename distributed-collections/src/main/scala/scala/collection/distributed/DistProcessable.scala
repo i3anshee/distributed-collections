@@ -12,7 +12,7 @@ trait DistProcessable[+T] {
 
   def distDo(distOp: (T, UntypedEmitter, DistContext) => Unit, outputs: GenSeq[(CollectionId, Manifest[_])]): GenSeq[DistIterable[Any]]
 
-  def groupBySort[S, K, K1 <: K,  T1](key: (T, Emitter[T1]) => K, by: (K1) => Ordered[S] = nullOrdered[Any]): DistMap[K, GenIterable[T1]] with DistCombinable[K, T1]
+  def groupBySort[S, K, K1 <: K,  T1](key: (T, Emitter[T1]) => K, by: (K1) => Ordered[S] = nullOrdered[K]): DistMap[K, GenIterable[T1]] with DistCombinable[K, T1]
 
   def flatten[B >: T](collections: GenTraversable[DistIterable[B]]): DistIterable[T]
 
@@ -24,7 +24,6 @@ trait DistProcessable[+T] {
 
 trait DistCombinable[K, +T] {
   def combine[T1 >: T](combine: (Iterable[T]) => T1): DistMap[K, T1]
-//  def combine[T1 <: T](combine: (Iterable[T]) => T1): DistMap[K, T1] = apply[T1]
 }
 
 

@@ -6,6 +6,7 @@ import collection.distributed._
 import api.Emitter
 import collection.immutable.GenIterable
 import execution.ExecutionPlan
+import collection.mutable
 
 /**
  * User: vjovanovic
@@ -15,33 +16,62 @@ import execution.ExecutionPlan
 
 object DistCollTest {
 
+  val examples: Map[String, (Array[String]) => Int] = Map(
+    ("WordCount" -> wordCount),
+    ("WordCountNative" -> wordCountNative),
+    ("Demo" -> demo),
+    ("WordCountVerbose" -> wordCountVerbose)
+  )
+
+  def wordCount(args: Array[String]) = {
+    val lines = new DistCollection[String](new URI(args(0)))
+
+    val out = lines.flatMap(_.split("\\s").toTraversable).groupBySort((v: String, em: Emitter[Int]) => {
+      em.emit(1)
+      v
+    }).combine(_.sum)
+    ExecutionPlan.execute(out)
+    0
+  }
+
+  def wordCountVerbose(args: Array[String]) = {
+    val lines = new DistCollection[String](new URI(args(0)))
+
+    val out = lines.flatMap(_.split("\\s").toTraversable).groupBySort((v: String, em: Emitter[Int]) => {
+      em.emit(1)
+      v
+    }).combine(_.sum)
+
+    ExecutionPlan.execute(out)
+    println(out)
+    0
+  }
+
+  def wordCountNative(args: Array[String]) = {
+    val lines = new DistCollection[String](new URI(args(0)))
+
+    val out = lines.distDo((el: String, em: Emitter[String]) =>
+      el.split("\\s").foreach(v => em.emit(new String("testString".getBytes))))
+      .groupBySort((v: String, em: Emitter[Int]) => {
+      em.emit(1)
+      v
+    })
+
+    ExecutionPlan.execute(out)
+    0
+  }
+
+
+  def demo(args: Array[String]) = {
+
+    val intCol = new DistCollection[Int](new URI("./intsTo1k"))
+    val intSet = new DistHashSet[Int](new URI("./intsTo1k"))
+
+    0
+  }
+
   def main(args: Array[String]) = {
-
-    println("Starting DistCollTest example!!!")
-
-    val ds1 = new DistCollection[Long](new URI("./longsTo1k"))
-    val ds2 = new DistCollection[Int](new URI("./intsTo1k"))
-
-    //    val map = ds1.filter(_ > 0).flatten(ds2.map(_.toLong)).groupBySort((l: Long, em: Emitter[Int]) => {
-    //      em.emit(l.toInt); l
-    //    }).filter(_._2.size > 100)
-    //
-    //    val b = ds1.filter(_ > 1000)
-    val b = ds1.groupBySort((v: Long, emitter: Emitter[Long]) => {
-      emitter.emit(v);
-      1
-    }).combine((it: Iterable[Long]) => it.reduce(_ + _)).filter(_._2 > 100).map(_._2)
-
-    val c = ds1.flatten(ds2.map(_.toLong)).filter(_ < 10)
-
-    val d = c.flatten(b)
-
-    ExecutionPlan.execute(d)
-
-    println(b.toString)
-    println(c.toString)
-    println(b.size)
-    println(c.size)
+    examples(args(0))(args.tail.toArray)
     0
   }
 }

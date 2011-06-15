@@ -5,6 +5,7 @@ import java.io.{ObjectInputStream, ByteArrayInputStream}
 import collection.distributed.api.DistContext
 import collection.JavaConversions._
 import org.apache.hadoop.io.BytesWritable
+import collection.mutable.ArrayBuffer
 
 /**
  * @author Vojin Jovanovic
@@ -31,8 +32,11 @@ class MapInputRuntimePlanNode(node: InputPlanNode) extends InputRuntimePlanNode(
 class ReduceInputRuntimePlanNode(node: InputPlanNode) extends InputRuntimePlanNode(node) {
   def copyUnconnected() = new ReduceInputRuntimePlanNode(node)
 
-  override def execute(parent: RuntimePlanNode, context: DistContext, key: Any, value: Any) =
-    emitter.emit((key, asScalaIterator(value.asInstanceOf[java.util.Iterator[BytesWritable]]).toIterable.map(v => deserializeElement(v.getBytes).asInstanceOf[Any])))
+  override def execute(parent: RuntimePlanNode, context: DistContext, key: Any, value: Any) = {
+    val deserializedValue = new ArrayBuffer[Any]
+    asScalaIterator(value.asInstanceOf[java.util.Iterator[BytesWritable]]).foreach(v => deserializedValue += deserializeElement(v.getBytes).asInstanceOf[Any])
+    emitter.emit((key, deserializedValue.toList))
+  }
 
 }
 
