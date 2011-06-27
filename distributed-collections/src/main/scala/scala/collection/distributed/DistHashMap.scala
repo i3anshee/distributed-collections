@@ -1,15 +1,17 @@
 package scala.collection.distributed
 
-import collection.immutable.HashMap
 import java.net.URI
+import collection.immutable
 
 
 class DistHashMap[K, +V](uri: URI)
   extends DistMap[K, V]
   with GenericDistMapTemplate[K, V, DistHashMap]
-  with DistMapLike[K, V, DistHashMap[K, V], HashMap[K, V]]
+  with DistMapLike[K, V, DistHashMap[K, V], immutable.Map[K, V]]
   with Serializable {
   self =>
+
+  override def seq = remoteIterable.toMap
 
   def location = uri
 

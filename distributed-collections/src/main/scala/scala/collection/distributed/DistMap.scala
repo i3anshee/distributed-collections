@@ -13,13 +13,12 @@ trait DistMap[K, +V]
   with DistIterable[(K, V)]
   with DistMapLike[K, V, DistMap[K, V], Map[K, V]] {
 
-  def mapCompanion: GenericDistMapCompanion[DistMap] = DistMap
 
-  def empty: DistMap[K, V] = throw new UnsupportedOperationException("Not implemented yet!!!")
+def mapCompanion: GenericDistMapCompanion[DistMap] = DistMap
 
-  override def stringPrefix = "DistMap"
+def empty: DistMap[K, V] = throw new UnsupportedOperationException ("Not implemented yet!!!")
 
-  override def seq: Map[K, V] = super.seq.toMap
+override def stringPrefix = "DistMap"
 }
 
 object DistMap extends DistMapFactory[DistMap] {

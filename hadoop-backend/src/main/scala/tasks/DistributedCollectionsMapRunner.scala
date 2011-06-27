@@ -5,7 +5,7 @@ import org.apache.hadoop.mapred._
 import lib.MultipleOutputs
 import java.net.URI
 import collection.distributed.api.{RecordNumber, DistContext}
-import collection.distributed.api.dag.{IOPlanNode, OutputPlanNode, InputPlanNode, ExPlanDAG}
+import collection.distributed.api.dag.{OutputPlanNode, InputPlanNode, ExPlanDAG}
 import org.apache.hadoop.fs.Path
 import org.apache.hadoop.io.{Writable, NullWritable, BytesWritable}
 import collection.mutable
@@ -51,7 +51,7 @@ class DistributedCollectionsMapRunner extends MapRunnable[NullWritable, BytesWri
 
       val fileNumber = Integer.parseInt(fileNameParts(fileNameParts.length - 1))
       val recordStart = fileSplit.getStart
-      distContext.recordNumber = new RecordNumber(fileNumber, recordStart, 0L)
+      distContext.recordNumber = RecordNumber(fileNumber, recordStart, 0L)
 
       mapRuntimeDAG = buildRuntimeDAG(mapDAG, multipleOutputs, output.asInstanceOf[OutputCollector[Writable, Writable]],
         tempFileToURI.map(v => (v._2, v._1)), intermediateOutputs.toSet, reporter)

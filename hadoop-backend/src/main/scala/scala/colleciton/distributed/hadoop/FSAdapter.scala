@@ -7,8 +7,8 @@ import java.io.{ObjectOutputStream, ByteArrayOutputStream, ObjectInputStream, By
 import scala.collection.distributed.api.io.CollectionMetaData
 import org.apache.hadoop.fs.permission.{FsAction, FsPermission}
 import org.apache.hadoop.mapred.JobConf
-import scala.util.Sorting
-import org.apache.hadoop.fs.{FileStatus, FileSystem, Path}
+import org.apache.hadoop.fs.{FileSystem, Path}
+import collection.immutable
 
 /**
  * User: vjovanovic
@@ -17,13 +17,14 @@ import org.apache.hadoop.fs.{FileStatus, FileSystem, Path}
 
 object FSAdapter {
 
-  // TODO (VJ) implement with builders and move to the api
+  // TODO (VJ) add  read buffers, synchronization and move to the api
   /**
+   * 
    * Returns an Iterable containing all values from the collection.
    * This operation does not include map and reduce operations but is executed only on master node.
    *
    */
-  def valuesIterable[A](file: URI): scala.collection.immutable.Iterable[A] = {
+  def valuesIterable[A](file: URI): immutable.Iterable[A] = {
     val conf = new Configuration()
     val fs = FileSystem.get(conf)
 

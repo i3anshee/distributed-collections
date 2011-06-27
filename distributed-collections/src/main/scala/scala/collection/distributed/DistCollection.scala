@@ -10,6 +10,8 @@ class DistCollection[T](uri: URI)
   override def companion = DistCollection
 
   override def location = uri
+
+  def seq = remoteIterable
 }
 
 object DistCollection extends DistFactory[DistCollection] {

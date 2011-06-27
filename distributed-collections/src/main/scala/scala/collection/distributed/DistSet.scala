@@ -1,7 +1,7 @@
 package scala.collection.distributed
 
 import collection.generic.GenericCompanion
-import collection.{GenTraversableOnce, GenSet}
+import collection.GenSet
 
 /**
  * User: vjovanovic
@@ -16,8 +16,6 @@ with DistSetLike[T, DistSet[T], Set[T]] {
   override def empty: DistSet[T] = throw new UnsupportedOperationException("")
 
   override def companion: GenericCompanion[DistSet] with GenericDistCompanion[DistSet] = DistSet
-
-  override def seq = super.seq.toSet
 
   override def stringPrefix = "DistSet"
 

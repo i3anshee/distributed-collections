@@ -1,20 +1,29 @@
 package scala.collection.distributed
 
-import api.{DistContext, Emitter2, Emitter}
-import scala.collection.generic.{CanBuildFrom}
+import api.{RecordNumber, DistContext, Emitter2, Emitter}
+import scala.collection.generic.CanBuildFrom
 import scala._
 import collection.immutable
 import collection.{GenTraversableOnce, GenIterableLike}
-import immutable.GenIterable
 import execution.ExecutionPlan
+import immutable.{GenSeq, GenMap}
+import shared.DSECollection
 
 
-trait DistIterableLike[+T, +Repr <: DistIterable[T], +Sequential <: Iterable[T] with GenIterableLike[T, Sequential]]
+trait DistIterableLike[+T, +Repr <: DistIterable[T], +Sequential <: immutable.Iterable[T] with GenIterableLike[T, Sequential]]
   extends GenIterableLike[T, Repr]
   with HasNewRemoteBuilder[T, Repr]
   with RichDistProcessable[T] {
 
   self: DistIterableLike[T, Repr, Sequential] =>
+
+  def seq: Sequential
+
+  protected[this] def bf2seq[S, That](bf: CanBuildFrom[Repr, S, That]) = new CanBuildFrom[Sequential, S, That] {
+    def apply(from: Sequential) = bf.apply(from.asInstanceOf[Repr])
+
+    def apply() = bf.apply()
+  }
 
   protected[this] def newRemoteBuilder: RemoteBuilder[T, Repr]
 
@@ -68,6 +77,24 @@ trait DistIterableLike[+T, +Repr <: DistIterable[T], +Sequential <: Iterable[T] 
     result.toTraversable.head._2
   }
 
+  def find(pred: (T) => Boolean) = if (isEmpty)
+    None
+  else {
+    var found = false;
+    val allResults = distDo((el: T, emitter: Emitter[(RecordNumber, T)], con: DistContext) =>
+      if (!found && pred(el)) {
+        emitter.emit((con.recordNumber, el))
+        found = true;
+      })
+    ExecutionPlan.execute(allResults)
+    val allResultsSeq = allResults.seq.toSeq
+    if (allResultsSeq.size == 0)
+      None
+    else
+    // sort by record number and pick first
+      Some(allResultsSeq.toSeq.sorted(Ordering[RecordNumber].on[(RecordNumber, _)](_._1)).head._2)
+  }
+
   def partition(pred: (T) => Boolean) = {
     val result = distDo((el: T, emitter: Emitter2[T, T], con: DistContext) => if (pred(el)) emitter.emit1(el) else emitter.emit2(el))
     val builder = newRemoteBuilder
@@ -103,17 +130,13 @@ trait DistIterableLike[+T, +Repr <: DistIterable[T], +Sequential <: Iterable[T] 
   // TODO (VJ) implement with global cache
   def exists(pred: (T) => Boolean) = {
     var found = false
-    distDo((el: T, em: Emitter[Boolean], context: DistContext) => if (!found && pred(el)) {
+    distDo((el: T, em: Emitter[Boolean]) => if (!found && pred(el)) {
       em.emit(true)
       found = true
-    }
-    ).size > 0
+    }).size > 0
   }
 
-
   // Implemented with seq collection
-
-
   def toSet[A1 >: T] = seq.toSet
 
   def foldRight[B](z: B)(op: (T, B) => B) = seq.foldRight(z)(op)
@@ -152,18 +175,149 @@ trait DistIterableLike[+T, +Repr <: DistIterable[T], +Sequential <: Iterable[T] 
 
   def foreach[U](f: (T) => U) = seq.foreach(f)
 
-  // TODO (VJ) replace with file view type of iterator
   def iterator = seq.toIterable.iterator
 
-  // Not Implemented Yet
+  def minBy[B](f: (T) => B)(implicit cmp: Ordering[B]) = {
+    val result = groupBySort((v: T, emitter: Emitter[T]) => {
+      emitter.emit(v);
+      1
+    }).combine((it: Iterable[T]) => it.minBy(f)(cmp))
 
-  def groupBy[K](f: (T) => K): DistMap[K, Repr] = throw new UnsupportedOperationException("Not implemented yet!!!")
+    ExecutionPlan.execute(result)
 
-  def scanRight[B, That](z: B)(op: (T, B) => B)(implicit bf: CanBuildFrom[Repr, B, That]) = throw new UnsupportedOperationException("Not implemented yet!!!")
+    result.seq.head._2
+  }
 
-  def scanLeft[B, That](z: B)(op: (B, T) => B)(implicit bf: CanBuildFrom[Repr, B, That]) = throw new UnsupportedOperationException("Not implemented yet!!!")
+  def maxBy[B](f: (T) => B)(implicit cmp: Ordering[B]) = {
+    val result = groupBySort((v: T, emitter: Emitter[T]) => {
+      emitter.emit(v);
+      1
+    }).combine((it: Iterable[T]) => it.maxBy(f)(cmp))
 
-  def drop(n: Int) = throw new UnsupportedOperationException("Not implemented yet!!!")
+    ExecutionPlan.execute(result)
+
+    result.seq.head._2
+  }
+
+  def max[A1 >: T](implicit ord: Ordering[A1]) = {
+    val result = groupBySort((v: T, emitter: Emitter[T]) => {
+      emitter.emit(v);
+      1
+    }).combine((it: Iterable[T]) => it.max(ord))
+
+    ExecutionPlan.execute(result)
+
+    result.toSeq.head._2
+  }
+
+  def min[A1 >: T](implicit ord: Ordering[A1]) = {
+    val result = groupBySort((v: T, emitter: Emitter[T]) => {
+      emitter.emit(v);
+      1
+    }).combine((it: Iterable[T]) => it.min(ord))
+
+    ExecutionPlan.execute(result)
+
+    result.seq.head._2
+  }
+
+  def product[A1 >: T](implicit num: Numeric[A1]) = {
+    val result = groupBySort((v: T, emitter: Emitter[T]) => {
+      emitter.emit(v);
+      1
+    }).combine((it: Iterable[T]) => it.product(num))
+
+    ExecutionPlan.execute(result)
+
+    result.seq.head._2
+  }
+
+  def sum[A1 >: T](implicit num: Numeric[A1]) = {
+    val result = groupBySort((v: T, emitter: Emitter[T]) => {
+      emitter.emit(v);
+      1
+    }).combine((it: Iterable[T]) => it.sum(num))
+
+    ExecutionPlan.execute(result)
+
+    result.seq.head._2
+  }
+
+  def copyToArray[B >: T](xs: Array[B]) = copyToArray(xs, 0)
+
+  def copyToArray[B >: T](xs: Array[B], start: Int) = copyToArray(xs, start, xs.length - start)
+
+  def copyToArray[B >: T](xs: Array[B], start: Int, len: Int) = seq.copyToArray(xs, start, len)
+
+  def scanLeft[S, That](z: S)(op: (S, T) => S)(implicit bf: CanBuildFrom[Repr, S, That]) = throw new UnsupportedOperationException("Not implemented yet!!!")//seq.scanLeft(z)(op)(bf2seq(bf))
+
+  def scanRight[S, That](z: S)(op: (T, S) => S)(implicit bf: CanBuildFrom[Repr, S, That]) = throw new UnsupportedOperationException("Not implemented yet!!!")//seq.scanRight(z)(op)(bf2seq(bf))
+
+  // TODO (vj) optimize when partitioning is introduced
+  // TODO (vj) for now use only shared collection. If needed introduce SharedMap
+  def drop(n: Int) = {
+    val rb = newRemoteBuilder
+    rb.uniquenessPreserved
+
+    // max of records sorted by file part
+    val sizes = new DSECollection[(Long, Long)](
+      Some(_.foldLeft((0L, 0L))((aggr, v) => (v._1, scala.math.max(aggr._2, v._2)))),
+      Some(it => {
+        val (fileParts: GenSeq[Long], records: GenSeq[Long]) = it.toSeq.sortWith(_._1 < _._1).unzip
+        fileParts.zip(records.scanLeft(0L)(_ + _))
+      })
+    )
+
+    rb.result(distDo((el: T, em: Emitter[(Long, T)], ctx: DistContext) => if (ctx.recordNumber.counter < n) {
+      sizes.put((ctx.recordNumber.filePart, ctx.recordNumber.counter))
+      em.emit((ctx.recordNumber.filePart, el))
+    }).groupBySort((el: (Long, T), em: Emitter[T]) => {
+      em.emit(el._2);
+      el._1
+    }).distDo((el: (Long, scala.collection.immutable.GenIterable[T]), em: Emitter[T], ctx: DistContext) => {
+      val start = sizes.toMap.get(el._1).get
+      var counter = 0
+      el._2.foreach(v => {
+        if (start + counter < n) em.emit(v)
+        counter += 1
+      })
+    }))
+  }
+
+  def zipWithLongIndex[A1 >: T, That](implicit bf: CanDistBuildFrom[Repr, (A1, Long), That]) = {
+    val rb = bf(repr)
+    rb.uniquenessPreserved
+    // TODO (vj) optimize when partitioning is introduced
+    // TODO (vj) for now use only shared collection. If needed introduce SharedMap
+
+    // max of records sorted by file part
+    val sizes = new DSECollection[(Long, Long)](
+      Some(_.foldLeft((0L, 0L))((aggr, v) => (v._1, scala.math.max(aggr._2, v._2)))),
+      Some(it => {
+        val (fileParts: GenSeq[Long], records: GenSeq[Long]) = it.toSeq.sortWith(_._1 < _._1).unzip
+        fileParts.zip(records.scanLeft(0L)(_ + _))
+      })
+    )
+
+    rb.result(distDo((el: A1, em: Emitter[(Long, A1)], ctx: DistContext) => {
+      sizes.put((ctx.recordNumber.filePart, ctx.recordNumber.counter))
+      em.emit((ctx.recordNumber.filePart, el))
+    }).groupBySort((el: (Long, A1), em: Emitter[A1]) => {
+      em.emit(el._2)
+      el._1
+    }).distDo((el: (Long, scala.collection.immutable.GenIterable[A1]), em: Emitter[(A1, Long)], ctx: DistContext) => {
+      val start = sizes.toMap.get(el._1).get
+      var counter = 0
+      el._2.foreach(v => {
+        em.emit((v, start + counter))
+        counter += 1
+      })
+    }))
+  }
+
+  def zipWithIndex[A1 >: T, That](implicit bf: CanBuildFrom[Repr, (A1, Int), That]) = throw new UnsupportedOperationException("Not implemented yet!!!")
+
+  def scan[B >: T, That](z: B)(op: (B, B) => B)(implicit cbf: CanBuildFrom[Repr, B, That]) = throw new UnsupportedOperationException("Not implemented yet!!!")
 
   def dropWhile(pred: (T) => Boolean) = throw new UnsupportedOperationException("Not implemented yet!!!")
 
@@ -177,35 +331,14 @@ trait DistIterableLike[+T, +Repr <: DistIterable[T], +Sequential <: Iterable[T] 
 
   def slice(unc_from: Int, unc_until: Int) = throw new UnsupportedOperationException("Not implemented yet!!!")
 
-  def minBy[B](f: (T) => B)(implicit cmp: Ordering[B]) = throw new UnsupportedOperationException("Not implemented yet!!!")
-
-  def maxBy[B](f: (T) => B)(implicit cmp: Ordering[B]) = throw new UnsupportedOperationException("Not implemented yet!!!")
-
-  def max[A1 >: T](implicit ord: Ordering[A1]) = throw new UnsupportedOperationException("Not implemented yet!!!")
-
-  def min[A1 >: T](implicit ord: Ordering[A1]) = throw new UnsupportedOperationException("Not implemented yet!!!")
-
-  def product[A1 >: T](implicit num: Numeric[A1]) = throw new UnsupportedOperationException("Not implemented yet!!!")
-
-  def sum[A1 >: T](implicit num: Numeric[A1]) = throw new UnsupportedOperationException("Not implemented yet!!!")
-
-  def aggregate[B](z: B)(seqop: (B, T) => B, combop: (B, B) => B) = throw new UnsupportedOperationException("Not implemented yet!!!")
-
-  def scan[B >: T, That](z: B)(op: (B, B) => B)(implicit cbf: CanBuildFrom[Repr, B, That]) = throw new UnsupportedOperationException("Not implemented yet!!!")
-
   def zipAll[B, A1 >: T, That](that: collection.GenIterable[B], thisElem: A1, thatElem: B)(implicit bf: CanBuildFrom[Repr, (A1, B), That]) = throw new UnsupportedOperationException("Not implemented yet!!!")
-
-  def copyToArray[B >: T](xs: Array[B], start: Int, len: Int) = throw new UnsupportedOperationException("Not implemented yet!!!")
-
-  def copyToArray[B >: T](xs: Array[B], start: Int) = throw new UnsupportedOperationException("Not implemented yet!!!")
-
-  def copyToArray[B >: T](xs: Array[B]) = throw new UnsupportedOperationException("Not implemented yet!!!")
-
-  def zipWithIndex[A1 >: T, That](implicit bf: CanBuildFrom[Repr, (A1, Int), That]) = throw new UnsupportedOperationException("Not implemented yet!!!")
 
   def zip[A1 >: T, B, That](that: collection.GenIterable[B])(implicit bf: CanBuildFrom[Repr, (A1, B), That]) = throw new UnsupportedOperationException("Not implemented yet!!!")
 
   def sameElements[A1 >: T](that: collection.GenIterable[A1]) = throw new UnsupportedOperationException("Not implemented yet!!!")
 
-  def find(pred: (T) => Boolean) = throw new UnsupportedOperationException("Not implemented yet!!!")
+  def aggregate[B](z: B)(seqop: (B, T) => B, combop: (B, B) => B) = throw new UnsupportedOperationException("Not implemented yet!!!")
+
+  // Not Implemented Yet
+  def groupBy[K](f: (T) => K): GenMap[K, Repr] = throw new UnsupportedOperationException("Not implemented yet!!!")
 }

@@ -1,9 +1,8 @@
 package scala.collection.distributed.api.dag
 
-import collection.immutable.GenSeq
 import collection.mutable
 import collection.distributed.api._
-import mutable.{Buffer, ArrayBuffer}
+import mutable.ArrayBuffer
 
 case class DistDoPlanNode[T](distOP: (T, UntypedEmitter, DistContext) => Unit,
                              inEdges: mutable.Buffer[(PlanNode, ReifiedDistCollection)] = new ArrayBuffer,

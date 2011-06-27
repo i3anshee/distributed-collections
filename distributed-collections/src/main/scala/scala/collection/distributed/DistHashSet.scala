@@ -2,9 +2,8 @@ package scala.collection.distributed
 
 import api.CollectionId
 import java.net.URI
-import collection.immutable.HashSet
-import collection.generic.{GenericCompanion}
-import collection.GenSet
+import collection.generic.GenericCompanion
+import collection.immutable
 
 /**
  * User: vjovanovic
@@ -13,17 +12,15 @@ import collection.GenSet
 
 class DistHashSet[T](uri: URI) extends DistSet[T]
 with GenericDistTemplate[T, DistHashSet]
-with DistSetLike[T, DistHashSet[T], HashSet[T]]
+with DistSetLike[T, DistHashSet[T], immutable.Set[T]]
 with CollectionId
 with Serializable {
-
 
   def location = uri
 
   override def companion: GenericCompanion[DistHashSet] with GenericDistCompanion[DistHashSet] = DistHashSet
 
-  //TODO (VJ) optimize the reading from dfs
-  override def seq: HashSet[T] = HashSet.empty ++ super.seq
+  override def seq = remoteIterable.toSet[T]
 
   override def empty: DistHashSet[T] = throw new UnsupportedOperationException("Not implemented yet!!")
 }
