@@ -269,7 +269,7 @@ trait DistIterableLike[+T, +Repr <: DistIterable[T], +Sequential <: immutable.It
     )
 
     rb.result(distDo((el: T, em: Emitter[(Long, T)], ctx: DistContext) => if (ctx.recordNumber.counter < n) {
-      sizes.put((ctx.recordNumber.filePart, ctx.recordNumber.counter))
+      sizes.+=((ctx.recordNumber.filePart, ctx.recordNumber.counter))
       em.emit((ctx.recordNumber.filePart, el))
     }).groupBySort((el: (Long, T), em: Emitter[T]) => {
       em.emit(el._2);
@@ -300,7 +300,7 @@ trait DistIterableLike[+T, +Repr <: DistIterable[T], +Sequential <: immutable.It
     )
 
     rb.result(distDo((el: A1, em: Emitter[(Long, A1)], ctx: DistContext) => {
-      sizes.put((ctx.recordNumber.filePart, ctx.recordNumber.counter))
+      sizes.+=((ctx.recordNumber.filePart, ctx.recordNumber.counter))
       em.emit((ctx.recordNumber.filePart, el))
     }).groupBySort((el: (Long, A1), em: Emitter[A1]) => {
       em.emit(el._2)

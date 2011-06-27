@@ -16,6 +16,7 @@ import org.apache.hadoop.fs.{FileStatus, FileSystem, Path}
 import java.io.{ObjectOutputStream, ByteArrayOutputStream}
 import collection.distributed.api.io.CollectionMetaData
 import collection.JavaConversions._
+import collection.distributed.api.shared.DistSideEffects
 
 class GreedyMSCRBuilder extends JobBuilder {
 
@@ -91,10 +92,12 @@ class GreedyMSCRBuilder extends JobBuilder {
 
   def configure(job: JobConf) =
     if (!mapDAG.isEmpty) {
+      // TODO (VJ) refactor to less files
       toClean += HadoopJob.dfsSerialize(job, "distribted-collections.mapDAG", mapDAG)
       toClean += HadoopJob.dfsSerialize(job, "distribted-collections.intermediateOutputs", intermediateOutputs)
       toClean += HadoopJob.dfsSerialize(job, "distribted-collections.tempFileToURI", tempFileToURI)
       toClean += HadoopJob.dfsSerialize(job, "distribted-collections.intermediateToByte", intermediateToByte)
+      toClean += HadoopJob.dfsSerialize(job, "distribted-collections.sideEffects", DistSideEffects.sideEffects)
 
       if (!reduceDAG.isEmpty) {
         toClean += HadoopJob.dfsSerialize(job, "distribted-collections.reduceDAG", reduceDAG)

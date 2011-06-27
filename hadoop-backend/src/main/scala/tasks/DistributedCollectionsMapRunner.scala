@@ -9,6 +9,7 @@ import collection.distributed.api.dag.{OutputPlanNode, InputPlanNode, ExPlanDAG}
 import org.apache.hadoop.fs.Path
 import org.apache.hadoop.io.{Writable, NullWritable, BytesWritable}
 import collection.mutable
+import collection.distributed.api.shared.DistSideEffects
 
 /**
  * User: vjovanovic
@@ -37,6 +38,11 @@ class DistributedCollectionsMapRunner extends MapRunnable[NullWritable, BytesWri
     tempFileToURI = deserializeFromCache(job, "distribted-collections.tempFileToURI").get
     intermediateToByte = deserializeFromCache(job, "distribted-collections.intermediateToByte").get
     multipleOutputs = new MultipleOutputs(job)
+
+    DistSideEffects.sideEffects = deserializeFromCache(job, "distribted-collections.sideEffects").get
+    DistSideEffects.sideEffects.foreach(v => {
+      v._1.impl = None
+    })
 
     workingDir = job.getWorkingDirectory
 
