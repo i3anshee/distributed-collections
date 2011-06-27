@@ -1,8 +1,8 @@
 package scala.collection.distributed.api.dag
 
-import scala.collection.mutable
-import mutable.{ArrayBuffer, Buffer}
-import collection.distributed.api.{ReifiedDistCollection, UniqueId, CollectionId}
+import collection.distributed.api.{ReifiedDistCollection, UniqueId}
+import collection.{immutable, mutable}
+import mutable.ArrayBuffer
 ;
 
 

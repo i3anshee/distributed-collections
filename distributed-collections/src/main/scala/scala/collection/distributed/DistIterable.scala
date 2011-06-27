@@ -6,11 +6,10 @@ import collection.generic.GenericCompanion
 import scala.colleciton.distributed.hadoop.FSAdapter
 import execution.{DCUtil, ExecutionPlan}
 import _root_.io.CollectionsIO
-import collection.immutable.{GenSeq, GenIterable, GenTraversable}
-import collection.immutable
+import collection.{GenTraversable, immutable}
 
 trait DistIterable[+T]
-  extends GenIterable[T]
+  extends immutable.GenIterable[T]
   with GenericDistTemplate[T, DistIterable]
   with DistIterableLike[T, DistIterable[T], immutable.Iterable[T]]
   with ReifiedDistCollection {
@@ -41,7 +40,7 @@ trait DistIterable[+T]
     outDistColl
   }
 
-  def groupBySort[S, K, K1 <: K, T1](key: (T, Emitter[T1]) => K, by: (K1) => Ordered[S] = nullOrdered[K]): DistMap[K, GenIterable[T1]] with DistCombinable[K, T1] = {
+  def groupBySort[S, K, K1 <: K, T1](key: (T, Emitter[T1]) => K, by: (K1) => Ordered[S] = nullOrdered[K]): DistMap[K, immutable.GenIterable[T1]] with DistCombinable[K, T1] = {
     // TODO (VJ) implicit type information (consult with Alex)
     val km = manifest[Any]
     val sm = manifest[Any]
@@ -62,7 +61,7 @@ trait DistIterable[+T]
       input = output
     }
 
-    new DistHashMap[K, GenIterable[T1]](input.location) with DistCombinable[K, T1] {
+    new DistHashMap[K, immutable.GenIterable[T1]](input.location) with DistCombinable[K, T1] {
       def combine[T2 >: T1](combine: (Iterable[T1]) => T2) = {
         var output = ReifiedDistCollection(DCUtil.generateNewCollectionURI, kvp)
         ExecutionPlan.addPlanNode(input, new CombinePlanNode(combine), output)
@@ -72,7 +71,7 @@ trait DistIterable[+T]
   }
 
 
-  def distDo(distOp: (T, UntypedEmitter, DistContext) => Unit, outputs: GenSeq[(CollectionId, Manifest[_])]) = {
+  def distDo(distOp: (T, UntypedEmitter, DistContext) => Unit, outputs: immutable.GenSeq[(CollectionId, Manifest[_])]) = {
     val outDistColls = outputs.map(out => new DistCollection[Any](out._1.location))
     val node = ExecutionPlan.addPlanNode(List(this), new DistDoPlanNode[T](distOp), outDistColls)
 

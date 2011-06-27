@@ -1,12 +1,10 @@
 package examples
 
 import java.net.URI
-import collection.mutable.ArrayBuffer
 import collection.distributed._
 import api.Emitter
-import collection.immutable.GenIterable
 import execution.ExecutionPlan
-import collection.mutable
+
 
 /**
  * User: vjovanovic

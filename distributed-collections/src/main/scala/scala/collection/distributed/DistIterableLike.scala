@@ -6,7 +6,7 @@ import scala._
 import collection.immutable
 import collection.{GenTraversableOnce, GenIterableLike}
 import execution.ExecutionPlan
-import immutable.{GenSeq, GenMap}
+
 import shared.DSECollection
 
 
@@ -263,7 +263,7 @@ trait DistIterableLike[+T, +Repr <: DistIterable[T], +Sequential <: immutable.It
     val sizes = new DSECollection[(Long, Long)](
       Some(_.foldLeft((0L, 0L))((aggr, v) => (v._1, scala.math.max(aggr._2, v._2)))),
       Some(it => {
-        val (fileParts: GenSeq[Long], records: GenSeq[Long]) = it.toSeq.sortWith(_._1 < _._1).unzip
+        val (fileParts: immutable.GenSeq[Long], records: immutable.GenSeq[Long]) = it.toSeq.sortWith(_._1 < _._1).unzip
         fileParts.zip(records.scanLeft(0L)(_ + _))
       })
     )
@@ -294,7 +294,7 @@ trait DistIterableLike[+T, +Repr <: DistIterable[T], +Sequential <: immutable.It
     val sizes = new DSECollection[(Long, Long)](
       Some(_.foldLeft((0L, 0L))((aggr, v) => (v._1, scala.math.max(aggr._2, v._2)))),
       Some(it => {
-        val (fileParts: GenSeq[Long], records: GenSeq[Long]) = it.toSeq.sortWith(_._1 < _._1).unzip
+        val (fileParts: immutable.GenSeq[Long], records: immutable.GenSeq[Long]) = it.toSeq.sortWith(_._1 < _._1).unzip
         fileParts.zip(records.scanLeft(0L)(_ + _))
       })
     )
@@ -340,5 +340,5 @@ trait DistIterableLike[+T, +Repr <: DistIterable[T], +Sequential <: immutable.It
   def aggregate[B](z: B)(seqop: (B, T) => B, combop: (B, B) => B) = throw new UnsupportedOperationException("Not implemented yet!!!")
 
   // Not Implemented Yet
-  def groupBy[K](f: (T) => K): GenMap[K, Repr] = throw new UnsupportedOperationException("Not implemented yet!!!")
+  def groupBy[K](f: (T) => K)= throw new UnsupportedOperationException("Not implemented yet!!!")
 }
