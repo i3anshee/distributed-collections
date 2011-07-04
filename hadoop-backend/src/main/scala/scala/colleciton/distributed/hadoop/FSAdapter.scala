@@ -4,11 +4,11 @@ import java.net.URI
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.io.{NullWritable, SequenceFile, BytesWritable}
 import java.io.{ObjectOutputStream, ByteArrayOutputStream, ObjectInputStream, ByteArrayInputStream}
-import scala.collection.distributed.api.io.CollectionMetaData
 import org.apache.hadoop.fs.permission.{FsAction, FsPermission}
 import org.apache.hadoop.mapred.JobConf
 import org.apache.hadoop.fs.{FileSystem, Path}
 import collection.immutable
+import collection.distributed.api.io.{SerializerInstance, CollectionMetaData}
 
 /**
  * User: vjovanovic
@@ -19,7 +19,7 @@ object FSAdapter {
 
   // TODO (VJ) add  read buffers, synchronization and move to the api
   /**
-   * 
+   *
    * Returns an Iterable containing all values from the collection.
    * This operation does not include map and reduce operations but is executed only on master node.
    *
@@ -66,7 +66,7 @@ object FSAdapter {
     file.close()
   }
 
-  def createDistCollection(t: TraversableOnce[_], uri: URI) = {
+  def createDistCollection(t: TraversableOnce[_], uri: URI, serializer: SerializerInstance) = {
     val conf = new Configuration()
 
     val fs = FileSystem.get(uri, conf)
@@ -83,7 +83,7 @@ object FSAdapter {
         .write(serializeElement(new CollectionMetaData(t.size)));
 
       writer = Some(new SequenceFile.Writer(fs, conf, file, classOf[NullWritable], classOf[BytesWritable]))
-      t.foreach(v => writer.get.append(NullWritable.get, new BytesWritable(serializeElement(v))))
+      t.foreach(v => writer.get.append(NullWritable.get, new BytesWritable(serializer.serialize(v))))
     } finally {
       if (writer.isDefined) {
         writer.get.close()
@@ -95,24 +95,6 @@ object FSAdapter {
     fs.setPermission(file, new FsPermission(FsAction.READ, FsAction.READ, FsAction.READ))
     fs.setPermission(meta, new FsPermission(FsAction.READ, FsAction.READ, FsAction.READ))
   }
-
-  //  def listFiles(job: JobConf, dir: Path, regex:String): List[String] {
-  //    vaconf = new Configuration() // takes default conf
-  //        FileSystem fs = FileSystem.get(conf);
-  //        Path dir = new Path("/dir");
-  //        FileStatus[] stats = fs.listStatus(dir);
-  //        foreach(FileStatus stat : stats)
-  //        {
-  //            stat.getPath().toUri().getPath(); // gives directory name
-  //            stat.getModificationTime();
-  //            stat.getReplication();
-  //            stat.getBlockSize();
-  //            stat.getOwner();
-  //            stat.getGroup();
-  //            stat.getPermission().toString();
-  //        }
-
-  //  }
 
   def rename(conf: JobConf, from: Path, to: Path) {
     val fs = FileSystem.get(conf)

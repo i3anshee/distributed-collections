@@ -7,7 +7,8 @@ import java.net.URI
 import collection.distributed.api.dag.CombinePlanNode
 import collection.mutable
 import collection.JavaConversions._
-import java.io.{ByteArrayInputStream, ObjectInputStream, ByteArrayOutputStream, ObjectOutputStream}
+import collection.distributed.api.io.{JavaSerializerInstance, SerializerInstance}
+import io.KryoSerializer
 
 /**
  * User: vjovanovic
@@ -24,30 +25,17 @@ class DistributedCollectionsCombine extends MapReduceBase with Reducer[BytesWrit
   }
 
   def reduce(key: BytesWritable, values: Iterator[BytesWritable], output: OutputCollector[BytesWritable, BytesWritable], reporter: Reporter) = {
-    val collKeyPair = deserializeElement(key.getBytes).asInstanceOf[(Byte, Any)]
+    val collKeyPair: (Byte, Any) = serializerInstance.deserialize(key.getBytes)
 
     val nodeOp = byteToNode.get(collKeyPair._1)
 
+    // TODO (VJ) inspect this line of code. Is it necessary, what is happening with performacne.
     if (nodeOp.isDefined)
       output.collect(key, new BytesWritable(
-        serializeElement(
-          nodeOp.get.op(values.toIterable.map(v => deserializeElement(v.getBytes).asInstanceOf[Any])))))
+        serializerInstance.serialize(
+          nodeOp.get.op(values.toIterable.map(v => serializerInstance.deserialize(v.getBytes).asInstanceOf[Any])))))
     else
       values.foreach(v => output.collect(key, v))
 
-  }
-
-  def serializeElement(value: Any): Array[Byte] = {
-    val baos = new ByteArrayOutputStream()
-    val oos = new ObjectOutputStream(baos)
-    oos.writeObject(value)
-    oos.flush()
-    baos.toByteArray
-  }
-
-  def deserializeElement(bytes: Array[Byte]): AnyRef = {
-    val bais = new ByteArrayInputStream(bytes)
-    val ois = new ObjectInputStream(bais)
-    ois.readObject()
   }
 }

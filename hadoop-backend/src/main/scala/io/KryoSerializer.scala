@@ -16,6 +16,8 @@ import scala.collection.mutable
 
 import com.esotericsoftware.kryo._
 import com.esotericsoftware.kryo.{Serializer => KSerializer}
+import collection.distributed.api.io.{SerializationStream, DeserializationStream, SerializerInstance}
+import java.lang.Class
 
 /**
  * Zig-zag encoder used to write object sizes to serialization streams.
@@ -128,8 +130,14 @@ trait KryoRegistrator {
 class KryoSerializer extends Serializer {
   val kryo = createKryo()
 
+
+  // TODO (VJ) what are these two methods?
+  def writeObjectData(p1: ByteBuffer, p2: AnyRef) = {}
+
+  def readObjectData[T](p1: ByteBuffer, p2: Class[T]) = throw new UnsupportedOperationException()
+
   val bufferSize =
-    System.getProperty("spark.kryoserializer.buffer.mb", "2").toInt * 1024 * 1024
+    1 * 1024 * 1024
 
   val threadBuf = new ThreadLocal[ObjectBuffer] {
     override def initialValue = new ObjectBuffer(kryo, bufferSize)

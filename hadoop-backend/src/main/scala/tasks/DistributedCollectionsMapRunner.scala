@@ -10,8 +10,9 @@ import org.apache.hadoop.fs.Path
 import org.apache.hadoop.io.{Writable, NullWritable, BytesWritable}
 import collection.mutable
 import collection.distributed.api.shared.{DSEProxy, DistSideEffects}
-import mutable.WeakHashMap
 import colleciton.distributed.hadoop.shared.DSENodeFactory
+import collection.distributed.api.io.{JavaSerializerInstance, SerializerInstance}
+import io.KryoSerializer
 
 /**
  * User: vjovanovic
@@ -43,7 +44,7 @@ class DistributedCollectionsMapRunner extends MapRunnable[NullWritable, BytesWri
 
     DistSideEffects.sideEffectsData =
       new mutable.HashMap[DistSideEffects with DSEProxy[_ <: DistSideEffects], Array[Byte]] ++
-        (deserializeFromCache[mutable.HashMap[DistSideEffects with DSEProxy[_<: DistSideEffects], Array[Byte]]](job, "distribted-collections.sideEffects").get)
+        (deserializeFromCache[mutable.HashMap[DistSideEffects with DSEProxy[_ <: DistSideEffects], Array[Byte]]](job, "distribted-collections.sideEffects").get)
 
     workingDir = job.getWorkingDirectory
 
@@ -89,16 +90,17 @@ class DistributedCollectionsMapRunner extends MapRunnable[NullWritable, BytesWri
     val runtimeDAG = new RuntimeDAG
     plan.foreach(node => node match {
       case v: InputPlanNode =>
-        val copiedNode = new MapInputRuntimePlanNode(v)
+        val copiedNode = new MapInputRuntimePlanNode(v, serializerInstance)
         runtimeDAG.addInputNode(copiedNode)
         runtimeDAG.connect(copiedNode, v)
 
       case v: OutputPlanNode =>
       val tempFile =
         if (intermediateSet.contains(v.collection.location))
-          runtimeDAG.connect(new MapOutputRuntimePlanNode(v, collector, intermediateToByte(v.collection.location)), v)
+          runtimeDAG.connect(new MapOutputRuntimePlanNode(v, collector, serializerInstance, intermediateToByte(v.collection.location)), v)
         else
-          runtimeDAG.connect(new OutputRuntimePlanNode(v, outputs.getCollector(tempFileToURI(v.collection.location), reporter).asInstanceOf[OutputCollector[Writable, Writable]]), v)
+          runtimeDAG.connect(new OutputRuntimePlanNode(v, serializerInstance,
+            outputs.getCollector(tempFileToURI(v.collection.location), reporter).asInstanceOf[OutputCollector[Writable, Writable]]), v)
 
       case _ => // copy the node to runtimeDAG with all connections
         runtimeDAG.connect(new RuntimeComputationNode(node), node)

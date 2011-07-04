@@ -5,6 +5,8 @@ import java.net.URI
 import org.apache.hadoop.fs.Path
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.filecache.DistributedCache
+import collection.distributed.api.io.SerializerInstance
+import io.KryoSerializer
 
 /**
  * User: vjovanovic
@@ -12,6 +14,7 @@ import org.apache.hadoop.filecache.DistributedCache
  */
 
 trait CollectionTask {
+  var serializerInstance: SerializerInstance = new KryoSerializer().newInstance()
 
   def deserializeFromCache[T](conf: Configuration, name: String): Option[T] = {
     // find the file in the node local cache

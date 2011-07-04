@@ -15,11 +15,21 @@ import execution.ExecutionPlan
 object DistCollTest {
 
   val examples: Map[String, (Array[String]) => Int] = Map(
+    ("WordCountDebug" -> wordCountDebug),
     ("WordCount" -> wordCount),
     ("WordCountNative" -> wordCountNative),
     ("Demo" -> demo),
     ("WordCountVerbose" -> wordCountVerbose)
   )
+
+  def wordCountDebug(args: Array[String]) = {
+    val lines = new DistCollection[String](new URI(args(0)))
+
+    val out = lines.flatMap(_.split("\\s").toTraversable).map(v => (v, 1)).groupByKey.combine(_.sum)
+
+    ExecutionPlan.execute(out)
+    0
+  }
 
   def wordCount(args: Array[String]) = {
     val lines = new DistCollection[String](new URI(args(0)))

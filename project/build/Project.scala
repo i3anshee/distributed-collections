@@ -19,7 +19,12 @@ class Project(info: ProjectInfo) extends ParentProject(info) with IdeaProject {
   class HadoopBackendProject(info: ProjectInfo) extends DefaultProject(info) with IdeaProject with UtilDependencies {
     val hadoopCore = "org.apache.mahout.hadoop" % "hadoop-core" % "0.20.1" % "provided"
     val dependsOnDistributedCollectionsBackendAPI = distributedCollectionsBackendAPI
-    val kryo = "com.googlecode" % "kryo" % "1.04"
+    // dependencies for modified kryo
+    override def compileClasspath = super.compileClasspath +++
+      ( "lib" / "kryo-1.04-mod.jar" ) +++
+      ( "lib" / "objenesis-1.2.jar" ) +++
+      ( "lib" / "minlog-1.2.jar" ) +++
+      ( "lib" / "reflectasm-1.01.jar" )
 
     // needed by hadoop (will be provided on cluster)
     val commonsLogging = "commons-logging" % "commons-logging" % "1.1.1" % "provided"

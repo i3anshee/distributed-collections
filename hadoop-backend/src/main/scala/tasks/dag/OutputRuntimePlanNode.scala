@@ -5,36 +5,36 @@ import collection.distributed.api.DistContext
 import org.apache.hadoop.mapred.OutputCollector
 import org.apache.hadoop.io.{NullWritable, BytesWritable, Writable}
 import java.io.{ObjectOutputStream, ByteArrayOutputStream}
+import collection.distributed.api.io.SerializerInstance
 
 /**
  * @author Vojin Jovanovic
  */
 
-class OutputRuntimePlanNode(val node: OutputPlanNode, val collector: OutputCollector[Writable, Writable]) extends IOPlanNode with RuntimePlanNode {
-  def copyUnconnected() = new OutputRuntimePlanNode(node, collector)
+class OutputRuntimePlanNode(val node: OutputPlanNode,
+                            val serializerInstace: SerializerInstance,
+                            val collector: OutputCollector[Writable, Writable])
+  extends IOPlanNode with RuntimePlanNode {
+  def copyUnconnected() = new OutputRuntimePlanNode(node, serializerInstace, collector)
 
   val collection = node.collection
 
 
   override def execute(parent: RuntimePlanNode, context: DistContext, key: Any, value: Any) = {
-    collector.collect(NullWritable.get, new BytesWritable(serializeElement(value)))
+    collector.collect(NullWritable.get, new BytesWritable(serializerInstace.serialize(value)))
   }
-
-
-  def serializeElement(value: Any): Array[Byte] = {
-    val baos = new ByteArrayOutputStream()
-    val oos = new ObjectOutputStream(baos)
-    oos.writeObject(value)
-    oos.flush()
-    baos.toByteArray
-  }
-
 }
 
-class MapOutputRuntimePlanNode(node: OutputPlanNode, collector: OutputCollector[Writable, Writable], val byteId: Byte)
-  extends OutputRuntimePlanNode(node, collector) {
-  override def copyUnconnected() = new MapOutputRuntimePlanNode(node, collector, byteId)
+class MapOutputRuntimePlanNode(node: OutputPlanNode,
+                               collector: OutputCollector[Writable, Writable],
+                               serializerInstance: SerializerInstance,
+                               val byteId: Byte)
+  extends OutputRuntimePlanNode(node, serializerInstance, collector) {
 
-  override def execute(parent: RuntimePlanNode, context: DistContext, key: Any, value: Any) =
-    collector.collect(new BytesWritable(serializeElement((byteId, key))), new BytesWritable(serializeElement(value)))
+  override def copyUnconnected() = new MapOutputRuntimePlanNode(node, collector, serializerInstance, byteId)
+
+  override def execute(parent: RuntimePlanNode, context: DistContext, key: Any, value: Any) = {
+    collector.collect(new BytesWritable(serializerInstance.serialize((byteId, key))), new BytesWritable())
+    serializerInstace.serialize(value)
+  }
 }

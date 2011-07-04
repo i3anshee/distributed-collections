@@ -5,13 +5,11 @@ import org.apache.hadoop.filecache.DistributedCache
 import java.util.UUID
 import scala.collection.distributed.api.dag._
 import scala.collection.mutable
-import scala.collection.distributed.api.io.CollectionMetaData
-import java.io.{ByteArrayOutputStream, ObjectOutputStream}
+import java.io.ObjectOutputStream
 import org.apache.hadoop.fs.{PathFilter, FileSystem, Path}
-import collection.distributed.api.{AbstractJobStrategy}
+import collection.distributed.api.AbstractJobStrategy
 import org.apache.hadoop.conf.Configuration
-import org.apache.hadoop.mapred.jobcontrol.Job
-import org.apache.hadoop.mapred.{RunningJob, JobClient, JobConf}
+import org.apache.hadoop.mapred.{JobClient, JobConf}
 
 object HadoopJob extends AbstractJobStrategy {
 
@@ -44,7 +42,6 @@ object HadoopJob extends AbstractJobStrategy {
   }
 
   private def optimizePlan(dag: ExPlanDAG): ExPlanDAG = {
-    // TODO (VJ) introduce sink flattens as the only optimization for now
     dag
   }
 

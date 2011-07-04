@@ -1,7 +1,8 @@
 /**
  * Taken from Spark project (www.spark-project.org) for quick benchmarking. Thanks Matei.
  */
-package io
+package scala.collection.distributed.api.io
+
 
 import java.io.{InputStream, OutputStream}
 

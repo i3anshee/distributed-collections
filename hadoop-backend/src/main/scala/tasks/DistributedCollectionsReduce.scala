@@ -13,6 +13,8 @@ import collection.distributed.api.{ReifiedDistCollection, DistContext}
 import java.io.{ByteArrayInputStream, ObjectInputStream}
 import collection.distributed.api.shared.{DSEProxy, DistSideEffects}
 import colleciton.distributed.hadoop.shared.DSENodeFactory
+import collection.distributed.api.io.{SerializerInstance, JavaSerializerInstance}
+import io.KryoSerializer
 
 /**
  * User: vjovanovic
@@ -68,26 +70,24 @@ class DistributedCollectionsReduce extends MapReduceBase with Reducer[BytesWrita
       initialized = true
     }
 
-    val collKeyPair = deserializeElement[(Byte, Any)](key.getBytes)
+    val collKeyPair = serializerInstance.deserialize[(Byte, Any)](key.getBytes)
     byteToNode(collKeyPair._1).execute(null, distContext, collKeyPair._2, values)
-  }
-
-  def deserializeElement[T](bytes: Array[Byte]): T = {
-    val bais = new ByteArrayInputStream(bytes)
-    val ois = new ObjectInputStream(bais)
-    ois.readObject().asInstanceOf[T]
   }
 
   def buildRuntimeDAG(plan: ExPlanDAG, outputs: MultipleOutputs, tempFileToURI: mutable.Map[URI, String], reporter: Reporter): RuntimeDAG = {
     val runtimeDAG = new RuntimeDAG
     plan.foreach(node => node match {
       case v: InputPlanNode =>
-        val copiedNode = new ReduceInputRuntimePlanNode(v)
+        val copiedNode = new ReduceInputRuntimePlanNode(v, serializerInstance)
         runtimeDAG.addInputNode(copiedNode)
         runtimeDAG.connect(copiedNode, v)
 
       case v: OutputPlanNode =>
-        runtimeDAG.connect(new OutputRuntimePlanNode(v, outputs.getCollector(tempFileToURI(v.collection.location), reporter).asInstanceOf[OutputCollector[Writable, Writable]]), v)
+        val collector = outputs.getCollector(tempFileToURI(v.collection.location), reporter).asInstanceOf[OutputCollector[Writable, Writable]]
+        runtimeDAG.connect(
+          new OutputRuntimePlanNode(v, serializerInstance, collector),
+          v
+        )
 
       case _ => // copy the node to runtimeDAG with all connections
         runtimeDAG.connect(new RuntimeComputationNode(node), node)
