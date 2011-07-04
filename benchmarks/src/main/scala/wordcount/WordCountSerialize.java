@@ -1,4 +1,4 @@
-package benchmark;
+package wordcount;
 
 /**
  * @author Vojin Jovanovic
@@ -17,10 +17,8 @@ import org.apache.hadoop.io.*;
 import org.apache.hadoop.mapred.*;
 import org.apache.hadoop.mapred.FileInputFormat;
 import org.apache.hadoop.mapred.SequenceFileInputFormat;
-import org.apache.hadoop.mapreduce.lib.input.*;
 import org.apache.hadoop.util.Tool;
 import org.apache.hadoop.util.ToolRunner;
-import scala.Predef;
 import scala.Tuple2;
 import scala.colleciton.distributed.hadoop.MetaPathFilter;
 
@@ -33,7 +31,7 @@ import scala.colleciton.distributed.hadoop.MetaPathFilter;
  * To run: bin/hadoop jar build/hadoop-examples.jar wordcount
  * [-m <i>maps</i>] [-r <i>reduces</i>] <i>in-dir</i> <i>out-dir</i>
  */
-public class WordCountFullSerialize extends Configured implements Tool {
+public class WordCountSerialize extends Configured implements Tool {
 
     /**
      * Counts the words in each line.
@@ -41,13 +39,13 @@ public class WordCountFullSerialize extends Configured implements Tool {
      * (<b>word</b>, <b>1</b>).
      */
     public static class MapClass extends MapReduceBase
-            implements Mapper<NullWritable, BytesWritable, BytesWritable, BytesWritable> {
+            implements Mapper<NullWritable, BytesWritable, Text, IntWritable> {
 
         private final static IntWritable one = new IntWritable(1);
-
+        private Text word = new Text();
 
         public void map(NullWritable key, BytesWritable value,
-                        OutputCollector<BytesWritable, BytesWritable> output,
+                        OutputCollector<Text, IntWritable> output,
                         Reporter reporter) throws IOException {
             ByteArrayInputStream bais = new ByteArrayInputStream(value.getBytes());
             ObjectInputStream ois = new ObjectInputStream(bais);
@@ -57,18 +55,8 @@ public class WordCountFullSerialize extends Configured implements Tool {
                 line = ois.readObject().toString();
                 StringTokenizer itr = new StringTokenizer(line);
                 while (itr.hasMoreTokens()) {
-
-                    ByteArrayOutputStream baos = new ByteArrayOutputStream();
-                    ObjectOutputStream oos = new ObjectOutputStream(baos);
-                    oos.writeObject(itr.nextToken());
-                    oos.flush();
-
-                    ByteArrayOutputStream baos1 = new ByteArrayOutputStream();
-                    ObjectOutputStream oos1 = new ObjectOutputStream(baos);
-                    oos.writeObject(1);
-                    oos.flush();
-
-                    output.collect(new BytesWritable(baos.toByteArray()), new BytesWritable(baos1.toByteArray()));
+                    word.set(itr.nextToken());
+                    output.collect(word, one);
                 }
             } catch (ClassNotFoundException e) {
                 e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
@@ -101,8 +89,8 @@ public class WordCountFullSerialize extends Configured implements Tool {
         conf.setInputFormat(SequenceFileInputFormat.class);
         conf.setOutputFormat(SequenceFileOutputFormat.class);
 
-        conf.setMapOutputKeyClass(BytesWritable.class);
-        conf.setMapOutputValueClass(BytesWritable.class);
+        conf.setMapOutputKeyClass(Text.class);
+        conf.setMapOutputValueClass(IntWritable.class);
         conf.setOutputKeyClass(NullWritable.class);
         conf.setOutputValueClass(BytesWritable.class);
 
@@ -151,61 +139,32 @@ public class WordCountFullSerialize extends Configured implements Tool {
      * A reducer class that just emits the sum of the input values.
      */
     public static class Combine extends MapReduceBase
-            implements Reducer<BytesWritable, BytesWritable, BytesWritable, BytesWritable> {
+            implements Reducer<Text, IntWritable, Text, IntWritable> {
 
-        public void reduce(BytesWritable key, Iterator<BytesWritable> values,
-                           OutputCollector<BytesWritable, BytesWritable> output,
+        public void reduce(Text key, Iterator<IntWritable> values,
+                           OutputCollector<Text, IntWritable> output,
                            Reporter reporter) throws IOException {
             int sum = 0;
             while (values.hasNext()) {
-                ByteArrayInputStream bais = new ByteArrayInputStream(values.next().getBytes());
-                ObjectInputStream ois = new ObjectInputStream(bais);
-
-                try {
-                    sum += (Integer) ois.readObject();
-                } catch (ClassNotFoundException e) {
-                    e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
-                }
+                sum += values.next().get();
             }
-
-            ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            ObjectOutputStream oos = new ObjectOutputStream(baos);
-            oos.writeObject(sum);
-            oos.flush();
-            output.collect(key, new BytesWritable(baos.toByteArray()));
+            output.collect(key, new IntWritable(sum));
         }
     }
 
     public static class Reduce extends MapReduceBase
-            implements Reducer<BytesWritable, BytesWritable, NullWritable, BytesWritable> {
+            implements Reducer<Text, IntWritable, NullWritable, BytesWritable> {
 
-        public void reduce(BytesWritable key, Iterator<BytesWritable> values,
+        public void reduce(Text key, Iterator<IntWritable> values,
                            OutputCollector<NullWritable, BytesWritable> output,
                            Reporter reporter) throws IOException {
             int sum = 0;
             while (values.hasNext()) {
-                ByteArrayInputStream bais = new ByteArrayInputStream(values.next().getBytes());
-                ObjectInputStream ois = new ObjectInputStream(bais);
-
-                try {
-                    sum += (Integer) ois.readObject();
-                } catch (ClassNotFoundException e) {
-                    e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
-                }
+                sum += values.next().get();
             }
-            ByteArrayInputStream bais = new ByteArrayInputStream(key.getBytes());
-            ObjectInputStream ois = new ObjectInputStream(bais);
-            String stringKey = null;
-            try {
-                stringKey = ois.readObject().toString();
-            } catch (ClassNotFoundException e) {
-                e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
-            }
-
-
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
             ObjectOutputStream oos = new ObjectOutputStream(baos);
-            oos.writeObject(new Tuple2<String, Integer>(stringKey, sum));
+            oos.writeObject(new Tuple2<String, Integer>(key.toString(), sum));
             oos.flush();
 
             output.collect(NullWritable.get(), new BytesWritable(baos.toByteArray()));

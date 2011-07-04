@@ -16,7 +16,7 @@ import org.apache.hadoop.fs.{FileStatus, FileSystem, Path}
 import java.io.{ObjectOutputStream, ByteArrayOutputStream}
 import collection.distributed.api.io.CollectionMetaData
 import collection.JavaConversions._
-import collection.distributed.api.shared.DistSideEffects
+import collection.distributed.api.shared.{DSECounterLike, DSECounterProxy, DSEProxy, DistSideEffects}
 
 class GreedyMSCRBuilder extends JobBuilder {
 
@@ -92,12 +92,15 @@ class GreedyMSCRBuilder extends JobBuilder {
 
   def configure(job: JobConf) =
     if (!mapDAG.isEmpty) {
+
       // TODO (VJ) refactor to less files
       toClean += HadoopJob.dfsSerialize(job, "distribted-collections.mapDAG", mapDAG)
       toClean += HadoopJob.dfsSerialize(job, "distribted-collections.intermediateOutputs", intermediateOutputs)
       toClean += HadoopJob.dfsSerialize(job, "distribted-collections.tempFileToURI", tempFileToURI)
       toClean += HadoopJob.dfsSerialize(job, "distribted-collections.intermediateToByte", intermediateToByte)
-      toClean += HadoopJob.dfsSerialize(job, "distribted-collections.sideEffects", DistSideEffects.sideEffects)
+
+      val hashMap = new mutable.HashMap[DistSideEffects with DSEProxy[_], Array[Byte]] ++ (DistSideEffects.sideEffectsData.toMap)
+      toClean += HadoopJob.dfsSerialize(job, "distribted-collections.sideEffects", hashMap)
 
       if (!reduceDAG.isEmpty) {
         toClean += HadoopJob.dfsSerialize(job, "distribted-collections.reduceDAG", reduceDAG)
@@ -142,6 +145,12 @@ class GreedyMSCRBuilder extends JobBuilder {
           FSAdapter.rename(conf, path, new Path(dest, "part-" + path.getName().split("-").last))
         }
       })
+
+      // update all the counters
+      DistSideEffects.sideEffectsData.foreach(v =>
+        v._1.impl.asInstanceOf[DSECounterLike] += runningJob.getCounters.getGroup("DSECounter").getCounter(v._1.impl.uid.toString)
+      )
+
       // write collections meta data
       storeCollectionsMetaData(conf, runningJob, v._2, v._1)
     })

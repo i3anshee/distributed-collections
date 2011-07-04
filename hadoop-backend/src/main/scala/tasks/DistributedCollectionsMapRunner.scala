@@ -9,7 +9,9 @@ import collection.distributed.api.dag.{OutputPlanNode, InputPlanNode, ExPlanDAG}
 import org.apache.hadoop.fs.Path
 import org.apache.hadoop.io.{Writable, NullWritable, BytesWritable}
 import collection.mutable
-import collection.distributed.api.shared.DistSideEffects
+import collection.distributed.api.shared.{DSEProxy, DistSideEffects}
+import mutable.WeakHashMap
+import colleciton.distributed.hadoop.shared.DSENodeFactory
 
 /**
  * User: vjovanovic
@@ -39,10 +41,9 @@ class DistributedCollectionsMapRunner extends MapRunnable[NullWritable, BytesWri
     intermediateToByte = deserializeFromCache(job, "distribted-collections.intermediateToByte").get
     multipleOutputs = new MultipleOutputs(job)
 
-    DistSideEffects.sideEffects = deserializeFromCache(job, "distribted-collections.sideEffects").get
-    DistSideEffects.sideEffects.foreach(v => {
-      v._1.impl = None
-    })
+    DistSideEffects.sideEffectsData =
+      new mutable.HashMap[DistSideEffects with DSEProxy[_ <: DistSideEffects], Array[Byte]] ++
+        (deserializeFromCache[mutable.HashMap[DistSideEffects with DSEProxy[_<: DistSideEffects], Array[Byte]]](job, "distribted-collections.sideEffects").get)
 
     workingDir = job.getWorkingDirectory
 
@@ -66,6 +67,8 @@ class DistributedCollectionsMapRunner extends MapRunnable[NullWritable, BytesWri
 
       var key: NullWritable = input.createKey
       var value: BytesWritable = input.createValue
+
+      DistSideEffects.sideEffectsData.foreach(v => DSENodeFactory.initializeNode(reporter, v))
 
       while (input.next(key, value)) {
         myInput.execute(null, distContext, null, value.getBytes)
@@ -102,6 +105,5 @@ class DistributedCollectionsMapRunner extends MapRunnable[NullWritable, BytesWri
     })
     runtimeDAG
   }
-
 
 }

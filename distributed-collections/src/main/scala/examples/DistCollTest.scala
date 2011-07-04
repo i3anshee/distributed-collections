@@ -61,10 +61,12 @@ object DistCollTest {
 
 
   def demo(args: Array[String]) = {
-
     val intCol = new DistCollection[Int](new URI("./intsTo1k"))
     val intSet = new DistHashSet[Int](new URI("./intsTo1k"))
 
+    val zipped = intSet.zipWithLongIndex
+
+    ExecutionPlan.execute(zipped)
     0
   }
 

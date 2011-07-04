@@ -66,6 +66,13 @@ trait DistIterableLike[+T, +Repr <: DistIterable[T], +Sequential <: immutable.It
     f(v)
   })
 
+  def groupByKey[K, V](implicit ev: <:<[T, (K, V)]): DistMap[K, immutable.GenIterable[V]] with DistCombinable[K, V] = {
+    groupBySort((v: T, em: Emitter[V]) => {
+      em.emit(v._2)
+      v._1
+    })
+  }
+
   def reduce[A1 >: T](op: (A1, A1) => A1) = if (isEmpty)
     throw new UnsupportedOperationException("empty.reduce")
   else {
@@ -249,9 +256,13 @@ trait DistIterableLike[+T, +Repr <: DistIterable[T], +Sequential <: immutable.It
 
   def copyToArray[B >: T](xs: Array[B], start: Int, len: Int) = seq.copyToArray(xs, start, len)
 
-  def scanLeft[S, That](z: S)(op: (S, T) => S)(implicit bf: CanBuildFrom[Repr, S, That]) = throw new UnsupportedOperationException("Not implemented yet!!!")//seq.scanLeft(z)(op)(bf2seq(bf))
+  def scanLeft[S, That](z: S)(op: (S, T) => S)(implicit bf: CanBuildFrom[Repr, S, That]) = throw new UnsupportedOperationException("Not implemented yet!!!")
 
-  def scanRight[S, That](z: S)(op: (T, S) => S)(implicit bf: CanBuildFrom[Repr, S, That]) = throw new UnsupportedOperationException("Not implemented yet!!!")//seq.scanRight(z)(op)(bf2seq(bf))
+  //seq.scanLeft(z)(op)(bf2seq(bf))
+
+  def scanRight[S, That](z: S)(op: (T, S) => S)(implicit bf: CanBuildFrom[Repr, S, That]) = throw new UnsupportedOperationException("Not implemented yet!!!")
+
+  //seq.scanRight(z)(op)(bf2seq(bf))
 
   // TODO (vj) optimize when partitioning is introduced
   // TODO (vj) for now use only shared collection. If needed introduce SharedMap
@@ -284,36 +295,30 @@ trait DistIterableLike[+T, +Repr <: DistIterable[T], +Sequential <: immutable.It
     }))
   }
 
-  def zipWithLongIndex[A1 >: T, That](implicit bf: CanDistBuildFrom[Repr, (A1, Long), That]) = {
-    val rb = bf(repr)
-    rb.uniquenessPreserved
+  def zipWithLongIndex[A1 >: T, That](implicit bf: CanDistBuildFrom[Repr, (A1, Long), That]) = throw new UnsupportedOperationException("Not implemented yet!!!")
+//  {
+//    val rb = bf(repr)
+//    rb.uniquenessPreserved
     // TODO (vj) optimize when partitioning is introduced
     // TODO (vj) for now use only shared collection. If needed introduce SharedMap
 
-    // max of records sorted by file part
-    val sizes = new DSECollection[(Long, Long)](
-      Some(_.foldLeft((0L, 0L))((aggr, v) => (v._1, scala.math.max(aggr._2, v._2)))),
-      Some(it => {
-        val (fileParts: immutable.GenSeq[Long], records: immutable.GenSeq[Long]) = it.toSeq.sortWith(_._1 < _._1).unzip
-        fileParts.zip(records.scanLeft(0L)(_ + _))
-      })
-    )
-
-    rb.result(distDo((el: A1, em: Emitter[(Long, A1)], ctx: DistContext) => {
-      sizes.+=((ctx.recordNumber.filePart, ctx.recordNumber.counter))
-      em.emit((ctx.recordNumber.filePart, el))
-    }).groupBySort((el: (Long, A1), em: Emitter[A1]) => {
-      em.emit(el._2)
-      el._1
-    }).distDo((el: (Long, scala.collection.immutable.GenIterable[A1]), em: Emitter[(A1, Long)], ctx: DistContext) => {
-      val start = sizes.toMap.get(el._1).get
-      var counter = 0
-      el._2.foreach(v => {
-        em.emit((v, start + counter))
-        counter += 1
-      })
-    }))
-  }
+//    val (records, recordNumbers) = distDo((el: A1, em: Emitter2[(Long, A1)], ctx: DistContext) => {
+//      em.emit((ctx.recordNumber.filePart, el))
+//      em.emit1(((ctx.recordNumber.filePart, ctx.recordNumber.counter)))
+//    })
+//
+//    val maximums = recordNumbers.combine(_.foldLeft((0L, 0L))((aggr, v) => (v._1, scala.math.max(aggr._2, v._2))))
+//    val maximumMap = DefObject[Map[Long, Long]](recordNumbers, it => {
+//      val (fileParts: immutable.GenSeq[Long], records: immutable.GenSeq[Long]) = it.toSeq.sortWith(_._1 < _._1).unzip
+//      fileParts.zip(records.scanLeft(0L)(_ + _))
+//    })
+//
+//    val zippedWithIndex = records.distDo((el: (Long, A1), em: Emitter[(A1, Long)], ctx: DistContext) =>
+//      em.emit((v, maximumMap.get(el._1).get + ctx.recordNumber.counter))
+//    )
+//
+//    rb.result(zippedWithIndex)
+//  }
 
   def zipWithIndex[A1 >: T, That](implicit bf: CanBuildFrom[Repr, (A1, Int), That]) = throw new UnsupportedOperationException("Not implemented yet!!!")
 
@@ -340,5 +345,5 @@ trait DistIterableLike[+T, +Repr <: DistIterable[T], +Sequential <: immutable.It
   def aggregate[B](z: B)(seqop: (B, T) => B, combop: (B, B) => B) = throw new UnsupportedOperationException("Not implemented yet!!!")
 
   // Not Implemented Yet
-  def groupBy[K](f: (T) => K)= throw new UnsupportedOperationException("Not implemented yet!!!")
+  def groupBy[K](f: (T) => K) = throw new UnsupportedOperationException("Not implemented yet!!!")
 }

@@ -1,0 +1,4 @@
+This module contains following benchmarks:
+ - k-means clustering for Hadoop and for Distributed Collections.
+ - word count
+

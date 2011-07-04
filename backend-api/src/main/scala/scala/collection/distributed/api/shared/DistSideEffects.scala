@@ -4,34 +4,70 @@ import java.util.concurrent.atomic.AtomicLong
 import collection.mutable
 import collection.{GenSeq, immutable}
 import java.io.{ObjectOutputStream, ByteArrayOutputStream}
+import java.nio.ByteBuffer
 
 /**
  * @author Vojin Jovanovic
  */
 
 abstract class DistSideEffects(val varType: DSEType) extends Serializable {
-  val id = DistSideEffects.newId
+  protected val id = DistSideEffects.newId
 
-  override def equals(p1: Any) = p1.isInstanceOf[DistSideEffects] && id == p1.asInstanceOf[DistSideEffects].id
-
-  override def hashCode = id.hashCode
+  def uid: Long = id
 
   def computationData: Array[Byte]
+
+  final override def equals(p1: Any) = p1.isInstanceOf[DistSideEffects] && uid == p1.asInstanceOf[DistSideEffects].uid
+
+  final override def hashCode = uid.hashCode
 }
 
 object DistSideEffects {
   val idSeed = new AtomicLong(0)
-  var sideEffects = new mutable.WeakHashMap[DistSideEffects with DSEProxy[_], Array[Byte]]
+
+  var sideEffectsData: mutable.Map[DistSideEffects with DSEProxy[_ <: DistSideEffects], Array[Byte]] = new mutable.WeakHashMap
 
   def newId = idSeed.getAndIncrement
 
-  def add(v: DistSideEffects with DSEProxy[_]) = sideEffects += (v -> v.computationData)
+  def add(v: DistSideEffects with DSEProxy[_ <: DistSideEffects]) = sideEffectsData += (v -> v.computationData)
+
+  def findImpl(id: Long): DistSideEffects = sideEffectsData.keys.find(_.uid == id).get.impl
 
 }
 
 trait DSEProxy[T] {
-  var impl: Option[T]
+  @transient var impl: T
 }
+
+trait DSECounterLike {
+  def +=(n: Long)
+
+  def apply(): Long
+
+  def computationData = {
+    val buffer = ByteBuffer.allocate(8)
+    buffer.putLong(apply())
+    buffer.array
+  }
+}
+
+
+class DSECounterProxy(proxyImpl: DistSideEffects with DSECounterLike)
+  extends DistSideEffects(CounterType) with DSECounterLike with DSEProxy[DistSideEffects with DSECounterLike] {
+  override val id = proxyImpl.uid
+  @transient override var impl: DistSideEffects with DSECounterLike = proxyImpl
+
+  private def findImpl: DistSideEffects with DSECounterLike = {
+    if (impl == null)
+      impl = DistSideEffects.findImpl(id).asInstanceOf[DistSideEffects with DSECounterLike]
+    impl
+  }
+
+  def +=(n: Long) = findImpl += n
+
+  def apply() = findImpl.apply()
+}
+
 
 trait DSECollectionLike[T] {
 
@@ -55,32 +91,32 @@ trait DSECollectionLike[T] {
 
 }
 
-class DSECollectionProxy[T](@transient override var impl: Option[DSECollectionLike[T]] = None)
+class DSECollectionProxy[T](@transient override var impl: DSECollectionLike[T] = null)
   extends DistSideEffects(CollectionType)
   with DSECollectionLike[T]
   with DSEProxy[DSECollectionLike[T]] {
 
-  def combiner: Option[(Iterator[T] => T)] = impl.get.combiner
+  private def findImpl: DSECollectionLike[T] = {
+    if (impl == null)
+      impl = DistSideEffects.findImpl(id).asInstanceOf[DSECollectionLike[T]]
+    impl
+  }
 
-  def postProcess: Option[Iterator[T] => GenSeq[T]] = impl.get.postProcess
+  def combiner: Option[(Iterator[T] => T)] = findImpl.combiner
 
-  def toMap[K, V](implicit ev: T <:< (K, V)): immutable.Map[K, V] = impl.get.toMap
+  def postProcess: Option[Iterator[T] => GenSeq[T]] = findImpl.postProcess
 
-  def seq = impl.get.seq
+  def toMap[K, V](implicit ev: T <:< (K, V)): immutable.Map[K, V] = findImpl.toMap
 
-  def +=(value: T) = impl.get += value
+  def seq = findImpl.seq
+
+  def +=(value: T) = findImpl += value
+
 }
 
 trait DSEVar[T] {
   def +=(value: T)
-
-  // add implicits for getting the var value
 }
-
-trait DSECounter {
-  def increment
-}
-
 
 sealed abstract class DSEType
 
@@ -89,3 +125,4 @@ case object CollectionType extends DSEType
 case object VarType extends DSEType
 
 case object CounterType extends DSEType
+

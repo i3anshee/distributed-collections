@@ -4,7 +4,6 @@ import collection.{immutable, mutable}
 import immutable.GenSeq
 import mutable.ArrayBuffer
 import collection.distributed.api.shared.{DSECollectionProxy, CollectionType, DistSideEffects, DSECollectionLike}
-import java.io.{ByteArrayOutputStream, ObjectOutputStream}
 
 /**
  * @author Vojin Jovanovic
@@ -24,11 +23,12 @@ class DSECollection[T](val combineOp: Option[(Iterator[T] => T)] = None, val pos
 }
 
 object DSECollection {
+
   def apply[T](combiner: Option[(Iterator[T] => T)] = None,
                postProcess: Option[Iterator[T] => GenSeq[T]] = None,
                collection: mutable.Buffer[T] = new ArrayBuffer[T]): DSECollectionLike[T] = {
-    val proxy = new DSECollectionProxy[T](Some(new DSECollection[T](combiner, postProcess, collection)))
-    DistSideEffects.add(proxy)
+    val proxy = new DSECollectionProxy[T](new DSECollection[T](combiner, postProcess, collection))
+//    DistSideEffects.add(proxy)
     proxy
   }
 

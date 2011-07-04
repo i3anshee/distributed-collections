@@ -19,12 +19,12 @@ class RecordNumber(val filePart: Long = 0L, var counter: Long = 0L) extends Orde
 object RecordNumber {
 
   private val recordStartBits = 40
-  private val recordStartMask = (0xFFFFFFFFFFFFFFFFL >> (64 - recordStartBits))
-  private val fileNumberSize = 0xFFFFFFFFFFFFFFFFL  >> recordStartBits
+  private val recordStartMask = (0xFFFFFFFFFFFFFFFFL >>> (64 - recordStartBits))
+  private val fileNumberSize = 0xFFFFFFFFFFFFFFFFL  >>> recordStartBits
 
   def apply(fileNumber: Int = 0, recordStart: Long = 0L, counter: Long = 0L) = {
-    if (fileNumber > fileNumberSize) throw new IllegalArgumentException("fileNumber must be less than 0xFFFFFF")
-    if (recordStart > recordStartMask) throw new IllegalArgumentException("recordStart must be less than 0xFFFFFFFFFFFFFF")
+    if (fileNumber > fileNumberSize) throw new IllegalArgumentException("fileNumber must be less than 0xFFFFFF\n" + fileNumber + "\n" + fileNumberSize)
+    if (recordStart > recordStartMask) throw new IllegalArgumentException("recordStart must be less than 0xFFFFFFFFFFFFFF" + recordStart)
 
     new RecordNumber((fileNumber.toLong << recordStartBits) | recordStart, counter)
   }

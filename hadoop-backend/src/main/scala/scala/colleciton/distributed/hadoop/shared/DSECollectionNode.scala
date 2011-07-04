@@ -24,5 +24,5 @@ class DSECollectionNode[T](val combineOp: Option[(Iterator[T] => T)] = None, val
 }
 
 object DSECollectionNode {
-  def apply[T](data: Array[Byte]): DSECollectionNode[T] = throw new UnsupportedOperationException("tomorrow")
+  def apply[T](data: Array[Byte]): DSECollectionNode[T] = throw new UnsupportedOperationException("Not implemented yet!!!")
 }

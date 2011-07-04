@@ -11,6 +11,8 @@ import collection.mutable
 import org.apache.hadoop.fs.Path
 import collection.distributed.api.{ReifiedDistCollection, DistContext}
 import java.io.{ByteArrayInputStream, ObjectInputStream}
+import collection.distributed.api.shared.{DSEProxy, DistSideEffects}
+import colleciton.distributed.hadoop.shared.DSENodeFactory
 
 /**
  * User: vjovanovic
@@ -28,6 +30,7 @@ class DistributedCollectionsReduce extends MapReduceBase with Reducer[BytesWrita
   var tempFileToURI: mutable.Map[String, URI] = null
   var intermediateToByte: mutable.Map[URI, Byte] = new mutable.HashMap
   val byteToNode: mutable.Map[Byte, RuntimePlanNode] = new mutable.HashMap
+  val distSideEffects = new mutable.HashMap[DistSideEffects with DSEProxy[_ <: DistSideEffects], Array[Byte]]
 
   var multipleOutputs: MultipleOutputs = null
   var initialized = false
@@ -38,7 +41,8 @@ class DistributedCollectionsReduce extends MapReduceBase with Reducer[BytesWrita
     reduceDAG = deserializeFromCache(job, "distribted-collections.reduceDAG").get
     tempFileToURI = deserializeFromCache(job, "distribted-collections.tempFileToURI").get
     intermediateToByte = deserializeFromCache(job, "distribted-collections.intermediateToByte").get
-
+    distSideEffects ++= deserializeFromCache[mutable.HashMap[DistSideEffects with DSEProxy[_ <: DistSideEffects], Array[Byte]]](
+      job, "distribted-collections.sideEffects").get
 
     multipleOutputs = new MultipleOutputs(job)
 
@@ -55,6 +59,11 @@ class DistributedCollectionsReduce extends MapReduceBase with Reducer[BytesWrita
       reduceRuntimeDAG.initialize
 
       byteToNode ++= intermediateToByte.map(v => (v._2, reduceRuntimeDAG.getPlanNode((ReifiedDistCollection(v._1, manifest[Any]))).get))
+
+      DistSideEffects.sideEffectsData =
+        new mutable.HashMap[DistSideEffects with DSEProxy[_ <: DistSideEffects], Array[Byte]] ++ distSideEffects
+      distSideEffects.clear
+      DistSideEffects.sideEffectsData.foreach(v => DSENodeFactory.initializeNode(reporter, v))
 
       initialized = true
     }
