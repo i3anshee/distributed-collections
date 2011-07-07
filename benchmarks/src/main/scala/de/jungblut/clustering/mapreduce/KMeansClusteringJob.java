@@ -45,32 +45,6 @@ public class KMeansClusteringJob {
         if (fs.exists(out))
             fs.delete(out, true);
 
-        if (fs.exists(center))
-            fs.delete(out, true);
-
-        if (fs.exists(in))
-            fs.delete(out, true);
-
-        final SequenceFile.Writer centerWriter = SequenceFile.createWriter(fs,
-                conf, center, ClusterCenter.class, IntWritable.class);
-        final IntWritable value = new IntWritable(0);
-        centerWriter.append(new ClusterCenter(new Vector(1, 1)), value);
-        centerWriter.append(new ClusterCenter(new Vector(5, 5)), value);
-        centerWriter.close();
-
-        final SequenceFile.Writer dataWriter = SequenceFile.createWriter(fs,
-                conf, in, ClusterCenter.class, Vector.class);
-        dataWriter.append(new ClusterCenter(new Vector(0, 0)), new Vector(1, 2));
-        dataWriter.append(new ClusterCenter(new Vector(0, 0)), new Vector(16, 3));
-        dataWriter.append(new ClusterCenter(new Vector(0, 0)), new Vector(3, 3));
-        dataWriter.append(new ClusterCenter(new Vector(0, 0)), new Vector(2, 2));
-        dataWriter.append(new ClusterCenter(new Vector(0, 0)), new Vector(2, 3));
-        dataWriter.append(new ClusterCenter(new Vector(0, 0)), new Vector(25, 1));
-        dataWriter.append(new ClusterCenter(new Vector(0, 0)), new Vector(7, 6));
-        dataWriter.append(new ClusterCenter(new Vector(0, 0)), new Vector(6, 5));
-        dataWriter.append(new ClusterCenter(new Vector(0, 0)), new Vector(-1, -23));
-        dataWriter.close();
-
         SequenceFileOutputFormat.setOutputPath(job, out);
         job.setInputFormatClass(SequenceFileInputFormat.class);
         job.setOutputFormatClass(SequenceFileOutputFormat.class);

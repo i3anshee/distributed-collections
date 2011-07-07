@@ -25,7 +25,6 @@ trait RuntimePlanNode extends PlanNode {
 
   val outEdges: mutable.LinkedHashMap[ReifiedDistCollection, mutable.Buffer[PlanNode]] = new mutable.LinkedHashMap
 
-
   def initialize = node match {
     case v: GroupByPlanNode[_, _, _] =>
       myEmitter = new GroupByRuntimeEmitter(this, outEdges.toSeq.map(v => (new DistContext(), v._2.asInstanceOf[Buffer[RuntimePlanNode]])))
@@ -38,6 +37,8 @@ trait RuntimePlanNode extends PlanNode {
     case v: FlattenPlanNode => emitter.emit(value)
 
     case v: DistDoPlanNode[Any] => v.distOP(value, emitter, context)
+
+    case v: DistForeachPlanNode[Any, Any] => v.distOP(value)
 
     case v: CombinePlanNode[Any, Any] =>
       val (k, it) = value.asInstanceOf[Tuple2[Any, Iterable[Any]]]
@@ -58,7 +59,6 @@ class RuntimeUntypedEmitter(val node: RuntimePlanNode, val outputs: Seq[(DistCon
     output._2.foreach(v => v.execute(node, output._1, null, el))
     outputs(index)._1.recordNumber.incrementRecordCounter
   }
-                              ;
 }
 
 class GroupByRuntimeEmitter(val node: RuntimePlanNode, val outputs: Seq[(DistContext, mutable.Buffer[RuntimePlanNode])]) extends UntypedEmitter {
@@ -66,7 +66,7 @@ class GroupByRuntimeEmitter(val node: RuntimePlanNode, val outputs: Seq[(DistCon
   def emit(index: Int, el: Any) = {
     val typedEl = el.asInstanceOf[(Any, Any)]
 
-    // TODO (VJ) group by result crosses the barrier once and then it is separated (optimization)
+    // TODO (VJ) group by result should cross the barrier once and then it is separated (optimization)
     val output = outputs(index)
     output._2.foreach(v => v.execute(node, output._1, typedEl._1, typedEl._2))
     outputs(index)._1.recordNumber.incrementRecordCounter

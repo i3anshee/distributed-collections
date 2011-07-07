@@ -2,6 +2,7 @@ package scala.collection.distributed
 
 import api._
 import api.dag._
+import api.shared.DistIterableBuilderLike
 import collection.generic.GenericCompanion
 import scala.colleciton.distributed.hadoop.FSAdapter
 import execution.{DCUtil, ExecutionPlan}
@@ -41,7 +42,6 @@ trait DistIterable[+T]
   }
 
   def groupBySort[S, K, K1 <: K, T1](key: (T, Emitter[T1]) => K, by: (K1) => Ordered[S] = nullOrdered[K]): DistMap[K, immutable.GenIterable[T1]] with DistCombinable[K, T1] = {
-    // TODO (VJ) implicit type information (consult with Alex)
     val km = manifest[Any]
     val sm = manifest[Any]
     val t1m = manifest[Any]
@@ -70,12 +70,15 @@ trait DistIterable[+T]
     }
   }
 
+  protected def distForeach[U](distOp: T => U, builders: scala.Seq[DistIterableBuilderLike[_, _]]) {
+    // extract dist iterable
+    val node = ExecutionPlan.addPlanNode(List(this), new DistForeachPlanNode[T, U](distOp), builders.map(v => ReifiedDistCollection(v)))
+  }
 
   def distDo(distOp: (T, UntypedEmitter, DistContext) => Unit, outputs: immutable.GenSeq[(CollectionId, Manifest[_])]) = {
     val outDistColls = outputs.map(out => new DistCollection[Any](out._1.location))
     val node = ExecutionPlan.addPlanNode(List(this), new DistDoPlanNode[T](distOp), outDistColls)
 
-    //    ExecutionPlan.execute(outDistColls)
     outDistColls
   }
 

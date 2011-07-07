@@ -14,7 +14,7 @@ import io.KryoSerializer
  */
 
 trait CollectionTask {
-  var serializerInstance: SerializerInstance = new KryoSerializer().newInstance()
+  var serializerInstance: SerializerInstance = null
 
   def deserializeFromCache[T](conf: Configuration, name: String): Option[T] = {
     // find the file in the node local cache

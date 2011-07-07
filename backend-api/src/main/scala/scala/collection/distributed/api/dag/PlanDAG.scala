@@ -14,7 +14,7 @@ with Serializable {
 
   def getPlanNode(uid: UniqueId): Option[T] = find(_.id == uid.id)
 
-  def getPlanNode(id: ReifiedDistCollection): Option[T] = this.find(_.outEdges.contains(id))
+  def getPlanNode(id: ReifiedDistCollection): Option[T] = this.find(_.outEdges.contains(ReifiedDistCollection(id.location, id.elemType)))
 
   def foreach[U](f: (T) => U) = {
     val queue: mutable.Queue[PlanNode] = (new mutable.Queue ++= inputNodes)

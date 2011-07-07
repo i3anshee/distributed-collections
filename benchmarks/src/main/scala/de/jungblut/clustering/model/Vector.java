@@ -8,11 +8,12 @@ package de.jungblut.clustering.model;
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
+import java.io.Serializable;
 import java.util.Arrays;
 
 import org.apache.hadoop.io.WritableComparable;
 
-public class Vector implements WritableComparable<Vector> {
+public class Vector implements WritableComparable<Vector>, Serializable {
 
 	private double[] vector;
 

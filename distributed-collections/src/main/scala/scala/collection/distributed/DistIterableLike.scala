@@ -1,14 +1,12 @@
 package scala.collection.distributed
 
-import api.{RecordNumber, DistContext, Emitter2, Emitter}
+import api.{RecordNumber, DistContext, Emitter}
 import scala.collection.generic.CanBuildFrom
 import scala._
 import collection.immutable
 import collection.{GenTraversableOnce, GenIterableLike}
-import execution.ExecutionPlan
-
-import shared.DSECollection
-
+import execution.{DCUtil, ExecutionPlan}
+import shared.{DistIterableBuilder}
 
 trait DistIterableLike[+T, +Repr <: DistIterable[T], +Sequential <: immutable.Iterable[T] with GenIterableLike[T, Sequential]]
   extends GenIterableLike[T, Repr]
@@ -103,10 +101,19 @@ trait DistIterableLike[+T, +Repr <: DistIterable[T], +Sequential <: immutable.It
   }
 
   def partition(pred: (T) => Boolean) = {
-    val result = distDo((el: T, emitter: Emitter2[T, T], con: DistContext) => if (pred(el)) emitter.emit1(el) else emitter.emit2(el))
     val builder = newRemoteBuilder
     builder.uniquenessPreserved
-    (builder.result(result._1), builder.result(result._2))
+
+    // partition
+    var itBuilder1 = DistIterableBuilder[T](DCUtil.generateNewCollectionURI)
+    var itBuilder2 = DistIterableBuilder[T](DCUtil.generateNewCollectionURI)
+    foreach(v => {
+      if (pred(v)) itBuilder1 += v
+      else itBuilder2 += v
+    })
+
+    // enforce collection constraints
+    (builder.result(itBuilder1.result), builder.result(itBuilder2.result))
   }
 
   def collect[B, That](pf: PartialFunction[T, B])(implicit bf: CanBuildFrom[Repr, B, That]) = {
@@ -125,23 +132,32 @@ trait DistIterableLike[+T, +Repr <: DistIterable[T], +Sequential <: immutable.It
 
   def forall(pred: (T) => Boolean) = {
     var found = false
-    distDo((el: T, em: Emitter[Boolean], context: DistContext) => if (!found && !pred(el)) {
-      em.emit(true)
+    val builder = DistIterableBuilder[Boolean]
+
+    foreach(el => if (!found && !pred(el)) {
+      builder += true
       found = true
-    }
-    ).size > 0
+    })
+
+    val res = builder.result
+    ExecutionPlan.execute(res)
+    res.size > 0
+  }
+
+  def exists(pred: (T) => Boolean) = {
+    var found = false
+    val builder = DistIterableBuilder[Boolean]
+
+    foreach(el => if (!found && pred(el)) {
+      builder += (true)
+      found = true
+    })
+    val res = builder.result()
+    ExecutionPlan.execute(res)
+    res.size > 0
   }
 
   def fold[A1 >: T](z: A1)(op: (A1, A1) => A1) = if (!isEmpty) op(reduce(op), z) else z
-
-  // TODO (VJ) implement with global cache
-  def exists(pred: (T) => Boolean) = {
-    var found = false
-    distDo((el: T, em: Emitter[Boolean]) => if (!found && pred(el)) {
-      em.emit(true)
-      found = true
-    }).size > 0
-  }
 
   // Implemented with seq collection
   def toSet[A1 >: T] = seq.toSet
@@ -180,7 +196,7 @@ trait DistIterableLike[+T, +Repr <: DistIterable[T], +Sequential <: immutable.It
 
   def toArray[A1 >: T](implicit evidence$1: ClassManifest[A1]) = seq.toArray(evidence$1)
 
-  def foreach[U](f: (T) => U) = seq.foreach(f)
+  def foreach[U](f: (T) => U) = distForeach(f, DistIterableBuilder.extractBuilders(f))
 
   def iterator = seq.toIterable.iterator
 
@@ -271,54 +287,42 @@ trait DistIterableLike[+T, +Repr <: DistIterable[T], +Sequential <: immutable.It
     rb.uniquenessPreserved
 
     // max of records sorted by file part
-    val sizes = new DSECollection[(Long, Long)](
-      Some(_.foldLeft((0L, 0L))((aggr, v) => (v._1, scala.math.max(aggr._2, v._2)))),
-      Some(it => {
-        val (fileParts: immutable.GenSeq[Long], records: immutable.GenSeq[Long]) = it.toSeq.sortWith(_._1 < _._1).unzip
-        fileParts.zip(records.scanLeft(0L)(_ + _))
-      })
-    )
+    //    val sizes = new DSECollection[(Long, Long)](
+    //      Some(_.foldLeft((0L, 0L))((aggr, v) => (v._1, scala.math.max(aggr._2, v._2)))),
+    //      Some(it => {
+    //        val (fileParts: immutable.GenSeq[Long], records: immutable.GenSeq[Long]) = it.toSeq.sortWith(_._1 < _._1).unzip
+    //        fileParts.zip(records.scanLeft(0L)(_ + _))
+    //      })
+    //    )
+    throw new UnsupportedOperationException("Not implemented yet!!!")
 
-    rb.result(distDo((el: T, em: Emitter[(Long, T)], ctx: DistContext) => if (ctx.recordNumber.counter < n) {
-      sizes.+=((ctx.recordNumber.filePart, ctx.recordNumber.counter))
-      em.emit((ctx.recordNumber.filePart, el))
-    }).groupBySort((el: (Long, T), em: Emitter[T]) => {
-      em.emit(el._2);
-      el._1
-    }).distDo((el: (Long, scala.collection.immutable.GenIterable[T]), em: Emitter[T], ctx: DistContext) => {
-      val start = sizes.toMap.get(el._1).get
-      var counter = 0
-      el._2.foreach(v => {
-        if (start + counter < n) em.emit(v)
-        counter += 1
-      })
-    }))
   }
 
   def zipWithLongIndex[A1 >: T, That](implicit bf: CanDistBuildFrom[Repr, (A1, Long), That]) = throw new UnsupportedOperationException("Not implemented yet!!!")
-//  {
-//    val rb = bf(repr)
-//    rb.uniquenessPreserved
-    // TODO (vj) optimize when partitioning is introduced
-    // TODO (vj) for now use only shared collection. If needed introduce SharedMap
 
-//    val (records, recordNumbers) = distDo((el: A1, em: Emitter2[(Long, A1)], ctx: DistContext) => {
-//      em.emit((ctx.recordNumber.filePart, el))
-//      em.emit1(((ctx.recordNumber.filePart, ctx.recordNumber.counter)))
-//    })
-//
-//    val maximums = recordNumbers.combine(_.foldLeft((0L, 0L))((aggr, v) => (v._1, scala.math.max(aggr._2, v._2))))
-//    val maximumMap = DefObject[Map[Long, Long]](recordNumbers, it => {
-//      val (fileParts: immutable.GenSeq[Long], records: immutable.GenSeq[Long]) = it.toSeq.sortWith(_._1 < _._1).unzip
-//      fileParts.zip(records.scanLeft(0L)(_ + _))
-//    })
-//
-//    val zippedWithIndex = records.distDo((el: (Long, A1), em: Emitter[(A1, Long)], ctx: DistContext) =>
-//      em.emit((v, maximumMap.get(el._1).get + ctx.recordNumber.counter))
-//    )
-//
-//    rb.result(zippedWithIndex)
-//  }
+  //  {
+  //    val rb = bf(repr)
+  //    rb.uniquenessPreserved
+  // TODO (vj) optimize when partitioning is introduced
+  // TODO (vj) for now use only shared collection. If needed introduce SharedMap
+
+  //    val (records, recordNumbers) = distDo((el: A1, em: Emitter2[(Long, A1)], ctx: DistContext) => {
+  //      em.emit((ctx.recordNumber.filePart, el))
+  //      em.emit1(((ctx.recordNumber.filePart, ctx.recordNumber.counter)))
+  //    })
+  //
+  //    val maximums = recordNumbers.combine(_.foldLeft((0L, 0L))((aggr, v) => (v._1, scala.math.max(aggr._2, v._2))))
+  //    val maximumMap = DefObject[Map[Long, Long]](recordNumbers, it => {
+  //      val (fileParts: immutable.GenSeq[Long], records: immutable.GenSeq[Long]) = it.toSeq.sortWith(_._1 < _._1).unzip
+  //      fileParts.zip(records.scanLeft(0L)(_ + _))
+  //    })
+  //
+  //    val zippedWithIndex = records.distDo((el: (Long, A1), em: Emitter[(A1, Long)], ctx: DistContext) =>
+  //      em.emit((v, maximumMap.get(el._1).get + ctx.recordNumber.counter))
+  //    )
+  //
+  //    rb.result(zippedWithIndex)
+  //  }
 
   def zipWithIndex[A1 >: T, That](implicit bf: CanBuildFrom[Repr, (A1, Int), That]) = throw new UnsupportedOperationException("Not implemented yet!!!")
 

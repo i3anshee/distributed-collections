@@ -71,12 +71,18 @@ object DistCollTest {
 
 
   def demo(args: Array[String]) = {
-    val intCol = new DistCollection[Int](new URI("./intsTo1k"))
-    val intSet = new DistHashSet[Int](new URI("./intsTo1k"))
+    val intCol = new DistCollection[Long](new URI("./kryo-longsTo1m"))
+    val intSet = new DistHashSet[Long](new URI("./kryo-longsTo1m"))
 
-    val zipped = intSet.zipWithLongIndex
+    val (p1, p2) = intCol.partition(_ < 10000)
+    val p1Mapped = p1.map(_ + 1)
+    ExecutionPlan.execute(p1, p2, p1Mapped)
 
-    ExecutionPlan.execute(zipped)
+
+    assert(intCol.exists(_ == 9999))
+    assert(p2.exists(_ == 10000))
+    assert(!p1.exists(_ == 10000))
+    assert(!p2.exists(_ == 9999))
     0
   }
 

@@ -1,6 +1,7 @@
 package scala.collection.distributed
 
 import api._
+import api.shared.DistIterableBuilderLike
 import collection.{GenTraversable, immutable}
 
 /**
@@ -11,9 +12,11 @@ trait DistProcessable[+T] {
   // TODO add cache as the base operation (support for systems that have memory caching capabilities)
   def distDo(distOp: (T, UntypedEmitter, DistContext) => Unit, outputs: immutable.GenSeq[(CollectionId, Manifest[_])]): immutable.GenSeq[DistIterable[Any]]
 
-  def groupBySort[S, K, K1 <: K,  T1](key: (T, Emitter[T1]) => K, by: (K1) => Ordered[S] = nullOrdered[K]): DistMap[K, immutable.GenIterable[T1]] with DistCombinable[K, T1]
+  def groupBySort[S, K, K1 <: K, T1](key: (T, Emitter[T1]) => K, by: (K1) => Ordered[S] = nullOrdered[K]): DistMap[K, immutable.GenIterable[T1]] with DistCombinable[K, T1]
 
   def flatten[B >: T](collections: GenTraversable[DistIterable[B]]): DistIterable[T]
+
+  protected def distForeach[U](distOp: T => U, distIterableBuilders: scala.Seq[DistIterableBuilderLike[_, _]]): Unit
 
   protected[this] val NullOrdered = (el: T) => null
 

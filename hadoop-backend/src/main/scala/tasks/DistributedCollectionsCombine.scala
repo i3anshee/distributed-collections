@@ -19,6 +19,12 @@ class DistributedCollectionsCombine extends MapReduceBase with Reducer[BytesWrit
   val byteToNode: mutable.Map[Byte, CombinePlanNode[Any, Any]] = new mutable.HashMap
 
   override def configure(job: JobConf) = {
+    val ser = job.get("serializatorRegistrator")
+    if (ser != null) {
+      System.setProperty("spark.kryo.registrator", ser);
+    }
+    serializerInstance = new KryoSerializer().newInstance()
+
     val intermediateToByte: mutable.Map[URI, Byte] = deserializeFromCache(job, "distribted-collections.intermediateToByte").get
     val combinedInputs: mutable.Map[URI, CombinePlanNode[Any, Any]] = deserializeFromCache(job, "distribted-collections.combinedInputs").get
     byteToNode ++= intermediateToByte.map(v => (v._2, combinedInputs(v._1)))
@@ -30,12 +36,15 @@ class DistributedCollectionsCombine extends MapReduceBase with Reducer[BytesWrit
     val nodeOp = byteToNode.get(collKeyPair._1)
 
     // TODO (VJ) inspect this line of code. Is it necessary, what is happening with performacne.
-    if (nodeOp.isDefined)
-      output.collect(key, new BytesWritable(
-        serializerInstance.serialize(
-          nodeOp.get.op(values.toIterable.map(v => serializerInstance.deserialize(v.getBytes).asInstanceOf[Any])))))
-    else
+    if (nodeOp.isDefined) {
+      val data = serializerInstance.serialize(
+        nodeOp.get.op(values.toIterable.map(v => serializerInstance.deserialize(v.getBytes).asInstanceOf[Any])))
+
+
+      output.collect(key, new BytesWritable(data))
+    } else {
       values.foreach(v => output.collect(key, v))
+    }
 
   }
 }

@@ -5,13 +5,12 @@ import org.apache.hadoop.mapred._
 import lib.MultipleOutputs
 import java.net.URI
 import collection.distributed.api.{RecordNumber, DistContext}
-import collection.distributed.api.dag.{OutputPlanNode, InputPlanNode, ExPlanDAG}
 import org.apache.hadoop.fs.Path
 import org.apache.hadoop.io.{Writable, NullWritable, BytesWritable}
 import collection.mutable
 import collection.distributed.api.shared.{DSEProxy, DistSideEffects}
 import colleciton.distributed.hadoop.shared.DSENodeFactory
-import collection.distributed.api.io.{JavaSerializerInstance, SerializerInstance}
+import collection.distributed.api.dag.{DistForeachPlanNode, OutputPlanNode, InputPlanNode, ExPlanDAG}
 import io.KryoSerializer
 
 /**
@@ -35,7 +34,11 @@ class DistributedCollectionsMapRunner extends MapRunnable[NullWritable, BytesWri
   var incrProcCount: Boolean = false
 
   def configure(job: JobConf) = {
-
+    val ser = job.get("serializatorRegistrator")
+    if (ser != null) {
+      System.setProperty("spark.kryo.registrator", ser);
+    }
+    serializerInstance = new KryoSerializer().newInstance()
     mapDAG = deserializeFromCache(job, "distribted-collections.mapDAG").get
     intermediateOutputs = deserializeFromCache(job, "distribted-collections.intermediateOutputs").get
     tempFileToURI = deserializeFromCache(job, "distribted-collections.tempFileToURI").get
@@ -63,13 +66,16 @@ class DistributedCollectionsMapRunner extends MapRunnable[NullWritable, BytesWri
 
       mapRuntimeDAG = buildRuntimeDAG(mapDAG, multipleOutputs, output.asInstanceOf[OutputCollector[Writable, Writable]],
         tempFileToURI.map(v => (v._2, v._1)), intermediateOutputs.toSet, reporter)
+
+      // we setup shared variables as they are used in initialize phase
+      DistSideEffects.sideEffectsData.foreach(v => DSENodeFactory.initializeNode(reporter, v))
       mapRuntimeDAG.initialize
       myInput = mapRuntimeDAG.inputNodes.find(v => new Path(workingDir, v.node.collection.location.toString).toString == fileSplit.getPath.getParent.toString).get
 
       var key: NullWritable = input.createKey
       var value: BytesWritable = input.createValue
 
-      DistSideEffects.sideEffectsData.foreach(v => DSENodeFactory.initializeNode(reporter, v))
+
 
       while (input.next(key, value)) {
         myInput.execute(null, distContext, null, value.getBytes)
@@ -101,6 +107,9 @@ class DistributedCollectionsMapRunner extends MapRunnable[NullWritable, BytesWri
         else
           runtimeDAG.connect(new OutputRuntimePlanNode(v, serializerInstance,
             outputs.getCollector(tempFileToURI(v.collection.location), reporter).asInstanceOf[OutputCollector[Writable, Writable]]), v)
+
+      case v: DistForeachPlanNode[Any, Any] =>
+        runtimeDAG.connect(new RuntimeForeachNode(node), node)
 
       case _ => // copy the node to runtimeDAG with all connections
         runtimeDAG.connect(new RuntimeComputationNode(node), node)

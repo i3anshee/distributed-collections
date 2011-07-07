@@ -5,6 +5,8 @@ import collection.mutable
 import collection.{GenSeq, immutable}
 import java.io.{ObjectOutputStream, ByteArrayOutputStream}
 import java.nio.ByteBuffer
+import java.net.URI
+import collection.distributed.api.ReifiedDistCollection
 
 /**
  * @author Vojin Jovanovic
@@ -17,9 +19,9 @@ abstract class DistSideEffects(val varType: DSEType) extends Serializable {
 
   def computationData: Array[Byte]
 
-  final override def equals(p1: Any) = p1.isInstanceOf[DistSideEffects] && uid == p1.asInstanceOf[DistSideEffects].uid
+  override def equals(p1: Any) = p1.isInstanceOf[DistSideEffects] && uid == p1.asInstanceOf[DistSideEffects].uid
 
-  final override def hashCode = uid.hashCode
+  override def hashCode = uid.hashCode
 }
 
 object DistSideEffects {
@@ -69,60 +71,41 @@ class DSECounterProxy(proxyImpl: DistSideEffects with DSECounterLike)
 }
 
 
-trait DSECollectionLike[T] {
+trait DistIterableBuilderLike[T, Repr] extends ReifiedDistCollection {
 
-  def combiner: Option[(Iterator[T] => T)]
+  def +=(element: T)
 
-  def postProcess: Option[Iterator[T] => GenSeq[T]]
+  def result(): Repr
 
-  def +=(value: T)
-
-  def seq: GenSeq[T]
-
-  def toMap[K, V](implicit ev: T <:< (K, V)): immutable.Map[K, V]
-
-  def computationData = {
-    val bos = new ByteArrayOutputStream()
-    val out = new ObjectOutputStream(bos)
-    out.writeObject((combiner, postProcess))
-    out.close()
-    bos.toByteArray
-  }
-
+  def computationData = location.toString.getBytes()
 }
 
-class DSECollectionProxy[T](@transient override var impl: DSECollectionLike[T] = null)
+class DistIterableBuilderProxy[T, Repr](@transient override var impl: DistSideEffects with DistIterableBuilderLike[T, Repr]  = null)
   extends DistSideEffects(CollectionType)
-  with DSECollectionLike[T]
-  with DSEProxy[DSECollectionLike[T]] {
+  with DistIterableBuilderLike[T, Repr]
+  with DSEProxy[DistSideEffects with DistIterableBuilderLike[T, Repr]] {
 
-  private def findImpl: DSECollectionLike[T] = {
+  private def findImpl: DistIterableBuilderLike[T, Repr] = {
     if (impl == null)
-      impl = DistSideEffects.findImpl(id).asInstanceOf[DSECollectionLike[T]]
+      impl = DistSideEffects.findImpl(id).asInstanceOf[DistSideEffects with DistIterableBuilderLike[T, Repr]]
     impl
   }
 
-  def combiner: Option[(Iterator[T] => T)] = findImpl.combiner
+  override def equals(p1: Any) = DistSideEffects.equals(p1)
 
-  def postProcess: Option[Iterator[T] => GenSeq[T]] = findImpl.postProcess
+  override def hashCode = DistSideEffects.hashCode
 
-  def toMap[K, V](implicit ev: T <:< (K, V)): immutable.Map[K, V] = findImpl.toMap
+  def location = findImpl.location
 
-  def seq = findImpl.seq
+  def result() = findImpl.result
 
   def +=(value: T) = findImpl += value
 
 }
 
-trait DSEVar[T] {
-  def +=(value: T)
-}
-
 sealed abstract class DSEType
 
 case object CollectionType extends DSEType
-
-case object VarType extends DSEType
 
 case object CounterType extends DSEType
 

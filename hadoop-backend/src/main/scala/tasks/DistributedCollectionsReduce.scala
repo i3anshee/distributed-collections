@@ -40,6 +40,12 @@ class DistributedCollectionsReduce extends MapReduceBase with Reducer[BytesWrita
   override def configure(job: JobConf) = {
     super.configure(job)
 
+    val ser = job.get("serializatorRegistrator")
+    if (ser != null) {
+      System.setProperty("spark.kryo.registrator", ser);
+    }
+    serializerInstance = new KryoSerializer().newInstance()
+
     reduceDAG = deserializeFromCache(job, "distribted-collections.reduceDAG").get
     tempFileToURI = deserializeFromCache(job, "distribted-collections.tempFileToURI").get
     intermediateToByte = deserializeFromCache(job, "distribted-collections.intermediateToByte").get
@@ -58,14 +64,12 @@ class DistributedCollectionsReduce extends MapReduceBase with Reducer[BytesWrita
     if (!initialized) {
       // create a dag
       reduceRuntimeDAG = buildRuntimeDAG(reduceDAG, multipleOutputs, tempFileToURI.map(v => (v._2, v._1)), reporter)
-      reduceRuntimeDAG.initialize
-
-      byteToNode ++= intermediateToByte.map(v => (v._2, reduceRuntimeDAG.getPlanNode((ReifiedDistCollection(v._1, manifest[Any]))).get))
-
       DistSideEffects.sideEffectsData =
         new mutable.HashMap[DistSideEffects with DSEProxy[_ <: DistSideEffects], Array[Byte]] ++ distSideEffects
-      distSideEffects.clear
       DistSideEffects.sideEffectsData.foreach(v => DSENodeFactory.initializeNode(reporter, v))
+      distSideEffects.clear
+      reduceRuntimeDAG.initialize
+      byteToNode ++= intermediateToByte.map(v => (v._2, reduceRuntimeDAG.getPlanNode((ReifiedDistCollection(v._1, manifest[Any]))).get))
 
       initialized = true
     }

@@ -15,6 +15,10 @@ trait ReifiedDistCollection extends CollectionId {
 }
 
 object ReifiedDistCollection {
+
+  def apply(collection: ReifiedDistCollection): ReifiedDistCollection =
+    apply(collection.location, collection.elemType)
+
   def apply(uri: URI, manifest: Manifest[_]) = new ReifiedDistCollection {
     def location = uri
 

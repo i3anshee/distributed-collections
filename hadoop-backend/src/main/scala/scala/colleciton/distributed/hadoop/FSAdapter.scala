@@ -8,7 +8,8 @@ import org.apache.hadoop.fs.permission.{FsAction, FsPermission}
 import org.apache.hadoop.mapred.JobConf
 import org.apache.hadoop.fs.{FileSystem, Path}
 import collection.immutable
-import collection.distributed.api.io.{SerializerInstance, CollectionMetaData}
+import io.KryoSerializer
+import collection.distributed.api.io.{JavaSerializerInstance, SerializerInstance, CollectionMetaData}
 
 /**
  * User: vjovanovic
@@ -16,6 +17,9 @@ import collection.distributed.api.io.{SerializerInstance, CollectionMetaData}
  */
 
 object FSAdapter {
+
+  val kryo = new KryoSerializer().newInstance()
+  val javaSerializer = new JavaSerializerInstance
 
   // TODO (VJ) add  read buffers, synchronization and move to the api
   /**
@@ -43,11 +47,7 @@ object FSAdapter {
       val value = new BytesWritable()
 
       while (reader.next(key, value)) {
-        val bais = new ByteArrayInputStream(value.getBytes)
-        val ois = new ObjectInputStream(bais)
-        val valueObject = ois.readObject()
-
-        result += valueObject.asInstanceOf[A]
+        result += kryo.deserialize(value.getBytes)
       }
       reader.close()
     })
@@ -80,7 +80,7 @@ object FSAdapter {
     try {
       // write length to metadata
       FileSystem.create(fs, meta, new FsPermission(FsAction.READ_WRITE, FsAction.READ, FsAction.READ))
-        .write(serializeElement(new CollectionMetaData(t.size)));
+        .write(javaSerializer.serialize(new CollectionMetaData(t.size)));
 
       writer = Some(new SequenceFile.Writer(fs, conf, file, classOf[NullWritable], classOf[BytesWritable]))
       t.foreach(v => writer.get.append(NullWritable.get, new BytesWritable(serializer.serialize(v))))
@@ -99,15 +99,6 @@ object FSAdapter {
   def rename(conf: JobConf, from: Path, to: Path) {
     val fs = FileSystem.get(conf)
     fs.rename(from, to)
-  }
-
-
-  private def serializeElement(value: Any): Array[Byte] = {
-    val baos = new ByteArrayOutputStream()
-    val oos = new ObjectOutputStream(baos)
-    oos.writeObject(value)
-    oos.flush()
-    baos.toByteArray
   }
 
 }

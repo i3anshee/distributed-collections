@@ -27,9 +27,7 @@ object ExecutionPlan {
   def execute(outputs: GenTraversable[ReifiedDistCollection]): Unit = {
 
     // attach outputs that need to be saved
-    outputs.foreach(output => {
-      exPlanDAG.getPlanNode(output).get.connect(output, new OutputPlanNode(output))
-    })
+    outputs.foreach(output => exPlanDAG.getPlanNode(output).get.connect(output, new OutputPlanNode(ReifiedDistCollection(output))))
 
     println(ExecutionPlan.toString)
 

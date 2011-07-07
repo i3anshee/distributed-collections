@@ -191,6 +191,7 @@ class KryoSerializer extends Serializer {
     })
 
     val regCls = System.getProperty("spark.kryo.registrator")
+    println(regCls)
     if (regCls != null) {
       val reg = Class.forName(regCls).newInstance().asInstanceOf[KryoRegistrator]
       reg.registerClasses(kryo)

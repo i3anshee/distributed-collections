@@ -16,7 +16,7 @@ import org.apache.hadoop.fs.{FileStatus, FileSystem, Path}
 import java.io.{ObjectOutputStream, ByteArrayOutputStream}
 import collection.distributed.api.io.CollectionMetaData
 import collection.JavaConversions._
-import collection.distributed.api.shared.{DSECounterLike, DSECounterProxy, DSEProxy, DistSideEffects}
+import collection.distributed.api.shared._
 
 class GreedyMSCRBuilder extends JobBuilder {
 
@@ -56,6 +56,7 @@ class GreedyMSCRBuilder extends JobBuilder {
     val matchesReducer = (n: PlanNode) => n match {
       case v: InputPlanNode => (true, true)
       case v: DistDoPlanNode[_] => (true, true)
+      case v: DistForeachPlanNode[_, _] => (true, true)
       case v: OutputPlanNode => (true, false)
       case v: CombinePlanNode[_, _] => (true, true)
       case _ => (false, false)
@@ -93,11 +94,20 @@ class GreedyMSCRBuilder extends JobBuilder {
   def configure(job: JobConf) =
     if (!mapDAG.isEmpty) {
 
+      job.setMemoryForMapTask(500)
+      job.setMemoryForReduceTask(500)
+      job.set("mapreduce.task.io.sort.mb", "400")
+
       // TODO (VJ) refactor to less files
       toClean += HadoopJob.dfsSerialize(job, "distribted-collections.mapDAG", mapDAG)
       toClean += HadoopJob.dfsSerialize(job, "distribted-collections.intermediateOutputs", intermediateOutputs)
       toClean += HadoopJob.dfsSerialize(job, "distribted-collections.tempFileToURI", tempFileToURI)
       toClean += HadoopJob.dfsSerialize(job, "distribted-collections.intermediateToByte", intermediateToByte)
+      val ser = System.getProperty("spark.kryo.registrator")
+      if (ser != null) {
+        job.set("serializatorRegistrator", ser)
+        println(ser)
+      }
 
       val hashMap = new mutable.HashMap[DistSideEffects with DSEProxy[_], Array[Byte]] ++ (DistSideEffects.sideEffectsData.toMap)
       toClean += HadoopJob.dfsSerialize(job, "distribted-collections.sideEffects", hashMap)
@@ -138,7 +148,7 @@ class GreedyMSCRBuilder extends JobBuilder {
       FileSystem.mkdirs(fs, dest, new FsPermission(FsAction.READ_WRITE, FsAction.READ, FsAction.READ))
 
       // list all files from temp file
-      val stats = fs.listStatus(outputDir);
+      val stats = fs.listStatus(outputDir)
       stats.foreach(stat => {
         val path = stat.getPath()
         if (path.getName().startsWith(v._1)) {
@@ -148,7 +158,9 @@ class GreedyMSCRBuilder extends JobBuilder {
 
       // update all the counters
       DistSideEffects.sideEffectsData.foreach(v =>
-        v._1.impl.asInstanceOf[DSECounterLike] += runningJob.getCounters.getGroup("DSECounter").getCounter(v._1.impl.uid.toString)
+        if (v._1.asInstanceOf[DistSideEffects].varType == CounterType) {
+          v._1.impl.asInstanceOf[DSECounterLike] += runningJob.getCounters.getGroup("DSECounter").getCounter(v._1.impl.uid.toString)
+        }
       )
 
       // write collections meta data

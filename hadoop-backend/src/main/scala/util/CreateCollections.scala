@@ -62,8 +62,7 @@ object CreateCollections {
   }
 
   def main(args: Array[String]) {
-    createWordCountText1m
-    createWordCountText10m
+    createLongs1m
   }
 
   class RandomTextIterable(val number: Int) extends Iterable[String] {

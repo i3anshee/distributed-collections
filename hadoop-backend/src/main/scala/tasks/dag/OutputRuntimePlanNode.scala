@@ -34,7 +34,9 @@ class MapOutputRuntimePlanNode(node: OutputPlanNode,
   override def copyUnconnected() = new MapOutputRuntimePlanNode(node, collector, serializerInstance, byteId)
 
   override def execute(parent: RuntimePlanNode, context: DistContext, key: Any, value: Any) = {
-    collector.collect(new BytesWritable(serializerInstance.serialize((byteId, key))), new BytesWritable())
-    serializerInstace.serialize(value)
+    val data = serializerInstace.serialize(value)
+    val keyData = serializerInstance.serialize((byteId, key))
+    collector.collect(new BytesWritable(keyData), new BytesWritable(data))
+
   }
 }
