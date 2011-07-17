@@ -159,7 +159,7 @@ class GreedyMSCRBuilder extends JobBuilder {
       // update all the counters
       DistSideEffects.sideEffectsData.foreach(v =>
         if (v._1.asInstanceOf[DistSideEffects].varType == CounterType) {
-          v._1.impl.asInstanceOf[DSECounterLike] += runningJob.getCounters.getGroup("DSECounter").getCounter(v._1.impl.uid.toString)
+          v._1.impl.asInstanceOf[DistCounterLike] += runningJob.getCounters.getGroup("DSECounter").getCounter(v._1.impl.uid.toString)
         }
       )
 

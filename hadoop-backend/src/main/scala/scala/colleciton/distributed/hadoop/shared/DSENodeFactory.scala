@@ -4,6 +4,7 @@ import collection.distributed.api.shared._
 import java.nio.ByteBuffer
 import org.apache.hadoop.mapred.{Reporter}
 import java.net.URI
+import collection.distributed.api.RecordNumber
 
 /**
  * @author Vojin Jovanovic
@@ -15,13 +16,16 @@ object DSENodeFactory {
     data._1.varType match {
       case CollectionType =>
         val uri = new URI(new String(data._2))
-        data._1.asInstanceOf[DistIterableBuilderProxy[Any, Any]].impl =
-          new DistIterableBuilderNode(uri)
+        data._1.asInstanceOf[DistBuilderProxy[Any, Any]].impl =
+          new DistBuilderNode(uri)
       case CounterType => {
         val buffer = ByteBuffer.allocate(8)
         buffer.put(data._2)
-        data._1.asInstanceOf[DSECounterProxy].impl =
-          new DSECounterNode(buffer.getLong(0), reporter.getCounter("DSECounter", data._1.uid.toString))
+        data._1.asInstanceOf[DistCounterProxy].impl =
+          new DistCounterNode(buffer.getLong(0), reporter.getCounter("DSECounter", data._1.uid.toString))
+      }
+      case RecordType => {
+        data._1.asInstanceOf[DistRecordCounterProxy].impl = new DistRecordCounterNode(new RecordNumber())
       }
     }
   }

@@ -1,29 +1,41 @@
 package scala.collection.distributed
 
+import api.shared.DistBuilderLike
 import api.{RecordNumber, DistContext, Emitter}
 import scala.collection.generic.CanBuildFrom
 import scala._
 import collection.immutable
 import collection.{GenTraversableOnce, GenIterableLike}
-import execution.{DCUtil, ExecutionPlan}
-import shared.{DistIterableBuilder}
+import execution.{ExecutionPlan}
+import shared.{DistRecordCounter, DistIterableBuilder}
 
+// TODO (VJ) HIGH fix the uniqueness preserved
+// TODO (VJ) HIGH consolidate ExecutionPlan.execute
+// TODO (VJ) LOW fix the isEmpty check
+// TODO (VJ) LOW fix the GenXXX interfaces. If they are sequential or parallel completely different algorithm needs to be used
 trait DistIterableLike[+T, +Repr <: DistIterable[T], +Sequential <: immutable.Iterable[T] with GenIterableLike[T, Sequential]]
   extends GenIterableLike[T, Repr]
-  with HasNewRemoteBuilder[T, Repr]
+  with HasNewDistBuilder[T, Repr]
   with RichDistProcessable[T] {
 
   self: DistIterableLike[T, Repr, Sequential] =>
 
+  def isView: Boolean
+
   def seq: Sequential
 
+  protected def execute: Unit = if (!isView) ExecutionPlan.execute(repr)
+
+  def view: DistIterableLike[T, Repr, Sequential] = throw new UnsupportedOperationException("Implementation in progress!!!")
+
+  //TODO (VJ) fix this issue
   protected[this] def bf2seq[S, That](bf: CanBuildFrom[Repr, S, That]) = new CanBuildFrom[Sequential, S, That] {
     def apply(from: Sequential) = bf.apply(from.asInstanceOf[Repr])
 
     def apply() = bf.apply()
   }
 
-  protected[this] def newRemoteBuilder: RemoteBuilder[T, Repr]
+  protected[this] def newDistBuilder: DistBuilderLike[T, Repr]
 
   def repr: Repr = this.asInstanceOf[Repr]
 
@@ -40,21 +52,23 @@ trait DistIterableLike[+T, +Repr <: DistIterable[T], +Sequential <: immutable.It
   override def toString = seq.mkString(stringPrefix + "(", ", ", ")")
 
   def map[S, That](f: T => S)(implicit bf: CanBuildFrom[Repr, S, That]): That = {
-    val remoteBuilder = bf.asInstanceOf[CanDistBuildFrom[Repr, S, That]](repr)
-    val collection = distDo((el: T, em: Emitter[S]) => em.emit(f(el)))
-    remoteBuilder.result(collection)
+    val builder = bf.asInstanceOf[CanDistBuildFrom[Repr, S, That]](repr)
+    distForeach(el => builder += f(el), DistIterableBuilder.extractBuilders(f) :+ builder)
+    execute
+    builder.result()
   }
 
   def flatMap[S, That](f: (T) => GenTraversableOnce[S])(implicit bf: CanBuildFrom[Repr, S, That]): That = {
-    val remoteBuilder = bf.asInstanceOf[CanDistBuildFrom[Repr, S, That]](repr)
-    remoteBuilder.result(distDo((el: T, emitter: Emitter[S]) => f(el).foreach((v) => emitter.emit(v))))
+    val rb = bf.asInstanceOf[CanDistBuildFrom[Repr, S, That]](repr)
+    foreach(el => f(el).foreach(v => rb += v))
+    rb.result()
   }
 
   def filter(p: T => Boolean): Repr = {
-    val rb = newRemoteBuilder
-    rb.uniquenessPreserved
-
-    rb.result(distDo((el: T, em: Emitter[T]) => if (p(el)) em.emit(el)))
+    val rb = newDistBuilder
+    //    rb.uniquenessPreserved
+    foreach(el => if (p(el)) rb += el)
+    rb.result
   }
 
   def filterNot(pred: (T) => Boolean) = filter(!pred(_))
@@ -71,28 +85,30 @@ trait DistIterableLike[+T, +Repr <: DistIterable[T], +Sequential <: immutable.It
     })
   }
 
+  // TODO (VJ) delete the result
   def reduce[A1 >: T](op: (A1, A1) => A1) = if (isEmpty)
     throw new UnsupportedOperationException("empty.reduce")
   else {
-    val result = groupBySort((v: T, emitter: Emitter[T]) => {
-      emitter.emit(v);
-      1
-    }).combine((it: Iterable[T]) => it.reduce(op))
+    val result = groupBySeq(v => true).combine((it: Iterable[T]) => it.reduce(op))
     ExecutionPlan.execute(result)
     result.toTraversable.head._2
   }
 
+  //TODO (VJ) delete intermediary result
+  //TODO (VJ) fix the record counter
   def find(pred: (T) => Boolean) = if (isEmpty)
     None
   else {
     var found = false;
-    val allResults = distDo((el: T, emitter: Emitter[(RecordNumber, T)], con: DistContext) =>
-      if (!found && pred(el)) {
-        emitter.emit((con.recordNumber, el))
-        found = true;
-      })
-    ExecutionPlan.execute(allResults)
-    val allResultsSeq = allResults.seq.toSeq
+    val recordCount = DistRecordCounter()
+    val allResults = DistIterableBuilder[(RecordNumber, T)]()
+    foreach(el => if (!found && pred(el)) {
+      allResults += ((recordCount.recordNumber, el))
+      found = true;
+    })
+
+    ExecutionPlan.execute(allResults.result)
+    val allResultsSeq = allResults.result.seq.toSeq
     if (allResultsSeq.size == 0)
       None
     else
@@ -101,29 +117,27 @@ trait DistIterableLike[+T, +Repr <: DistIterable[T], +Sequential <: immutable.It
   }
 
   def partition(pred: (T) => Boolean) = {
-    val builder = newRemoteBuilder
-    builder.uniquenessPreserved
+    val builder1 = newDistBuilder
+    val builder2 = newDistBuilder
 
     // partition
-    var itBuilder1 = DistIterableBuilder[T](DCUtil.generateNewCollectionURI)
-    var itBuilder2 = DistIterableBuilder[T](DCUtil.generateNewCollectionURI)
-    foreach(v => {
-      if (pred(v)) itBuilder1 += v
-      else itBuilder2 += v
-    })
+    foreach(v => (if (pred(v)) builder1 else builder2) += v)
 
-    // enforce collection constraints
-    (builder.result(itBuilder1.result), builder.result(itBuilder2.result))
+    // fetch results
+    (builder1.result(), builder2.result())
   }
 
   def collect[B, That](pf: PartialFunction[T, B])(implicit bf: CanBuildFrom[Repr, B, That]) = {
-    val remoteBuilder = bf.asInstanceOf[CanDistBuildFrom[Repr, B, That]](repr)
-    remoteBuilder.result(distDo((el, emitter) => if (pf.isDefinedAt(el)) emitter.emit(pf(el))))
+    val rb = bf.asInstanceOf[CanDistBuildFrom[Repr, B, That]](repr)
+    foreach(el => if (pf.isDefinedAt(el)) rb += pf(el))
+    rb.result()
   }
 
   def ++[B >: T, That](that: GenTraversableOnce[B])(implicit bf: CanBuildFrom[Repr, B, That]) = {
     val remoteBuilder = bf.asInstanceOf[CanDistBuildFrom[Repr, T, That]](repr)
-    remoteBuilder.result(this.flatten(that.asInstanceOf[DistIterable[B]]))
+    //TODO (VJ) make flatten accept the builder
+    //    flatten(that.asInstanceOf[DistIterable[B]])
+    throw new UnsupportedOperationException("Waiting for complete removal of DistDo!!!")
   }
 
   def reduceOption[A1 >: T](op: (A1, A1) => A1) = if (isEmpty) None else Some(reduce(op))
@@ -144,14 +158,16 @@ trait DistIterableLike[+T, +Repr <: DistIterable[T], +Sequential <: immutable.It
     res.size > 0
   }
 
+  //TODO (VJ) cleanup
   def exists(pred: (T) => Boolean) = {
     var found = false
     val builder = DistIterableBuilder[Boolean]
 
     foreach(el => if (!found && pred(el)) {
-      builder += (true)
+      builder += true
       found = true
     })
+
     val res = builder.result()
     ExecutionPlan.execute(res)
     res.size > 0
@@ -281,10 +297,10 @@ trait DistIterableLike[+T, +Repr <: DistIterable[T], +Sequential <: immutable.It
   //seq.scanRight(z)(op)(bf2seq(bf))
 
   // TODO (vj) optimize when partitioning is introduced
-  // TODO (vj) for now use only shared collection. If needed introduce SharedMap
+  // TODO (vj) for now use only shared collection.
   def drop(n: Int) = {
-    val rb = newRemoteBuilder
-    rb.uniquenessPreserved
+    val rb = newDistBuilder
+    //    rb.uniquenessPreserved
 
     // max of records sorted by file part
     //    val sizes = new DSECollection[(Long, Long)](

@@ -1,9 +1,11 @@
 package scala.collection.distributed
 
 import api.CollectionId
+import api.shared.DistBuilderLike
 import java.net.URI
 import collection.generic.GenericCompanion
 import collection.immutable
+import shared.{DistHashSetBuilder, DistSetBuilder}
 
 /**
  * User: vjovanovic
@@ -27,7 +29,7 @@ with Serializable {
 
 object DistHashSet extends DistSetFactory[DistHashSet] {
 
-  def newRemoteBuilder[T]: RemoteBuilder[T, DistHashSet[T]] = new DistHashSetRemoteBuilder[T]
+  def newDistBuilder[T]: DistBuilderLike[T, DistHashSet[T]] = DistHashSetBuilder[T]()
 
   implicit def canBuildFrom[T]: CanDistBuildFrom[Coll, T, DistHashSet[T]] = new GenericDistBuildFrom[T]
 }

@@ -2,7 +2,7 @@ package tasks.dag
 
 import collection.distributed.api.dag.PlanNode
 import collection.distributed.api.shared.{CollectionType, DistSideEffects}
-import colleciton.distributed.hadoop.shared.DistIterableBuilderNode
+import colleciton.distributed.hadoop.shared.DistBuilderNode
 import collection.distributed.api.DistContext
 import collection.mutable.Buffer
 
@@ -17,7 +17,7 @@ class RuntimeForeachNode(val node: PlanNode) extends RuntimePlanNode {
     // find all the builders
     DistSideEffects.sideEffectsData.keys.foreach(v => {
       if (v.varType == CollectionType) {
-        val builder = v.impl.asInstanceOf[DistIterableBuilderNode]
+        val builder = v.impl.asInstanceOf[DistBuilderNode]
         if (outEdges.contains(builder)) {
           builder.output = (this, outEdges.get(builder).get.asInstanceOf[Buffer[tasks.dag.RuntimePlanNode]])
         }

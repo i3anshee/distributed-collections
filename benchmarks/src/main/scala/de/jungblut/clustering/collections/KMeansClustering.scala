@@ -3,7 +3,7 @@ package de.jungblut.clustering.collections
 import de.jungblut.clustering.model.{Vector, DistanceMeasurer, ClusterCenter}
 import collection.mutable.{ArrayBuffer, Buffer}
 import java.net.URI
-import collection.distributed.shared.{DSECounter, DistIterableBuilder}
+import collection.distributed.shared.{DistCounter, DistIterableBuilder}
 import execution.ExecutionPlan
 import collection.immutable.GenIterable
 import collection.distributed.api.{DistContext, Emitter2}
@@ -20,7 +20,7 @@ object KMeansClustering {
     var points: DistIterable[(ClusterCenter, Vector)] =
       new DistCollection[(ClusterCenter, Vector)](new URI("tmp/clustering/kryo-input"))
     var centers: DistIterable[ClusterCenter] = new DistCollection[ClusterCenter](new URI("tmp/clustering/kryo-cen"))
-    val convergedCounter = DSECounter()
+    val convergedCounter = DistCounter()
 
     var converged = false
     while (!converged) {

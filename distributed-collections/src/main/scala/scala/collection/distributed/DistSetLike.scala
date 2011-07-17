@@ -18,36 +18,28 @@ trait DistSetLike[T, +Repr <: DistSetLike[T, Repr, Sequential] with DistSet[T], 
 
   def +(elem: T): Repr = {
     var alreadyAdded = false
-    newRemoteBuilder.result(distDo((el: T, em: Emitter[T]) => {
+    val rb = newDistBuilder
+    foreach(el => {
       if (!alreadyAdded) {
-        em.emit(elem)
+        rb += elem
         alreadyAdded = true
       }
-      em.emit(el)
-    }))
+      rb += el
+    })
+    rb.result
   }
 
-  def -(elem: T): Repr = {
-    val rb = newRemoteBuilder
-    rb.uniquenessPreserved
-    rb.result(filter(p => p != elem))
-  }
+  def -(elem: T): Repr = filter(p => p != elem)
 
+  //TODO (VJ) fix the constraints for sets (apparently views should not enforce constraints until forced)
+  //TODO (VJ) compare performance to native
+  def --(that: GenTraversableOnce[T]): Repr =
+    map(v => (v, true)) ++
+      that.asInstanceOf[DistIterable[T]].map(v => (v, false))
+        .groupByKey
+        .filter(el => el._2.size == 1 && el._2.head == true).map(_._1)
 
-  def --(that: GenTraversableOnce[T]): Repr = newRemoteBuilder.result(
-    distDo((el, em: Emitter[(T, Boolean)]) => em.emit((el, true))).
-      flatten(List(
-      that.asInstanceOf[DistIterable[T]].distDo((el, em: Emitter[(T, Boolean)]) => em.emit((el, false))))).
-      groupBySort((el: (T, Boolean), em: Emitter[Boolean]) => {
-      em.emit(el._2)
-      el._1
-    }).distDo((el: (T, GenIterable[Boolean]), em: Emitter[T]) => if (el._2.size == 1 && el._2.head == true) em.emit(el._1)))
-
-  def union(that: GenSet[T]): Repr = {
-    val builder = newRemoteBuilder
-    builder.uniquenessPreserved
-    builder.result(this.++(that))
-  }
+  def union(that: GenSet[T]): Repr = ++(that)
 
   def diff(that: GenSet[T]): Repr = --(that)
 

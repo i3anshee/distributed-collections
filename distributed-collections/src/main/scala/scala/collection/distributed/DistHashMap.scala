@@ -2,6 +2,7 @@ package scala.collection.distributed
 
 import java.net.URI
 import collection.immutable
+import shared.DistHashMapBuilder
 
 
 class DistHashMap[K, +V](uri: URI)
@@ -30,8 +31,7 @@ class DistHashMap[K, +V](uri: URI)
 object DistHashMap extends DistMapFactory[DistHashMap] {
   def empty[K, V]: DistHashMap[K, V] = throw new UnsupportedOperationException("Not implmented yet!!")
 
-
-  def newRemoteBuilder[K, V] = new DistHashMapRemoteBuilder[K, V]
+  def newDistBuilder[K, V] = DistHashMapBuilder[K, V]()
 
   implicit def canBuildFrom[K, V]: CanDistBuildFrom[Coll, (K, V), DistHashMap[K, V]] = {
     new CanDistBuildFromMap[K, V]

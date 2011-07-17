@@ -9,5 +9,5 @@ import collection.mutable
  */
 
 trait AbstractJobStrategy {
-   def execute(dag: ExPlanDAG, globalCache: mutable.Map[String, Any])
+   def execute(dag: ExPlanDAG)
 }

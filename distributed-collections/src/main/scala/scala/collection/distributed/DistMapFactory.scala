@@ -1,5 +1,6 @@
 package scala.collection.distributed
 
+import api.shared.DistBuilderLike
 import collection.mutable.Builder
 import collection.generic.{CanCombineFrom, MapFactory}
 
@@ -18,18 +19,18 @@ extends MapFactory[CC]
    *  @tparam K      the type of the keys
    *  @tparam V      the type of the associated values
    */
-  override def newBuilder[K, V]: Builder[(K, V), CC[K, V]] = newRemoteBuilder[K, V]
+  override def newBuilder[K, V]: Builder[(K, V), CC[K, V]] = newDistBuilder[K, V]
 
   /** The default combiner for $Coll objects.
    *  @tparam K     the type of the keys
    *  @tparam V     the type of the associated values
    */
-  def newRemoteBuilder[K, V]: RemoteBuilder[(K, V), CC[K, V]]
+  def newDistBuilder[K, V]: DistBuilderLike[(K, V), CC[K, V]]
 
   class CanDistBuildFromMap[K, V] extends CanDistBuildFrom[CC[_, _], (K, V), CC[K, V]] {
-    def apply(from: MapColl) = from.genericMapRemoteBuilder[K, V].asInstanceOf[RemoteBuilder[(K, V), CC[K, V]]]
+    def apply(from: MapColl) = from.genericMapDistBuilder[K, V].asInstanceOf[DistBuilderLike[(K, V), CC[K, V]]]
 
-    def apply() = newRemoteBuilder[K, V]
+    def apply() = newDistBuilder[K, V]
   }
 
 }

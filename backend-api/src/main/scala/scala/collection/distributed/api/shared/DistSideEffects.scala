@@ -1,12 +1,10 @@
 package scala.collection.distributed.api.shared
 
 import java.util.concurrent.atomic.AtomicLong
-import collection.mutable
-import collection.{GenSeq, immutable}
-import java.io.{ObjectOutputStream, ByteArrayOutputStream}
 import java.nio.ByteBuffer
-import java.net.URI
-import collection.distributed.api.ReifiedDistCollection
+import collection.mutable.Builder
+import collection.mutable
+import collection.distributed.api.{RecordNumber, ReifiedDistCollection}
 
 /**
  * @author Vojin Jovanovic
@@ -41,7 +39,15 @@ trait DSEProxy[T] {
   @transient var impl: T
 }
 
-trait DSECounterLike {
+sealed abstract class DSEType
+
+case object CollectionType extends DSEType
+
+case object CounterType extends DSEType
+
+case object RecordType extends DSEType
+
+trait DistCounterLike {
   def +=(n: Long)
 
   def apply(): Long
@@ -53,15 +59,55 @@ trait DSECounterLike {
   }
 }
 
+trait DistBuilderLike[-Elem, +To] extends Builder[Elem, To] with ReifiedDistCollection {
 
-class DSECounterProxy(proxyImpl: DistSideEffects with DSECounterLike)
-  extends DistSideEffects(CounterType) with DSECounterLike with DSEProxy[DistSideEffects with DSECounterLike] {
+  def result(): To
+
+  def clear() = throw new UnsupportedOperationException("Remote builders can not be cleared as the element addition is part of the framework!!!")
+
+  def applyConstraints: Unit
+
+  def computationData = location.toString.getBytes()
+}
+
+trait RecordCounterLike {
+  def fileNumber: Int
+
+  def recordStart: Long
+
+  def counter: Long
+
+  def recordNumber = RecordNumber(fileNumber, recordStart, counter)
+
+  def computationData = Array[Byte](0)
+}
+
+class DistRecordCounterProxy(proxyImpl: DistSideEffects with RecordCounterLike)
+  extends DistSideEffects(RecordType) with RecordCounterLike with DSEProxy[DistSideEffects with RecordCounterLike] {
   override val id = proxyImpl.uid
-  @transient override var impl: DistSideEffects with DSECounterLike = proxyImpl
+  @transient override var impl: DistSideEffects with RecordCounterLike = proxyImpl
 
-  private def findImpl: DistSideEffects with DSECounterLike = {
+  private def findImpl: DistSideEffects with RecordCounterLike = {
     if (impl == null)
-      impl = DistSideEffects.findImpl(id).asInstanceOf[DistSideEffects with DSECounterLike]
+      impl = DistSideEffects.findImpl(id).asInstanceOf[DistSideEffects with RecordCounterLike]
+    impl
+  }
+
+  def counter = findImpl.counter
+
+  def recordStart = findImpl.recordStart
+
+  def fileNumber = findImpl.fileNumber
+}
+
+class DistCounterProxy(proxyImpl: DistSideEffects with DistCounterLike)
+  extends DistSideEffects(CounterType) with DistCounterLike with DSEProxy[DistSideEffects with DistCounterLike] {
+  override val id = proxyImpl.uid
+  @transient override var impl: DistSideEffects with DistCounterLike = proxyImpl
+
+  private def findImpl: DistSideEffects with DistCounterLike = {
+    if (impl == null)
+      impl = DistSideEffects.findImpl(id).asInstanceOf[DistSideEffects with DistCounterLike]
     impl
   }
 
@@ -70,24 +116,14 @@ class DSECounterProxy(proxyImpl: DistSideEffects with DSECounterLike)
   def apply() = findImpl.apply()
 }
 
-
-trait DistIterableBuilderLike[T, Repr] extends ReifiedDistCollection {
-
-  def +=(element: T)
-
-  def result(): Repr
-
-  def computationData = location.toString.getBytes()
-}
-
-class DistIterableBuilderProxy[T, Repr](@transient override var impl: DistSideEffects with DistIterableBuilderLike[T, Repr]  = null)
+class DistBuilderProxy[T, Repr](@transient override var impl: DistSideEffects with DistBuilderLike[T, Repr] = null)
   extends DistSideEffects(CollectionType)
-  with DistIterableBuilderLike[T, Repr]
-  with DSEProxy[DistSideEffects with DistIterableBuilderLike[T, Repr]] {
+  with DistBuilderLike[T, Repr]
+  with DSEProxy[DistSideEffects with DistBuilderLike[T, Repr]] {
 
-  private def findImpl: DistIterableBuilderLike[T, Repr] = {
+  private def findImpl: DistBuilderLike[T, Repr] = {
     if (impl == null)
-      impl = DistSideEffects.findImpl(id).asInstanceOf[DistSideEffects with DistIterableBuilderLike[T, Repr]]
+      impl = DistSideEffects.findImpl(id).asInstanceOf[DistSideEffects with DistBuilderLike[T, Repr]]
     impl
   }
 
@@ -99,13 +135,10 @@ class DistIterableBuilderProxy[T, Repr](@transient override var impl: DistSideEf
 
   def result() = findImpl.result
 
-  def +=(value: T) = findImpl += value
+  def +=(value: T) = {
+    findImpl += value
+    this
+  }
 
+  def applyConstraints = findImpl.applyConstraints
 }
-
-sealed abstract class DSEType
-
-case object CollectionType extends DSEType
-
-case object CounterType extends DSEType
-

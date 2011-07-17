@@ -1,11 +1,13 @@
 package scala.collection.distributed
 
+import api.shared.DistBuilderLike
+
 /**
  * User: vjovanovic
  * Date: 4/25/11
  */
 
-trait HasNewRemoteBuilder[+A, +Repr] {
+trait HasNewDistBuilder[+T, +Repr] {
   /** The builder that builds instances of Repr */
-  protected[this] def newRemoteBuilder: RemoteBuilder[A, Repr]
+  protected[this] def newDistBuilder: DistBuilderLike[T, Repr]
 }

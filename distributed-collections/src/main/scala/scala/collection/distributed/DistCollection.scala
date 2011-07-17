@@ -1,6 +1,7 @@
 package scala.collection.distributed
 
 import java.net.URI
+import shared.DistCollectionBuilder
 
 class DistCollection[T](uri: URI)
   extends DistIterable[T]
@@ -12,12 +13,13 @@ class DistCollection[T](uri: URI)
   override def location = uri
 
   def seq = remoteIterable
+
 }
 
 object DistCollection extends DistFactory[DistCollection] {
   implicit def canBuildFrom[T]: CanDistBuildFrom[Coll, T, DistCollection[T]] = new GenericCanDistBuildFrom[T]
 
-  def newRemoteBuilder[T] = new DistCollRemoteBuilder[T]
+  def newDistBuilder[T] = DistCollectionBuilder[T]()
 
-  def newBuilder[T] = new DistCollRemoteBuilder[T]
+  def newBuilder[T] = DistCollectionBuilder[T]()
 }

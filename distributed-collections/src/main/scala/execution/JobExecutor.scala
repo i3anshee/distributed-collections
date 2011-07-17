@@ -2,7 +2,6 @@ package execution
 
 import scala.collection.distributed.api.dag.ExPlanDAG
 import scala.collection.distributed.api.AbstractJobStrategy
-import collection.mutable
 import scala.colleciton.distributed.hadoop.HadoopJob
 
 /**
@@ -13,7 +12,7 @@ import scala.colleciton.distributed.hadoop.HadoopJob
 object JobExecutor {
   val myStrategy: AbstractJobStrategy = HadoopJob
 
-  def execute(dag: ExPlanDAG, globalCache: mutable.Map[String, Any]) {
-    myStrategy.execute(dag, globalCache)
+  def execute(dag: ExPlanDAG) {
+    myStrategy.execute(dag)
   }
 }

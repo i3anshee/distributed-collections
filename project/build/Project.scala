@@ -19,6 +19,7 @@ class Project(info: ProjectInfo) extends ParentProject(info) with IdeaProject {
   class HadoopBackendProject(info: ProjectInfo) extends DefaultProject(info) with IdeaProject with UtilDependencies {
     val hadoopCore = "org.apache.mahout.hadoop" % "hadoop-core" % "0.20.1" % "provided"
     val dependsOnDistributedCollectionsBackendAPI = distributedCollectionsBackendAPI
+
     // dependencies for modified kryo
     override def compileClasspath = super.compileClasspath +++
       ("lib" / "kryo-1.04-mod.jar") +++

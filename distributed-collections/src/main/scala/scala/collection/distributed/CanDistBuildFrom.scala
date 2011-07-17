@@ -1,5 +1,6 @@
 package scala.collection.distributed
 
+import api.shared.DistBuilderLike
 import collection.generic.CanBuildFrom
 
 /**
@@ -8,6 +9,6 @@ import collection.generic.CanBuildFrom
  */
 
 trait CanDistBuildFrom[-From, -Elem, +To] extends CanBuildFrom[From, Elem, To] {
-  def apply(from: From): RemoteBuilder[Elem, To]
-  def apply(): RemoteBuilder[Elem, To]
+  def apply(from: From): DistBuilderLike[Elem, To]
+  def apply(): DistBuilderLike[Elem, To]
 }

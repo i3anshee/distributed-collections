@@ -2,12 +2,13 @@ package scala.collection.distributed
 
 import api._
 import api.dag._
-import api.shared.DistIterableBuilderLike
+import api.shared.DistBuilderLike
 import collection.generic.GenericCompanion
 import scala.colleciton.distributed.hadoop.FSAdapter
 import execution.{DCUtil, ExecutionPlan}
 import _root_.io.CollectionsIO
 import collection.{GenTraversable, immutable}
+import shared.DistIterableBuilder
 
 trait DistIterable[+T]
   extends immutable.GenIterable[T]
@@ -33,11 +34,12 @@ trait DistIterable[+T]
 
   override def toString = seq.mkString(stringPrefix + "(", ", ", ")")
 
+  def isView = false
+
   def flatten[B >: T](collections: GenTraversable[DistIterable[B]]): DistIterable[T] = {
     val outDistColl = new DistCollection[T](DCUtil.generateNewCollectionURI)
     val allCollections = List(this) ++ collections
     ExecutionPlan.addPlanNode(allCollections, new FlattenPlanNode(allCollections, elemType), List(outDistColl))
-    //    ExecutionPlan.execute(outDistColl)
     outDistColl
   }
 
@@ -70,9 +72,10 @@ trait DistIterable[+T]
     }
   }
 
-  protected def distForeach[U](distOp: T => U, builders: scala.Seq[DistIterableBuilderLike[_, _]]) {
+  protected def distForeach[U](distOp: T => U, builders: scala.Seq[DistBuilderLike[_, _]]) {
     // extract dist iterable
     val node = ExecutionPlan.addPlanNode(List(this), new DistForeachPlanNode[T, U](distOp), builders.map(v => ReifiedDistCollection(v)))
+    builders.foreach(_.applyConstraints)
   }
 
   def distDo(distOp: (T, UntypedEmitter, DistContext) => Unit, outputs: immutable.GenSeq[(CollectionId, Manifest[_])]) = {
@@ -82,7 +85,10 @@ trait DistIterable[+T]
     outDistColls
   }
 
+  //TODO (VJ) investigate what is the problem
   protected[this] def parCombiner = throw new UnsupportedOperationException("Not implemented yet!!!")
+
+  def delete: Unit = null
 }
 
 /**$factoryInfo
@@ -90,7 +96,7 @@ trait DistIterable[+T]
 object DistIterable extends DistFactory[DistIterable] {
   implicit def canBuildFrom[T]: CanDistBuildFrom[Coll, T, DistIterable[T]] = new GenericCanDistBuildFrom[T]
 
-  def newRemoteBuilder[T] = new IterableRemoteBuilder[T]
+  def newDistBuilder[T] = DistIterableBuilder[T]()
 
-  def newBuilder[T] = new IterableRemoteBuilder[T]
+  def newBuilder[T] = DistIterableBuilder[T]()
 }

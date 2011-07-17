@@ -3,13 +3,13 @@ package execution
 import java.util.UUID
 import java.net.URI
 import scala.collection.distributed.api.dag._
-import collection.distributed.api.{ReifiedDistCollection}
-import collection.{GenTraversable, GenSeq, mutable}
-import mutable.ArrayBuffer
+import collection.distributed.api.ReifiedDistCollection
+import collection.{GenTraversableOnce, GenSeq}
+import collection.mutable.ArrayBuffer
 
 object ExecutionPlan {
   var exPlanDAG: ExPlanDAG = new ExPlanDAG()
-  var globalCache = new mutable.HashMap[String, Any]()
+  val markedCollections = new ArrayBuffer[ReifiedDistCollection]()
 
   def addPlanNode(inputs: GenSeq[ReifiedDistCollection], newPlanNode: PlanNode, output: GenSeq[ReifiedDistCollection]): PlanNode = {
     copy(inputs).foreach(input => findOrCreateParent(input).connect(input, newPlanNode))
@@ -21,17 +21,22 @@ object ExecutionPlan {
   def addPlanNode(input: ReifiedDistCollection, newPlanNode: PlanNode, out: ReifiedDistCollection): PlanNode =
     addPlanNode(List(input), newPlanNode, List(out))
 
+  def markCollection(coll: ReifiedDistCollection) = markedCollections += coll
+
+  def execute: Unit = execute(Nil)
+
   def execute(outputs: ReifiedDistCollection*): Unit =
     execute(outputs)
 
-  def execute(outputs: GenTraversable[ReifiedDistCollection]): Unit = {
+  def execute(outputs: GenTraversableOnce[ReifiedDistCollection]): Unit = {
 
-    // attach outputs that need to be saved
-    outputs.foreach(output => exPlanDAG.getPlanNode(output).get.connect(output, new OutputPlanNode(ReifiedDistCollection(output))))
+    // attach output nodes
+    (Nil ++ outputs ++ markedCollections).foreach(output => exPlanDAG.getPlanNode(output).get.connect(output, new OutputPlanNode(ReifiedDistCollection(output))))
+    markedCollections.clear()
 
     println(ExecutionPlan.toString)
 
-    JobExecutor.execute(exPlanDAG, globalCache)
+    JobExecutor.execute(exPlanDAG)
     exPlanDAG = new ExPlanDAG()
   }
 

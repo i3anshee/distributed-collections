@@ -1,6 +1,7 @@
 package scala.collection.distributed
 
 import annotation.unchecked.uncheckedVariance
+import api.shared.DistBuilderLike
 import collection.generic.{GenericCompanion, GenericTraversableTemplate}
 import collection.mutable.Builder
 
@@ -11,25 +12,24 @@ import collection.mutable.Builder
 
 trait GenericDistTemplate[+A, +CC[X] <: DistIterable[X]]
   extends GenericTraversableTemplate[A, CC]
-  with HasNewRemoteBuilder[A, CC[A]@uncheckedVariance] {
+  with HasNewDistBuilder[A, CC[A]@uncheckedVariance] {
 
   def companion: GenericCompanion[CC] with GenericDistCompanion[CC]
 
   protected[this] override def newBuilder: collection.mutable.Builder[A, CC[A]] = companion.newBuilder[A]
 
-  override def genericBuilder[B]: Builder[B, CC[B]] = genericRemoteBuilder[B]
+  override def genericBuilder[B]: Builder[B, CC[B]] = genericDistBuilder[B]
 
-  protected[this] def newRemoteBuilder = genericRemoteBuilder
+  protected[this] def newDistBuilder = genericDistBuilder
 
-  def genericRemoteBuilder[B]: RemoteBuilder[B, CC[B]] = companion.newRemoteBuilder[B]
+  def genericDistBuilder[B]: DistBuilderLike[B, CC[B]] = companion.newDistBuilder[B]
 
 }
 
-trait GenericDistMapTemplate[K, +V, +CC[X, Y] <: DistMap[X, Y]] extends GenericDistTemplate[(K, V), DistIterable]
-{
-  protected[this] override def newRemoteBuilder: RemoteBuilder[(K, V), CC[K, V]] = mapCompanion.newRemoteBuilder[K, V]
+trait GenericDistMapTemplate[K, +V, +CC[X, Y] <: DistMap[X, Y]] extends GenericDistTemplate[(K, V), DistIterable] {
+  protected[this] override def newDistBuilder: DistBuilderLike[(K, V), CC[K, V]] = mapCompanion.newDistBuilder[K, V]
 
   def mapCompanion: GenericDistMapCompanion[CC]
 
-  def genericMapRemoteBuilder[P, Q]: RemoteBuilder[(P, Q), CC[P, Q]] = mapCompanion.newRemoteBuilder[P, Q]
+  def genericMapDistBuilder[P, Q]: DistBuilderLike[(P, Q), CC[P, Q]] = mapCompanion.newDistBuilder[P, Q]
 }

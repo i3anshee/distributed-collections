@@ -1,7 +1,9 @@
 package scala.collection.distributed
 
+import api.shared.DistBuilderLike
 import collection.generic.GenericCompanion
 import collection.GenSet
+import shared.DistSetBuilder
 
 /**
  * User: vjovanovic
@@ -24,5 +26,5 @@ with DistSetLike[T, DistSet[T], Set[T]] {
 object DistSet extends DistSetFactory[DistSet] {
   implicit def canBuildFrom[T]: CanDistBuildFrom[Coll, T, DistSet[T]] = new GenericDistBuildFrom[T]
 
-  def newRemoteBuilder[T]: RemoteBuilder[T, DistSet[T]] = new DistSetRemoteBuilder[T]
+  def newDistBuilder[T]: DistBuilderLike[T, DistSet[T]] = DistSetBuilder[T]()
 }
