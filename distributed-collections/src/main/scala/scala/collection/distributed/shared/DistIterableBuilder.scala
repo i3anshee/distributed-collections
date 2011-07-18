@@ -11,17 +11,25 @@ import scala.Boolean
  * @author Vojin Jovanovic
  */
 
-private[this] class DistIterableBuilder[T](uri: URI)
-  extends DistSideEffects(CollectionType) with DistBuilderLike[T, DistIterable[T]] {
-
+abstract class BuilderDistSideEffects[T, That](uri: URI, val uniqueElements: Boolean = false)
+  extends DistSideEffects(CollectionType)
+  with DistBuilderLike[T, That] {
   def location = uri
+
+  def +=(value: T) = throw new RuntimeException("Addition allowed only in cluster nodes!!!")
+}
+
+//TODO (VJ) LOW maybe implement with higher kinded types
+private[this] class DistIterableBuilder[T](uri: URI, uniqueElements: Boolean = false)
+  extends BuilderDistSideEffects[T, DistIterable[T]](uri, uniqueElements) {
+
+  def uniqueElementsBuilder = new DistIterableBuilder[T](location, true)
 
   def result(): DistIterable[T] = new DistCollection[T](location)
 
-  def +=(value: T) = throw new RuntimeException("Addition allowed only in cluster nodes!!!")
+  def result(uri: URI): DistIterable[T] = new DistCollection[T](uri)
 
   def applyConstraints = {}
-
 }
 
 object DistIterableBuilder {
@@ -56,13 +64,14 @@ object DistIterableBuilder {
 
 }
 
-private[this] class DistCollectionBuilder[T](uri: URI) extends DistSideEffects(CollectionType) with DistBuilderLike[T, DistCollection[T]] {
+private[this] class DistCollectionBuilder[T](uri: URI, uniqueElements: Boolean = false)
+  extends BuilderDistSideEffects[T, DistCollection[T]](uri, uniqueElements) {
 
-  def location = uri
+  def uniqueElementsBuilder = new DistCollectionBuilder[T](location, true)
 
   def result(): DistCollection[T] = new DistCollection[T](location)
 
-  def +=(value: T) = throw new RuntimeException("Addition allowed only in cluster nodes!!!")
+  def result(uri: URI): DistCollection[T] = new DistCollection[T](uri)
 
   def applyConstraints = {}
 
@@ -78,13 +87,37 @@ object DistCollectionBuilder {
   }
 }
 
-private[this] class DistSetBuilder[T](uri: URI)
-  extends DistSideEffects(CollectionType) with DistBuilderLike[T, DistSet[T]] {
-  def location = uri
+private[this] class DistCollectionViewBuilder[T](uri: URI, uniqueElements: Boolean = false)
+  extends BuilderDistSideEffects[T, DistCollectionView[T]](uri, uniqueElements) {
 
-  def result() = new DistHashSet(uri)
+  def uniqueElementsBuilder = new DistCollectionViewBuilder[T](location, true)
 
-  def +=(value: T) = throw new UnsupportedOperationException("Element addition allowed only in cluster nodes!!!")
+  def result(): DistCollectionView[T] = new DistCollectionView[T](location)
+
+  def result(uri: URI): DistCollectionView[T] = new DistCollectionView[T](uri)
+
+  def applyConstraints = {}
+
+}
+
+object DistCollectionViewBuilder {
+  def apply[T](): DistBuilderLike[T, DistCollectionView[T]] = apply(DCUtil.generateNewCollectionURI)
+
+  def apply[T](uri: URI): DistBuilderLike[T, DistCollectionView[T]] = {
+    val proxy = new DistBuilderProxy[T, DistCollectionView[T]](new DistCollectionViewBuilder(uri))
+    DistSideEffects.add(proxy)
+    proxy
+  }
+}
+
+private[this] class DistSetBuilder[T](uri: URI, uniqueElements: Boolean = false)
+  extends BuilderDistSideEffects[T, DistSet[T]](uri, uniqueElements) {
+
+  def uniqueElementsBuilder = new DistSetBuilder[T](location, true)
+
+  def result() = new DistHashSet(location)
+
+  def result(uri: URI) = new DistHashSet(uri)
 
   def applyConstraints = new DistCollection[T](uri).view.groupBySeq(_.hashCode).flatMap(v => v._2.toSet)
 }
@@ -99,14 +132,16 @@ object DistSetBuilder {
   }
 }
 
-private[this] class DistHashSetBuilder[T](uri: URI) extends DistSideEffects(CollectionType) with DistBuilderLike[T, DistHashSet[T]] {
-  def location = uri
+private[this] class DistHashSetBuilder[T](uri: URI, uniqueElements: Boolean = false)
+  extends BuilderDistSideEffects[T, DistHashSet[T]](uri, uniqueElements) {
 
-  def result() = new DistHashSet(uri)
+  def uniqueElementsBuilder = new DistHashSetBuilder[T](location, true)
 
-  def +=(value: T) = throw new UnsupportedOperationException("Element addition allowed only in cluster nodes!!!")
+  def result() = new DistHashSet[T](location)
 
-  def applyConstraints = new DistCollection[T](uri).view.groupBySeq(_.hashCode).flatMap(v => v._2.toSet)
+  def result(uri: URI) = new DistHashSet[T](uri)
+
+  def applyConstraints = if (!this.uniqueElements) new DistCollection[T](uri).view.groupBySeq(_.hashCode).flatMap(v => v._2.toSet)
 }
 
 object DistHashSetBuilder {
@@ -119,14 +154,15 @@ object DistHashSetBuilder {
   }
 }
 
-private[this] class DistMapBuilder[K, V](uri: URI) extends DistSideEffects(CollectionType) with DistBuilderLike[(K, V), DistMap[K, V]] {
-  def location = uri
-
-  def +=(elem: (K, V)) = throw new UnsupportedOperationException("Element addition allowed only in cluster nodes!!!")
-
-  def applyConstraints = {}
+private[this] class DistMapBuilder[K, V](uri: URI, uniqueElements: Boolean = false)
+  extends BuilderDistSideEffects[(K, V), DistMap[K, V]](uri, uniqueElements) {
+  def uniqueElementsBuilder = new DistMapBuilder[K, V](location, true)
 
   def result() = new DistHashMap[K, V](location)
+
+  def result(uri: URI) = new DistHashMap[K, V](uri)
+
+  def applyConstraints = {}
 }
 
 object DistMapBuilder {
@@ -139,14 +175,17 @@ object DistMapBuilder {
   }
 }
 
-private[this] class DistHashMapBuilder[K, V](uri: URI) extends DistSideEffects(CollectionType) with DistBuilderLike[(K, V), DistHashMap[K, V]] {
-  def location = uri
+private[this] class DistHashMapBuilder[K, V](uri: URI, uniqueElements: Boolean = false)
+  extends BuilderDistSideEffects[(K, V), DistHashMap[K, V]](uri, uniqueElements) {
 
-  def +=(elem: (K, V)) = throw new UnsupportedOperationException("Element addition allowed only in cluster nodes!!!")
+  def uniqueElementsBuilder = new DistHashMapBuilder[K, V](location, true)
 
+  //TODO (VJ) apply map constraints
   def applyConstraints = {}
 
   def result() = new DistHashMap[K, V](location)
+
+  def result(uri: URI) = new DistHashMap[K, V](uri)
 }
 
 object DistHashMapBuilder {

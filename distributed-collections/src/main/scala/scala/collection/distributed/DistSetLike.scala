@@ -33,15 +33,15 @@ trait DistSetLike[T, +Repr <: DistSetLike[T, Repr, Sequential] with DistSet[T], 
 
   //TODO (VJ) fix the constraints for sets (apparently views should not enforce constraints until forced)
   //TODO (VJ) compare performance to native
-  def --(that: GenTraversableOnce[T]): Repr =
-    map(v => (v, true)) ++
-      that.asInstanceOf[DistIterable[T]].map(v => (v, false))
-        .groupByKey
-        .filter(el => el._2.size == 1 && el._2.head == true).map(_._1)
+  def --(that: GenTraversableOnce[T]): Repr = throw new UnsupportedOperationException("Not implemented yet!!!")
+//    map(v => (v, true)) ++
+//      that.asInstanceOf[DistIterable[T]].map(v => (v, false))
+//        .groupByKey
+//        .filter(el => el._2.size == 1 && el._2.head == true).map(_._1)
 
-  def union(that: GenSet[T]): Repr = ++(that)
+  def union(that: GenSet[T]): Repr = throw new UnsupportedOperationException("Not implemented yet!!!")
 
-  def diff(that: GenSet[T]): Repr = --(that)
+  def diff(that: GenSet[T]): Repr = this -- that
 
   override def subsetOf(that: GenSet[T]): Boolean = throw new UnsupportedOperationException("Unsupported operation!!!")
 

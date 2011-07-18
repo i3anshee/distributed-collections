@@ -26,6 +26,7 @@ class DistHashMap[K, +V](uri: URI)
 
   def get(k: K) = throw new UnsupportedOperationException("Not implemented yet!!")
 
+  def view = throw new UnsupportedOperationException("Not implemented yet!!")
 }
 
 object DistHashMap extends DistMapFactory[DistHashMap] {

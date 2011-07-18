@@ -24,6 +24,8 @@ with Serializable {
 
   override def seq = remoteIterable.toSet[T]
 
+  def view = throw new UnsupportedOperationException("Not implemented yet!!")
+
   override def empty: DistHashSet[T] = throw new UnsupportedOperationException("Not implemented yet!!")
 }
 

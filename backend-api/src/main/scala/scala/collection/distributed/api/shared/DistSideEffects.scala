@@ -2,6 +2,7 @@ package scala.collection.distributed.api.shared
 
 import java.util.concurrent.atomic.AtomicLong
 import java.nio.ByteBuffer
+import java.net.URI
 import collection.mutable.Builder
 import collection.mutable
 import collection.distributed.api.{RecordNumber, ReifiedDistCollection}
@@ -61,6 +62,10 @@ trait DistCounterLike {
 
 trait DistBuilderLike[-Elem, +To] extends Builder[Elem, To] with ReifiedDistCollection {
 
+  def uniqueElementsBuilder: DistBuilderLike[Elem, To] with DistSideEffects
+
+  def result(uri: URI): To
+
   def result(): To
 
   def clear() = throw new UnsupportedOperationException("Remote builders can not be cleared as the element addition is part of the framework!!!")
@@ -68,6 +73,8 @@ trait DistBuilderLike[-Elem, +To] extends Builder[Elem, To] with ReifiedDistColl
   def applyConstraints: Unit
 
   def computationData = location.toString.getBytes()
+
+  def uniqueElements: Boolean
 }
 
 trait RecordCounterLike {
@@ -135,10 +142,16 @@ class DistBuilderProxy[T, Repr](@transient override var impl: DistSideEffects wi
 
   def result() = findImpl.result
 
+  def result(uri: URI) = findImpl.result(uri)
+
   def +=(value: T) = {
     findImpl += value
     this
   }
+
+  def uniqueElements = findImpl.uniqueElements
+
+  def uniqueElementsBuilder = new DistBuilderProxy[T, Repr](impl.uniqueElementsBuilder)
 
   def applyConstraints = findImpl.applyConstraints
 }

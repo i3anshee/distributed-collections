@@ -7,16 +7,17 @@ import collection.generic.GenericCompanion
 import scala.colleciton.distributed.hadoop.FSAdapter
 import execution.{DCUtil, ExecutionPlan}
 import _root_.io.CollectionsIO
-import collection.{GenTraversable, immutable}
 import shared.DistIterableBuilder
+import collection.{GenIterable, GenTraversable, immutable}
 
 trait DistIterable[+T]
-  extends immutable.GenIterable[T]
+  extends GenIterable[T]
   with GenericDistTemplate[T, DistIterable]
-  with DistIterableLike[T, DistIterable[T], immutable.Iterable[T]]
+  with DistIterableLike[T, DistIterable[T], Iterable[T]]
   with ReifiedDistCollection {
 
-  def remoteIterable: immutable.Iterable[T] = FSAdapter.valuesIterable(this.location)
+  //TODO (VJ) move to backend
+  def remoteIterable: Iterable[T] = FSAdapter.valuesIterable(this.location)
 
   override def companion: GenericCompanion[DistIterable] with GenericDistCompanion[DistIterable] = DistIterable
 

@@ -15,6 +15,7 @@ class DistBuilderNode(val uri: URI)
   var output: (RuntimePlanNode, Traversable[RuntimePlanNode]) = null
 
   def result() = throw new RuntimeException("Creation of ditributed collecitons is impossible in cluster nodes!s");
+  def result(uri : URI) = throw new RuntimeException("Creation of ditributed collecitons is impossible in cluster nodes!s");
 
   def +=(element: Any) = {
     output._2.foreach(v => {
@@ -28,4 +29,8 @@ class DistBuilderNode(val uri: URI)
   def applyConstraints = throw new UnsupportedOperationException("Constraints can be applied only on client side!!!!")
 
   def location = uri
+
+  def uniqueElements = throw new UnsupportedOperationException("Client side does not have access to builder elements information!!!")
+
+  def uniqueElementsBuilder = throw new UnsupportedOperationException("Client side can not create a new builder!!!")
 }

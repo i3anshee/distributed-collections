@@ -23,7 +23,6 @@ trait GenericDistTemplate[+A, +CC[X] <: DistIterable[X]]
   protected[this] def newDistBuilder = genericDistBuilder
 
   def genericDistBuilder[B]: DistBuilderLike[B, CC[B]] = companion.newDistBuilder[B]
-
 }
 
 trait GenericDistMapTemplate[K, +V, +CC[X, Y] <: DistMap[X, Y]] extends GenericDistTemplate[(K, V), DistIterable] {

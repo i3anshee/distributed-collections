@@ -9,24 +9,29 @@ import collection.{GenTraversableOnce, GenIterableLike}
 import execution.{ExecutionPlan}
 import shared.{DistRecordCounter, DistIterableBuilder}
 
+// TODO (VJ) convert group by sort to a new interface
+// TODO (VJ) convert combine to the new interface
+// TODO (VJ) extract counters as well as builders
 // TODO (VJ) HIGH fix the uniqueness preserved
 // TODO (VJ) HIGH consolidate ExecutionPlan.execute
 // TODO (VJ) LOW fix the isEmpty check
 // TODO (VJ) LOW fix the GenXXX interfaces. If they are sequential or parallel completely different algorithm needs to be used
-trait DistIterableLike[+T, +Repr <: DistIterable[T], +Sequential <: immutable.Iterable[T] with GenIterableLike[T, Sequential]]
+trait DistIterableLike[+T, +Repr <: DistIterable[T], +Sequential <: Iterable[T] with GenIterableLike[T, Sequential]]
   extends GenIterableLike[T, Repr]
   with HasNewDistBuilder[T, Repr]
   with RichDistProcessable[T] {
 
   self: DistIterableLike[T, Repr, Sequential] =>
 
-  def isView: Boolean
+  protected[this] def isView: Boolean
 
   def seq: Sequential
 
-  protected def execute: Unit = if (!isView) ExecutionPlan.execute(repr)
+  protected[this] def execute: Unit = if (!isView) ExecutionPlan.execute(repr)
 
-  def view: DistIterableLike[T, Repr, Sequential] = throw new UnsupportedOperationException("Implementation in progress!!!")
+  protected[this] def forceExecute: Unit = ExecutionPlan.execute(repr)
+
+  def view: DistIterableView[T, Repr, Sequential]
 
   //TODO (VJ) fix this issue
   protected[this] def bf2seq[S, That](bf: CanBuildFrom[Repr, S, That]) = new CanBuildFrom[Sequential, S, That] {
@@ -49,25 +54,27 @@ trait DistIterableLike[+T, +Repr <: DistIterable[T], +Sequential <: immutable.It
 
   def mkString: String = seq.mkString
 
+  //TODO (VJ) LOW maybe just write the location of the collection (it is less dangerous)
   override def toString = seq.mkString(stringPrefix + "(", ", ", ")")
 
   def map[S, That](f: T => S)(implicit bf: CanBuildFrom[Repr, S, That]): That = {
-    val builder = bf.asInstanceOf[CanDistBuildFrom[Repr, S, That]](repr)
-    distForeach(el => builder += f(el), DistIterableBuilder.extractBuilders(f) :+ builder)
+    val rb = bf.asInstanceOf[CanDistBuildFrom[Repr, S, That]](repr)
+    distForeach(el => rb += f(el), DistIterableBuilder.extractBuilders(f) :+ rb)
     execute
-    builder.result()
+    rb.result
   }
 
   def flatMap[S, That](f: (T) => GenTraversableOnce[S])(implicit bf: CanBuildFrom[Repr, S, That]): That = {
     val rb = bf.asInstanceOf[CanDistBuildFrom[Repr, S, That]](repr)
     foreach(el => f(el).foreach(v => rb += v))
-    rb.result()
+    execute
+    rb.result
   }
 
   def filter(p: T => Boolean): Repr = {
-    val rb = newDistBuilder
-    //    rb.uniquenessPreserved
+    val rb = newDistBuilder.uniqueElementsBuilder
     foreach(el => if (p(el)) rb += el)
+    execute
     rb.result
   }
 
@@ -133,11 +140,10 @@ trait DistIterableLike[+T, +Repr <: DistIterable[T], +Sequential <: immutable.It
     rb.result()
   }
 
-  def ++[B >: T, That](that: GenTraversableOnce[B])(implicit bf: CanBuildFrom[Repr, B, That]) = {
-    val remoteBuilder = bf.asInstanceOf[CanDistBuildFrom[Repr, T, That]](repr)
-    //TODO (VJ) make flatten accept the builder
-    //    flatten(that.asInstanceOf[DistIterable[B]])
-    throw new UnsupportedOperationException("Waiting for complete removal of DistDo!!!")
+  def ++[B >: T, That](that: GenTraversableOnce[B])(implicit bf: CanBuildFrom[Repr, B, That]): That = {
+    val rb = bf.asInstanceOf[CanDistBuildFrom[Repr, T, That]](repr)
+    val collection = flatten(that.asInstanceOf[DistIterable[B]])
+    rb.result(collection.location)
   }
 
   def reduceOption[A1 >: T](op: (A1, A1) => A1) = if (isEmpty) None else Some(reduce(op))
@@ -299,9 +305,7 @@ trait DistIterableLike[+T, +Repr <: DistIterable[T], +Sequential <: immutable.It
   // TODO (vj) optimize when partitioning is introduced
   // TODO (vj) for now use only shared collection.
   def drop(n: Int) = {
-    val rb = newDistBuilder
-    //    rb.uniquenessPreserved
-
+    val rb = newDistBuilder.uniqueElementsBuilder
     // max of records sorted by file part
     //    val sizes = new DSECollection[(Long, Long)](
     //      Some(_.foldLeft((0L, 0L))((aggr, v) => (v._1, scala.math.max(aggr._2, v._2)))),
