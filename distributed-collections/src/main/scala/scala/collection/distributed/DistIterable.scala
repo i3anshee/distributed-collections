@@ -37,59 +37,36 @@ trait DistIterable[+T]
 
   def isView = false
 
-  def flatten[B >: T](collections: GenTraversable[DistIterable[B]]): DistIterable[T] = {
+  protected[this] def flatten[B >: T](collections: GenTraversable[DistIterable[B]]): DistIterable[T] = {
     val outDistColl = new DistCollection[T](DCUtil.generateNewCollectionURI)
-    val allCollections = List(this) ++ collections
-    ExecutionPlan.addPlanNode(allCollections, new FlattenPlanNode(allCollections, elemType), List(outDistColl))
+    val allCollections = (List(this) ++ collections).map(v => ReifiedDistCollection(v))
+    ExecutionPlan.addPlanNode(allCollections, new FlattenPlanNode(allCollections, elemType), List(ReifiedDistCollection(outDistColl)))
     outDistColl
   }
 
-  def groupBySort[S, K, K1 <: K, T1](key: (T, Emitter[T1]) => K, by: (K1) => Ordered[S] = nullOrdered[K]): DistMap[K, immutable.GenIterable[T1]] with DistCombinable[K, T1] = {
-    val km = manifest[Any]
-    val sm = manifest[Any]
-    val t1m = manifest[Any]
-    val t2m = manifest[Any]
-    val kvp = manifest[(Any, Any)]
-
-
-    var input: ReifiedDistCollection = this
-
-    var output = ReifiedDistCollection(DCUtil.generateNewCollectionURI, kvp)
-    ExecutionPlan.addPlanNode(input, GroupByPlanNode(key, km), output)
-    input = output
-
-    if (by != NullOrdered) {
-      var output = ReifiedDistCollection(DCUtil.generateNewCollectionURI, elemType)
-      ExecutionPlan.addPlanNode(input, new SortPlanNode[K1, S](by, sm), output)
-      input = output
-    }
-
-    new DistHashMap[K, immutable.GenIterable[T1]](input.location) with DistCombinable[K, T1] {
-      def combine[T2 >: T1](combine: (Iterable[T1]) => T2) = {
-        var output = ReifiedDistCollection(DCUtil.generateNewCollectionURI, kvp)
-        ExecutionPlan.addPlanNode(input, new CombinePlanNode(combine), output)
-        new DistHashMap[K, T2](output.location)
-      }
-    }
+  protected[this] def groupByKey[K, V](kvOp: (T) => (K, V)): DistMap[K, immutable.GenIterable[V]] = {
+    val kvp = manifest[Any]
+    val output = ReifiedDistCollection(DCUtil.generateNewCollectionURI, kvp)
+    ExecutionPlan.addPlanNode(this, GroupByPlanNode(kvOp, kvp), output)
+    new DistHashMap[K, immutable.GenIterable[V]](output.location)
   }
 
-  protected def distForeach[U](distOp: T => U, builders: scala.Seq[DistBuilderLike[_, _]]) {
+  protected[this] def combine[K, V, V1](combine: (Iterable[V]) => V1)(implicit ev: <:<[T, (K, V)]): DistIterable[(K, V1)] = {
+    val valRes = manifest[Any]
+    val output = ReifiedDistCollection(DCUtil.generateNewCollectionURI, valRes)
+    ExecutionPlan.addPlanNode(ReifiedDistCollection(this), CombinePlanNode(combine), output)
+    new DistCollection[(K, V1)](output.location)
+  }
+
+  protected def distForeach[U](distOp: T => U, builders: scala.Seq[DistBuilderLike[_, _]]) = {
     // extract dist iterable
-    val node = ExecutionPlan.addPlanNode(List(this), new DistForeachPlanNode[T, U](distOp), builders.map(v => ReifiedDistCollection(v)))
+    val node = ExecutionPlan.addPlanNode(
+      List(ReifiedDistCollection(this)), new DistForeachPlanNode[T, U](distOp), builders.map(v => ReifiedDistCollection(v)))
     builders.foreach(_.applyConstraints)
   }
 
-  def distDo(distOp: (T, UntypedEmitter, DistContext) => Unit, outputs: immutable.GenSeq[(CollectionId, Manifest[_])]) = {
-    val outDistColls = outputs.map(out => new DistCollection[Any](out._1.location))
-    val node = ExecutionPlan.addPlanNode(List(this), new DistDoPlanNode[T](distOp), outDistColls)
-
-    outDistColls
-  }
-
-  //TODO (VJ) investigate what is the problem
+  //TODO (VJ) investigate how to convert to parallel
   protected[this] def parCombiner = throw new UnsupportedOperationException("Not implemented yet!!!")
-
-  def delete: Unit = null
 }
 
 /**$factoryInfo

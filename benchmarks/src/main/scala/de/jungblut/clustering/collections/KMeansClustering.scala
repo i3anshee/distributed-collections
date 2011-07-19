@@ -25,7 +25,8 @@ object KMeansClustering {
     var converged = false
     while (!converged) {
       val seqCenters = centers.seq
-      val (result, distCenters) = points.map(v => {
+      val distCenters = DistIterableBuilder[ClusterCenter]()
+      val result = points.map(v => {
         var nearest: ClusterCenter = null
         var nearestDistance: Double = Double.MaxValue
 
@@ -34,8 +35,7 @@ object KMeansClustering {
           if (nearest == null) {
             nearest = c
             nearestDistance = dist
-          }
-          else {
+          } else {
             if (nearestDistance > dist) {
               nearest = c
               nearestDistance = dist
@@ -44,9 +44,7 @@ object KMeansClustering {
         }
 
         (nearest, v._2)
-      }).groupByKey.distDo((values: (ClusterCenter, GenIterable[Vector]),
-                            em: Emitter2[(ClusterCenter, Vector), ClusterCenter],
-                            con: DistContext) => {
+      }).groupByKey.flatMap((values: (ClusterCenter, GenIterable[Vector])) => {
         var newCenter: Vector = new Vector
         val vectorList: Buffer[Vector] = new ArrayBuffer[Vector]
         val vectorSize: Int = values._1.getCenter.getVector.length
@@ -70,17 +68,15 @@ object KMeansClustering {
         val center: ClusterCenter = new ClusterCenter(newCenter)
 
         // closure side effects
-        em.emit2(center)
+        distCenters += center
         if (center.converged(values._1)) convergedCounter += 1
 
-        // emmit the result
-        vectorList.foreach(v => em.emit((center, v)))
+        vectorList.map(v => (center, v))
       })
 
-      ExecutionPlan.execute(result, distCenters)
 
       points = result
-      centers = distCenters
+      centers = distCenters.result
 
       converged = (convergedCounter() == seqCenters.size)
       convergedCounter += -convergedCounter()
