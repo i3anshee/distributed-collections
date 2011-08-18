@@ -1,7 +1,6 @@
 package tasks.dag
 
 import collection.distributed.api.dag.{InputPlanNode, IOPlanNode}
-import java.io.{ObjectInputStream, ByteArrayInputStream}
 import collection.distributed.api.DistContext
 import collection.JavaConversions._
 import org.apache.hadoop.io.BytesWritable
@@ -26,6 +25,7 @@ class MapInputRuntimePlanNode(node: InputPlanNode, serializerInstance: Serialize
 
 class ReduceInputRuntimePlanNode(node: InputPlanNode, serializerInstance: SerializerInstance)
   extends InputRuntimePlanNode(node, serializerInstance) {
+
   def copyUnconnected() = new ReduceInputRuntimePlanNode(node, serializerInstance)
 
   override def execute(parent: RuntimePlanNode, context: DistContext, key: Any, value: Any) = {
@@ -33,6 +33,4 @@ class ReduceInputRuntimePlanNode(node: InputPlanNode, serializerInstance: Serial
     asScalaIterator(value.asInstanceOf[java.util.Iterator[BytesWritable]]).foreach(v => deserializedValue += serializerInstance.deserialize(v.getBytes).asInstanceOf[Any])
     emitter.emit((key, deserializedValue.toList))
   }
-
 }
-

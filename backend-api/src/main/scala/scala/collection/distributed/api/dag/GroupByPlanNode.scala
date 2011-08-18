@@ -1,8 +1,8 @@
 package scala.collection.distributed.api.dag
 
 import collection.mutable
-import mutable.{ArrayBuffer, Buffer}
-import collection.distributed.api.{ReifiedDistCollection, UniqueId, CollectionId, Emitter}
+import mutable.ArrayBuffer
+import collection.distributed.api.{ReifiedDistCollection, UniqueId}
 
 case class GroupByPlanNode[T, V, K](keyFunction: (T) => (K, V),
                                     kmf: Manifest[_],

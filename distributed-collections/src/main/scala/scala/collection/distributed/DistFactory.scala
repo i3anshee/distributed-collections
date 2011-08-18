@@ -1,6 +1,6 @@
 package scala.collection.distributed
 
-import collection.generic.{GenericParCompanion, TraversableFactory}
+import collection.generic.{GenTraversableFactory, GenericParCompanion, TraversableFactory}
 
 /**
  * User: vjovanovic
@@ -8,7 +8,7 @@ import collection.generic.{GenericParCompanion, TraversableFactory}
  */
 
 abstract class DistFactory[CC[X] <: DistIterable[X] with GenericDistTemplate[X, CC]]
-  extends TraversableFactory[CC]
+  extends GenTraversableFactory[CC]
   with GenericDistCompanion[CC] {
 
   class GenericCanDistBuildFrom[A] extends GenericCanBuildFrom[A] with CanDistBuildFrom[CC[_], A, CC[A]] {

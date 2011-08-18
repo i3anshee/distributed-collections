@@ -3,7 +3,6 @@ package tasks.dag
 import collection.mutable
 import collection.distributed.api.dag._
 import mutable.{Buffer, ArrayBuffer}
-import tasks.BufferEmitter
 import collection.distributed.api.{ReifiedDistCollection, DistContext, UntypedEmitter}
 
 /**
@@ -36,8 +35,6 @@ trait RuntimePlanNode extends PlanNode {
   def execute(parent: RuntimePlanNode, context: DistContext, key: Any, value: Any) = this.node match {
     case v: FlattenPlanNode => emitter.emit(value)
 
-    case v: DistDoPlanNode[Any] => v.distOP(value, emitter, context)
-
     case v: DistForeachPlanNode[Any, Any] => v.distOP(value)
 
     case v: CombinePlanNode[Any, Any] =>
@@ -45,9 +42,7 @@ trait RuntimePlanNode extends PlanNode {
       emitter.emit((k, v.op(it)))
 
     case v: GroupByPlanNode[Any, Any, Any] =>
-      val tmpEmitter = new BufferEmitter(1)
-      val key = v.keyFunction(value, tmpEmitter)
-      tmpEmitter.getBuffer(0).foreach(v => emitter.emit((key, v)))
+      emitter.emit(v.keyFunction(value))
   }
 
 }

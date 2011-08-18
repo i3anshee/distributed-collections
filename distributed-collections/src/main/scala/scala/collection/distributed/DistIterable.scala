@@ -8,7 +8,7 @@ import scala.colleciton.distributed.hadoop.FSAdapter
 import execution.{DCUtil, ExecutionPlan}
 import _root_.io.CollectionsIO
 import shared.DistIterableBuilder
-import collection.{GenIterable, GenTraversable, immutable}
+import collection.{GenIterable, GenTraversable}
 
 trait DistIterable[+T]
   extends GenIterable[T]
@@ -23,6 +23,8 @@ trait DistIterable[+T]
 
   def stringPrefix = "DistIterable"
 
+  override def toString = stringPrefix + "(" + location.toString + ")"
+
   lazy val sizeLongVal: Long = CollectionsIO.getCollectionMetaData(this).size
 
   def size = if (sizeLong > Int.MaxValue) throw new RuntimeException("Size is larger than MAX_INT!!!") else sizeLong.toInt
@@ -33,8 +35,6 @@ trait DistIterable[+T]
 
   override def isEmpty = sizeLong != 0
 
-  override def toString = seq.mkString(stringPrefix + "(", ", ", ")")
-
   def isView = false
 
   protected[this] def flatten[B >: T](collections: GenTraversable[DistIterable[B]]): DistIterable[T] = {
@@ -44,11 +44,11 @@ trait DistIterable[+T]
     outDistColl
   }
 
-  protected[this] def groupByKey[K, V](kvOp: (T) => (K, V)): DistMap[K, immutable.GenIterable[V]] = {
+  protected[this] def groupByKey[K, V](kvOp: (T) => (K, V)): DistMap[K, GenIterable[V]] = {
     val kvp = manifest[Any]
     val output = ReifiedDistCollection(DCUtil.generateNewCollectionURI, kvp)
     ExecutionPlan.addPlanNode(this, GroupByPlanNode(kvOp, kvp), output)
-    new DistHashMap[K, immutable.GenIterable[V]](output.location)
+    new DistHashMap[K, GenIterable[V]](output.location)
   }
 
   protected[this] def combine[K, V, V1](combine: (Iterable[V]) => V1)(implicit ev: <:<[T, (K, V)]): DistIterable[(K, V1)] = {

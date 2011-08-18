@@ -1,8 +1,6 @@
 package scala.collection.distributed
 
-import api.Emitter
 import collection.{GenTraversableOnce, GenSet, GenSetLike, SetLike}
-import collection.immutable.GenIterable
 
 /**
  * User: vjovanovic

@@ -6,11 +6,10 @@ package scala.collection.distributed
  */
 
 import api.shared.DistBuilderLike
-import collection.generic.SetFactory
-
+import collection.generic.{GenSetFactory, SetFactory}
 
 abstract class DistSetFactory[CC[X] <: DistSet[X] with DistSetLike[X, CC[X], _] with GenericDistTemplate[X, CC]]
-  extends SetFactory[CC]
+  extends GenSetFactory[CC]
   with GenericDistCompanion[CC] {
 
   def newDistBuilder[A]: DistBuilderLike[A, CC[A]]

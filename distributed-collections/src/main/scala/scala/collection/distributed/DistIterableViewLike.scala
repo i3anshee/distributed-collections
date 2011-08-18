@@ -25,8 +25,8 @@ protected[distributed] trait DistIterableViewLike
   override def isView = true
 
   //TODO (VJ) fix this issue in a sweeter way
-  override protected[this] def newDistBuilder: scala.collection.distributed.api.shared.DistBuilderLike[T, This] =
-    DistCollectionViewBuilder[T]().asInstanceOf[scala.collection.distributed.api.shared.DistBuilderLike[T, This]]
+  override protected[this] def newDistBuilder: DistBuilderLike[T, This] =
+    DistCollectionViewBuilder[T]().asInstanceOf[DistBuilderLike[T, This]]
 
   //TODO (VJ) move to generic form (good for now...)
   def mark: Coll = {

@@ -19,7 +19,6 @@ class DistCollectionView[T](uri: URI)
 
   //TODO (VJ) I need an iterable view that triggers the distributed computation after being forced
   def seq = throw new UnsupportedOperationException("Need a lazy iterator here. Will be implemented later.")
-  // FSAdapter.iterator with a special view that triggers distributed computation
 
   protected[this] def viewIdString = ""
 

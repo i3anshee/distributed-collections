@@ -2,12 +2,6 @@ package examples
 
 import java.net.URI
 import collection.distributed._
-import api.Emitter
-import execution.ExecutionPlan
-import shared.DistCounter
-import collection.parallel.{ParSet, ParSeq}
-import collection.generic.CanBuildFrom
-
 /**
  * User: vjovanovic
  * Date: 4/26/11
@@ -25,7 +19,6 @@ object DistCollTest {
     val longSet = new DistHashSet[Long](new URI("./kryo-longsTo1m"))
 
     val materialized1 = longCol.view.filter(v => true).map(_ + 1).mark
-
     val materialized2 = (longCol.view.filter(v => true) ++ materialized1).force
 
     println(materialized1)

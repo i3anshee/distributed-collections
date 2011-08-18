@@ -17,6 +17,7 @@ import java.io.{ObjectOutputStream, ByteArrayOutputStream}
 import collection.distributed.api.io.CollectionMetaData
 import collection.JavaConversions._
 import collection.distributed.api.shared._
+import tasks.{DistributedCollectionsCombine, DistributedCollectionsReduce, DistributedCollectionsMapRunner}
 
 class GreedyMSCRBuilder extends JobBuilder {
 
@@ -55,7 +56,6 @@ class GreedyMSCRBuilder extends JobBuilder {
 
     val matchesReducer = (n: PlanNode) => n match {
       case v: InputPlanNode => (true, true)
-      case v: DistDoPlanNode[_] => (true, true)
       case v: DistForeachPlanNode[_, _] => (true, true)
       case v: OutputPlanNode => (true, false)
       case v: CombinePlanNode[_, _] => (true, true)
@@ -134,8 +134,15 @@ class GreedyMSCRBuilder extends JobBuilder {
       FileInputFormat.setInputPathFilter(job, classOf[MetaPathFilter])
       FileOutputFormat.setOutputPath(job, outputDir)
 
+      job.setInputFormat(classOf[SequenceFileInputFormat[_, _]])
+      job.setOutputFormat(classOf[SequenceFileOutputFormat[_, _]])
 
-      QuickTypeFixScalaI0.setJobClassesBecause210SnapshotWillNot(job, addCombiner, !reduceDAG.isEmpty, tempFileToURI.keys.toArray)
+      job.setMapRunnerClass(classOf[DistributedCollectionsMapRunner])
+      if (addCombiner) job.setCombinerClass(classOf[DistributedCollectionsCombine])
+      if (!reduceDAG.isEmpty) job.setReducerClass(classOf[DistributedCollectionsReduce])
+
+      for (output <- tempFileToURI.keys)
+        MultipleOutputs.addNamedOutput(job, output, classOf[SequenceFileOutputFormat[_, _]], classOf[NullWritable], classOf[BytesWritable])
     }
 
 

@@ -4,10 +4,8 @@ import de.jungblut.clustering.model.{Vector, DistanceMeasurer, ClusterCenter}
 import collection.mutable.{ArrayBuffer, Buffer}
 import java.net.URI
 import collection.distributed.shared.{DistCounter, DistIterableBuilder}
-import execution.ExecutionPlan
-import collection.immutable.GenIterable
-import collection.distributed.api.{DistContext, Emitter2}
 import collection.distributed.{DistIterable, DistCollection}
+import collection.GenIterable
 
 /**
  * @author Vojin Jovanovic
