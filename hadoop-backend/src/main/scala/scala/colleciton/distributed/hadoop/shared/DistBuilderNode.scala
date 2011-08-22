@@ -15,16 +15,16 @@ class DistBuilderNode(val uri: URI)
   var output: (RuntimePlanNode, Traversable[RuntimePlanNode]) = null
 
   def result() = throw new RuntimeException("Creation of ditributed collecitons is impossible in cluster nodes!s");
-  def result(uri : URI) = throw new RuntimeException("Creation of ditributed collecitons is impossible in cluster nodes!s");
+
+  def result(uri: URI) = throw new RuntimeException("Creation of ditributed collecitons is impossible in cluster nodes!s");
 
   def +=(element: Any) = {
+    // TODO hack with DistContext. It needs to be passed in
     output._2.foreach(v => {
       v.execute(output._1, new DistContext(), null, element)
     })
-
     this
   }
-
 
   def applyConstraints = throw new UnsupportedOperationException("Constraints can be applied only on client side!!!!")
 

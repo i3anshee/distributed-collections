@@ -20,7 +20,7 @@ class MapInputRuntimePlanNode(node: InputPlanNode, serializerInstance: Serialize
   def copyUnconnected() = new MapInputRuntimePlanNode(node, serializerInstance)
 
   override def execute(parent: RuntimePlanNode, context: DistContext, key: Any, value: Any) =
-    emitter.emit(serializerInstance.deserialize(value.asInstanceOf[Array[Byte]]))
+    emit(serializerInstance.deserialize(value.asInstanceOf[Array[Byte]]))
 }
 
 class ReduceInputRuntimePlanNode(node: InputPlanNode, serializerInstance: SerializerInstance)
@@ -31,6 +31,6 @@ class ReduceInputRuntimePlanNode(node: InputPlanNode, serializerInstance: Serial
   override def execute(parent: RuntimePlanNode, context: DistContext, key: Any, value: Any) = {
     val deserializedValue = new ArrayBuffer[Any]
     asScalaIterator(value.asInstanceOf[java.util.Iterator[BytesWritable]]).foreach(v => deserializedValue += serializerInstance.deserialize(v.getBytes).asInstanceOf[Any])
-    emitter.emit((key, deserializedValue.toList))
+    emit((key, deserializedValue.toList))
   }
 }
