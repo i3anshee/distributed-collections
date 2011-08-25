@@ -6,6 +6,7 @@ import collection.mutable.{Buffer, ArrayBuffer}
 import collection.distributed._
 import execution.{ExecutionPlan, DCUtil}
 import scala.Boolean
+import reflect.Field
 
 /**
  * @author Vojin Jovanovic
@@ -29,7 +30,7 @@ private[this] class DistIterableBuilder[T](uri: URI, uniqueElements: Boolean = f
 
   def result(uri: URI): DistIterable[T] = new DistCollection[T](uri)
 
-  def applyConstraints = {}
+  def applyConstraints() {}
 }
 
 object DistIterableBuilder {
@@ -42,21 +43,33 @@ object DistIterableBuilder {
     proxy
   }
 
+  /**
+   * Extracts methods
+   */
   def extractBuilders(op: AnyRef): Seq[DistBuilderLike[_, _]] = {
     val buildersBuffer: Buffer[DistBuilderLike[_, _]] = new ArrayBuffer
-    op.getClass.getDeclaredFields.foreach(f => {
 
+    op.getClass().getDeclaredFields.foreach(f => {
+      println("Type " + f.getType)
       if (f.getType.isAssignableFrom(classOf[scala.runtime.ObjectRef])) {
+        // checking vars in closure
+        val isAccessible = f.isAccessible
         f.setAccessible(true)
-        val elem = f.get(op).asInstanceOf[scala.runtime.ObjectRef].elem;
-        if (classOf[DistBuilderLike[_, _]].isAssignableFrom(elem.getClass)) {
+
+        val elem = f.get(op).asInstanceOf[scala.runtime.ObjectRef].elem
+        println("Elem =" + elem.getClass)
+        if (classOf[DistBuilderLike[_, _]].isAssignableFrom(elem.getClass))
           buildersBuffer += elem.asInstanceOf[DistBuilderLike[_, _]]
+
+        f.setAccessible(isAccessible)
+      } else {
+        // checking vals
+        val isAccessible = f.isAccessible
+        f.setAccessible(true)
+        if (classOf[DistBuilderLike[_, _]].isAssignableFrom(f.get(op).getClass)) {
+          buildersBuffer += f.get(op).asInstanceOf[DistBuilderLike[_, _]]
         }
-        f.setAccessible(false)
-      } else if (classOf[DistBuilderLike[_, _]].isAssignableFrom(f.getType)) {
-        f.setAccessible(true)
-        buildersBuffer += f.get(op).asInstanceOf[DistBuilderLike[_, _]]
-        f.setAccessible(true)
+        f.setAccessible(isAccessible)
       }
     })
     buildersBuffer.toSeq
@@ -73,7 +86,7 @@ private[this] class DistCollectionBuilder[T](uri: URI, uniqueElements: Boolean =
 
   def result(uri: URI): DistCollection[T] = new DistCollection[T](uri)
 
-  def applyConstraints = {}
+  def applyConstraints() {}
 
 }
 
