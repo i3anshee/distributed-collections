@@ -20,7 +20,8 @@ object DistCollTest {
     val longCol = new DistCollection[Long](new URI("./kryo-longsTo1m"))
     val longSet = new DistHashSet[Long](new URI("./kryo-longsTo1m"))
 
-    val materialized1 = longCol.map(v => 0 to 2).filter(v => true)
+    val materialized1 = longCol.view.map(v => 0 to 2).filter(v => true).force
+
 
     println(materialized1.mkString)
     0

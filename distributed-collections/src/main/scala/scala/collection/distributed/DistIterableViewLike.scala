@@ -35,7 +35,7 @@ protected[distributed] trait DistIterableViewLike
   }
 
   def force[B >: T, That](implicit bf: CanBuildFrom[Coll, B, That]) = {
-    forceExecute()
+    forceExecute(this)
     val builder = bf.asInstanceOf[CanDistBuildFrom[Coll, B, That]](underlying)
     builder.result(location)
   }
