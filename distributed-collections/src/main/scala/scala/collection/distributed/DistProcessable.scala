@@ -8,7 +8,7 @@ import collection.{GenIterable, GenTraversable}
  */
 trait DistProcessable[+T] {
 
-  protected def distForeach[U](distOp: T => U, distIterableBuilders: scala.Seq[DistBuilderLike[_, _]]): Unit
+  protected def distForeach[U](distOp: T => U, distIterableBuilders: scala.Seq[DistBuilderLike[_, _]])
 
   protected def groupByKey[K, V](key: (T) => (K, V)): DistMap[K, GenIterable[V]]
 

@@ -159,7 +159,7 @@ class KryoSerializer extends Serializer {
       ("", ""), (1, 1), (1.0, 1.0), (1L, 1L),
       (1, 1.0), (1.0, 1), (1L, 1.0), (1.0, 1L), (1, 1L), (1L, 1),
       // Scala collections
-      List(1), immutable.Map(1 -> 1), immutable.HashMap(1 -> 1),
+      List(1), immutable.Map(1 -> 1), immutable.HashMap(1 -> 1), (0 to 1),
       mutable.Map(1 -> 1), mutable.HashMap(1 -> 1), mutable.ArrayBuffer(1),
       // Options and Either
       Some(1), Left(1), Right(1),

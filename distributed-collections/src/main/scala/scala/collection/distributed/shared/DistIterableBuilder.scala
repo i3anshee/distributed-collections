@@ -50,14 +50,12 @@ object DistIterableBuilder {
     val buildersBuffer: Buffer[DistBuilderLike[_, _]] = new ArrayBuffer
 
     op.getClass().getDeclaredFields.foreach(f => {
-      println("Type " + f.getType)
       if (f.getType.isAssignableFrom(classOf[scala.runtime.ObjectRef])) {
         // checking vars in closure
         val isAccessible = f.isAccessible
         f.setAccessible(true)
 
         val elem = f.get(op).asInstanceOf[scala.runtime.ObjectRef].elem
-        println("Elem =" + elem.getClass)
         if (classOf[DistBuilderLike[_, _]].isAssignableFrom(elem.getClass))
           buildersBuffer += elem.asInstanceOf[DistBuilderLike[_, _]]
 
@@ -109,7 +107,7 @@ private[this] class DistCollectionViewBuilder[T](uri: URI, uniqueElements: Boole
 
   def result(uri: URI): DistCollectionView[T] = new DistCollectionView[T](uri)
 
-  def applyConstraints = {}
+  def applyConstraints() {}
 
 }
 
@@ -132,7 +130,9 @@ private[this] class DistSetBuilder[T](uri: URI, uniqueElements: Boolean = false)
 
   def result(uri: URI) = new DistHashSet(uri)
 
-  def applyConstraints = new DistCollection[T](uri).view.groupBySeq(_.hashCode).flatMap(v => v._2.toSet)
+  def applyConstraints() {
+    new DistCollection[T](uri).view.groupBySeq(_.hashCode).flatMap(v => v._2.toSet)
+  }
 }
 
 object DistSetBuilder {
@@ -154,7 +154,9 @@ private[this] class DistHashSetBuilder[T](uri: URI, uniqueElements: Boolean = fa
 
   def result(uri: URI) = new DistHashSet[T](uri)
 
-  def applyConstraints = if (!this.uniqueElements) new DistCollection[T](uri).view.groupBySeq(_.hashCode).flatMap(v => v._2.toSet)
+  def applyConstraints() {
+    if (!this.uniqueElements) new DistCollection[T](uri).view.groupBySeq(_.hashCode).flatMap(v => v._2.toSet)
+  }
 }
 
 object DistHashSetBuilder {
@@ -175,7 +177,7 @@ private[this] class DistMapBuilder[K, V](uri: URI, uniqueElements: Boolean = fal
 
   def result(uri: URI) = new DistHashMap[K, V](uri)
 
-  def applyConstraints = {}
+  def applyConstraints() {}
 }
 
 object DistMapBuilder {
@@ -194,7 +196,7 @@ private[this] class DistHashMapBuilder[K, V](uri: URI, uniqueElements: Boolean =
   def uniqueElementsBuilder = new DistHashMapBuilder[K, V](location, true)
 
   //TODO (VJ) apply map constraints
-  def applyConstraints = {}
+  def applyConstraints() {}
 
   def result() = new DistHashMap[K, V](location)
 

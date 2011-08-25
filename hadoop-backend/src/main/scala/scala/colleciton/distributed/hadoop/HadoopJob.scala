@@ -68,6 +68,6 @@ object HadoopJob extends AbstractJobStrategy {
 }
 
 
-class MetaPathFilter extends PathFilter {
+class CollectionsMetaDataPathFilter extends PathFilter {
   def accept(path: Path) = !path.toString.endsWith("META")
 }

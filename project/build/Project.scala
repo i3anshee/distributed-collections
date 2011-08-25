@@ -30,6 +30,7 @@ class Project(info: ProjectInfo) extends ParentProject(info) with IdeaProject {
     // needed by hadoop (will be provided on cluster)
     val commonsLogging = "commons-logging" % "commons-logging" % "1.1.1" % "provided"
     val commonsCli = "commons-cli" % "commons-cli" % "1.1" % "provided"
+    val kryo = "com.googlecode" % "kryo" % "1.04"
   }
 
   class DistributedCollectionsProject(info: ProjectInfo) extends DefaultProject(info) with IdeaProject with UtilDependencies {

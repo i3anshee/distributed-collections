@@ -58,7 +58,7 @@ class DistributedCollectionsMapRunner extends MapRunnable[NullWritable, BytesWri
   def run(input: RecordReader[NullWritable, BytesWritable], output: OutputCollector[BytesWritable, BytesWritable], reporter: Reporter): Unit = {
     try {
       val fileSplit = reporter.getInputSplit.asInstanceOf[FileSplit]
-      val fileNameParts = fileSplit.getPath().getName.split("-")
+      val fileNameParts = fileSplit.getPath.getName.split("-")
 
       val fileNumber = Integer.parseInt(fileNameParts(fileNameParts.length - 1))
       val recordStart = fileSplit.getStart
@@ -69,17 +69,15 @@ class DistributedCollectionsMapRunner extends MapRunnable[NullWritable, BytesWri
 
       // we setup shared variables as they are used in initialize phase
       DistSideEffects.sideEffectsData.foreach(v => DSENodeFactory.initializeNode(reporter, v))
-      mapRuntimeDAG.initialize
+      mapRuntimeDAG.initialize()
       myInput = mapRuntimeDAG.inputNodes.find(v => new Path(workingDir, v.node.collection.location.toString).toString == fileSplit.getPath.getParent.toString).get
 
       var key: NullWritable = input.createKey
       var value: BytesWritable = input.createValue
 
-
-
       while (input.next(key, value)) {
         myInput.execute(null, distContext, null, value.getBytes)
-        distContext.recordNumber.incrementRecordCounter
+        distContext.recordNumber.incrementRecordCounter()
 
         if (incrProcCount) {
           reporter.incrCounter(SkipBadRecords.COUNTER_GROUP, SkipBadRecords.COUNTER_MAP_PROCESSED_RECORDS, 1)
@@ -87,12 +85,16 @@ class DistributedCollectionsMapRunner extends MapRunnable[NullWritable, BytesWri
       }
     }
     finally {
-      multipleOutputs.close
+      multipleOutputs.close()
     }
   }
 
-  def buildRuntimeDAG(plan: ExPlanDAG, outputs: MultipleOutputs, collector: OutputCollector[Writable, Writable], tempFileToURI: mutable.Map[URI, String],
-                      intermediateSet: Set[URI], reporter: Reporter): RuntimeDAG = {
+  def buildRuntimeDAG(plan: ExPlanDAG,
+                      outputs: MultipleOutputs,
+                      collector: OutputCollector[Writable, Writable],
+                      tempFileToURI: mutable.Map[URI, String],
+                      intermediateSet: Set[URI], reporter: Reporter)
+  : RuntimeDAG = {
     val runtimeDAG = new RuntimeDAG
     plan.foreach(node => node match {
       case v: InputPlanNode =>
@@ -101,12 +103,12 @@ class DistributedCollectionsMapRunner extends MapRunnable[NullWritable, BytesWri
         runtimeDAG.connect(copiedNode, v)
 
       case v: OutputPlanNode =>
-      val tempFile =
-        if (intermediateSet.contains(v.collection.location))
-          runtimeDAG.connect(new MapOutputRuntimePlanNode(v, collector, serializerInstance, intermediateToByte(v.collection.location)), v)
-        else
-          runtimeDAG.connect(new OutputRuntimePlanNode(v, serializerInstance,
-            outputs.getCollector(tempFileToURI(v.collection.location), reporter).asInstanceOf[OutputCollector[Writable, Writable]]), v)
+        val tempFile =
+          if (intermediateSet.contains(v.collection.location))
+            runtimeDAG.connect(new MapOutputRuntimePlanNode(v, collector, serializerInstance, intermediateToByte(v.collection.location)), v)
+          else
+            runtimeDAG.connect(new OutputRuntimePlanNode(v, serializerInstance,
+              outputs.getCollector(tempFileToURI(v.collection.location), reporter).asInstanceOf[OutputCollector[Writable, Writable]]), v)
 
       case v: DistForeachPlanNode[Any, Any] =>
         runtimeDAG.connect(new RuntimeForeachNode(node), node)

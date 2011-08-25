@@ -8,7 +8,7 @@ case class InputPlanNode(collection: ReifiedDistCollection,
                          inEdges: mutable.Buffer[(PlanNode, ReifiedDistCollection)] = new ArrayBuffer,
                          outEdges: mutable.LinkedHashMap[ReifiedDistCollection, mutable.Buffer[PlanNode]] = new mutable.LinkedHashMap,
                          uniqueId: Long = UniqueId()) extends IOPlanNode {
-  def copyUnconnected() = copy(inEdges = new ArrayBuffer, outEdges = new mutable.LinkedHashMap)
+  def copyUnconnected = copy(inEdges = new ArrayBuffer, outEdges = new mutable.LinkedHashMap)
 
   override def nodeType = "I"
 }

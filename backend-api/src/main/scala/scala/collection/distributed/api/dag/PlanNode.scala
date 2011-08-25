@@ -11,9 +11,9 @@ trait PlanNode extends UniqueId {
 
   protected[this] val uniqueId: Long
 
-  def copyUnconnected(): PlanNode
+  def copyUnconnected: PlanNode
 
-  def disconnect(that: PlanNode): Unit = {
+  def disconnect(that: PlanNode) {
     val exists = (children.exists(_ == that) || inEdges.contains(that))
     outEdges.values.foreach(_ filterNot (_ == that))
     val remaining = inEdges.filter(_._1 == that)
@@ -33,7 +33,9 @@ trait PlanNode extends UniqueId {
 
   def predecessors: Iterable[PlanNode] = inEdges.map(_._1)
 
-  def disconnect(): Unit = (predecessors ++ children).foreach(_.disconnect(this))
+  def disconnect() {
+    (predecessors ++ children).foreach(_.disconnect(this))
+  }
 
   override def toString = nodeType + "(" + id + ")->" +
     children.map(node => "" + node.nodeType + "(" + node.id + ")").mkString("[", ",", "]")

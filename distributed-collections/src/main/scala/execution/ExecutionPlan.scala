@@ -12,8 +12,14 @@ object ExecutionPlan {
   val markedCollections = new ArrayBuffer[ReifiedDistCollection]()
 
   def addPlanNode(inputs: GenSeq[ReifiedDistCollection], newPlanNode: PlanNode, output: GenSeq[ReifiedDistCollection]): PlanNode = {
-    copy(inputs).foreach(input => findOrCreateParent(input).connect(input, newPlanNode))
-    output.foreach(v => newPlanNode.outEdges.put(ReifiedDistCollection.copy(v), new ArrayBuffer))
+    // connect to all inputs
+    inputs.map(v => ReifiedDistCollection(v)).foreach {
+      input => findOrCreateParent(input).connect(input, newPlanNode)
+    }
+    // connect to all outputs
+    output.map(v => ReifiedDistCollection(v)).foreach {
+      v => newPlanNode.outEdges.put(v, new ArrayBuffer)
+    }
 
     newPlanNode
   }
@@ -23,18 +29,18 @@ object ExecutionPlan {
 
   def markCollection(coll: ReifiedDistCollection) = markedCollections += coll
 
-  def execute: Unit = execute(Nil)
+  def execute() {
+    execute(Nil)
+  }
 
-  def execute(outputs: ReifiedDistCollection*): Unit =
+  def execute(outputs: ReifiedDistCollection*) {
     execute(outputs)
+  }
 
-  def execute(outputs: GenTraversableOnce[ReifiedDistCollection]): Unit = {
-
+  def execute(outputs: GenTraversableOnce[ReifiedDistCollection]) {
     // attach output nodes
     (Nil ++ outputs ++ markedCollections).foreach(output => exPlanDAG.getPlanNode(output).get.connect(output, new OutputPlanNode(ReifiedDistCollection(output))))
     markedCollections.clear()
-
-    println(ExecutionPlan.toString)
 
     JobExecutor.execute(exPlanDAG)
     exPlanDAG = new ExPlanDAG()
@@ -53,9 +59,7 @@ object ExecutionPlan {
     existingNode.get
   }
 
-  private[this] def copy(input: GenSeq[ReifiedDistCollection]): GenSeq[ReifiedDistCollection] = input.map(v => ReifiedDistCollection.copy(v))
-
-  override def toString = exPlanDAG.toString
+  override def toString = exPlanDAG.toString()
 }
 
 /**
@@ -64,11 +68,10 @@ object ExecutionPlan {
 object DCUtil {
 
   // TODO (VJ) this needs to be set by the framework and if any management needs to be done it is orthogonal to this project
-  var baseURIString = "dcollections/"
+  var baseURIString = "collections/"
 
   /**
    * Generates a new collection file system identifier.
    */
-  def generateNewCollectionURI() = new URI(baseURIString + UUID.randomUUID().toString)
-
+  def generateNewCollectionURI = new URI(baseURIString + UUID.randomUUID().toString)
 }

@@ -47,7 +47,6 @@ class GreedyMSCRBuilder extends JobBuilder {
 
     startingNodes.foreach((node: PlanNode) => buildDag(node, mapDAG, visited, matches))
 
-
     val remainingDAG = buildRemainingDAG(dag, visited)
 
     visited.clear
@@ -73,7 +72,7 @@ class GreedyMSCRBuilder extends JobBuilder {
     val combinedInputs = reduceDAG.filter(_ match {
       case v: CombinePlanNode[_, _] => true
       case _ => false
-    }).map(node => (node.inEdges.head._1.asInstanceOf[InputPlanNode].collection.location, node.copyUnconnected().asInstanceOf[CombinePlanNode[Any, Any]]))
+    }).map(node => (node.inEdges.head._1.asInstanceOf[InputPlanNode].collection.location, node.copyUnconnected.asInstanceOf[CombinePlanNode[Any, Any]]))
 
     // if mapper has an output node that is matched by reduce than there is not temporary file (and the collector is set to default)
     println("Output")
@@ -131,7 +130,7 @@ class GreedyMSCRBuilder extends JobBuilder {
 
       // set the input and output files for the job
       mapDAG.inputNodes.foreach((in) => FileInputFormat.addInputPath(job, new Path(in.collection.location.toString)))
-      FileInputFormat.setInputPathFilter(job, classOf[MetaPathFilter])
+      FileInputFormat.setInputPathFilter(job, classOf[CollectionsMetaDataPathFilter])
       FileOutputFormat.setOutputPath(job, outputDir)
 
       job.setInputFormat(classOf[SequenceFileInputFormat[_, _]])
@@ -219,7 +218,7 @@ class GreedyMSCRBuilder extends JobBuilder {
     val remainingDAG = new ExPlanDAG()
     dag.foreach(node => {
       if (!visited.contains(node)) {
-        val nodeCopy = node.copyUnconnected()
+        val nodeCopy = node.copyUnconnected
 
         node.inEdges.foreach(edge => if (visited.contains(edge._1)) {
           var existing = remainingDAG.getPlanNode(edge._2)

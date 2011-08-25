@@ -2,6 +2,8 @@ package examples
 
 import java.net.URI
 import collection.distributed._
+import io.KryoSerializer
+
 /**
  * User: vjovanovic
  * Date: 4/26/11
@@ -18,12 +20,15 @@ object DistCollTest {
     val longCol = new DistCollection[Long](new URI("./kryo-longsTo1m"))
     val longSet = new DistHashSet[Long](new URI("./kryo-longsTo1m"))
 
-    val materialized1 = longCol.view.filter(v => true).map(_ + 1).mark
-    val materialized2 = (longCol.view.filter(v => true) ++ materialized1).force
+    val materialized1 = longCol.map(v => 0 to 2).filter(v => true)
 
-    println(materialized1)
-    println(materialized2)
+    println(materialized1.mkString)
     0
+  }
+
+  def wc(args: Array[String]) {
+    val text = DistCollection[String]("collections/text")
+    val wordCount = text.flatMap(_.split("\\s"))
   }
 
   def main(args: Array[String]) = {

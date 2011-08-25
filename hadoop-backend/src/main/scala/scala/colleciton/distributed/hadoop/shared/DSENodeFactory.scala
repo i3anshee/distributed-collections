@@ -17,7 +17,7 @@ object DSENodeFactory {
       case CollectionType =>
         val uri = new URI(new String(data._2))
         data._1.asInstanceOf[DistBuilderProxy[Any, Any]].impl =
-          new DistBuilderNode(uri)
+          new DistBuilderNode(uri, data._1.uid)
       case CounterType => {
         val buffer = ByteBuffer.allocate(8)
         buffer.put(data._2)

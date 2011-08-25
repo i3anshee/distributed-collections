@@ -16,11 +16,11 @@ with Serializable {
 
   def getPlanNode(id: ReifiedDistCollection): Option[T] = this.find(_.outEdges.contains(ReifiedDistCollection(id.location, id.elemType)))
 
-  def foreach[U](f: (T) => U) = {
+  def foreach[U](f: (T) => U) {
     val queue: mutable.Queue[PlanNode] = (new mutable.Queue ++= inputNodes)
     val visited = new mutable.HashSet[PlanNode]
     while (!queue.isEmpty) {
-      val node = queue.dequeue
+      val node = queue.dequeue()
       if (!visited.contains(node)) {
         visited += node
         f(node.asInstanceOf[T])
@@ -29,20 +29,20 @@ with Serializable {
     }
   }
 
-  def connectDownwards(newNode: PlanNode, oldNode: PlanNode) =
+  def connectDownwards(newNode: PlanNode, oldNode: PlanNode) {
     oldNode.outEdges.foreach(outputs => {
       outputs._2.foreach(node => {
         val child = getPlanNode(node)
-        if (child.isDefined)
-          newNode.connect(outputs._1, child.get)
+        if (child.isDefined) newNode.connect(ReifiedDistCollection(outputs._1), child.get)
       })
     })
+  }
 
   def connectUpwards(newNode: PlanNode, oldNode: PlanNode) {
     oldNode.inEdges.foreach(node => {
       val parent = getPlanNode(node._1)
       if (parent.isDefined)
-        parent.get.connect(node._2, newNode)
+        parent.get.connect(ReifiedDistCollection(node._2), newNode)
     })
   }
 
@@ -51,7 +51,7 @@ with Serializable {
     connectDownwards(newNode, oldNode)
   }
 
-  override def toString = {
+  override def toString() = {
     // not using Traversable because the traversal order is special
     var newQueue = new mutable.Queue[PlanNode]() ++= inputNodes
 
@@ -62,9 +62,9 @@ with Serializable {
       newQueue = new mutable.Queue[PlanNode]
       sb.append("\n")
       while (!queue.isEmpty) {
-        val node = queue.dequeue
+        val node = queue.dequeue()
         if (!visited(node)) {
-          sb.append(node.toString()).append(", ")
+          sb.append(node.toString).append(", ")
           newQueue ++= node.children
           visited.add(node)
         }
@@ -73,6 +73,6 @@ with Serializable {
       sb.append("\n")
     }
     sb.append("]")
-    sb.toString
+    sb.toString()
   }
 }

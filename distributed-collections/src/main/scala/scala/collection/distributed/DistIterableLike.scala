@@ -7,7 +7,7 @@ import execution.{ExecutionPlan}
 import shared.{DistCounter, DistRecordCounter, DistIterableBuilder}
 import collection.{GenIterable, GenTraversableOnce, GenIterableLike, IterableLike}
 
-// TODO (VJ) introduce dependencies to the backend
+// TODO (VJ) introduce dependencies to the back-end
 // TODO (VJ) group by issue with views
 // TODO (VJ) extract counters as well as builders
 // TODO (VJ) LOW fix the isEmpty check (some frameworks might not support the O(1) isEmpty and size operations).
@@ -26,13 +26,21 @@ trait DistIterableLike[+T, +Repr <: DistIterable[T], +Sequential <: Iterable[T] 
 
   def seq: Sequential
 
-  protected[this] def execute(collections: ReifiedDistCollection*): Unit = if (!isView) forceExecute(collections: _*)
+  protected[this] def execute(collections: ReifiedDistCollection*) {
+    if (!isView) forceExecute(collections: _*)
+  }
 
-  protected[this] def execute: Unit = if (!isView) forceExecute
+  protected[this] def execute() {
+    if (!isView) forceExecute()
+  }
 
-  protected[this] def forceExecute(collections: ReifiedDistCollection*): Unit = ExecutionPlan.execute(collections)
+  protected[this] def forceExecute(collections: ReifiedDistCollection*) {
+    ExecutionPlan.execute(collections)
+  }
 
-  protected[this] def forceExecute: Unit = ExecutionPlan.execute
+  protected[this] def forceExecute() {
+    ExecutionPlan.execute()
+  }
 
   def view: DistIterableView[T, Repr, Sequential]
 
@@ -68,7 +76,7 @@ trait DistIterableLike[+T, +Repr <: DistIterable[T], +Sequential <: Iterable[T] 
     val rb = newDistBuilder.uniqueElementsBuilder
     foreach(el => if (p(el)) rb += el)
     execute(rb)
-    rb.result
+    rb.result()
   }
 
   def filterNot(pred: (T) => Boolean) = filter(!pred(_))
@@ -96,9 +104,9 @@ trait DistIterableLike[+T, +Repr <: DistIterable[T], +Sequential <: Iterable[T] 
       found = true
     })
 
-    val res = allResults.result
+    val res = allResults.result()
     forceExecute(res)
-    val allResultsSeq = res.seqAndDelete.toSeq
+    val allResultsSeq = res.seqAndDelete().toSeq
     if (allResultsSeq.size == 0)
       None
     else
@@ -139,7 +147,7 @@ trait DistIterableLike[+T, +Repr <: DistIterable[T], +Sequential <: Iterable[T] 
     val cnt = DistCounter()
     foreach(v => if (p(v)) cnt += 1)
     //TODO (VJ) Dependency on counters in execution plan
-    forceExecute
+    forceExecute()
     cnt()
   }
 
@@ -152,16 +160,19 @@ trait DistIterableLike[+T, +Repr <: DistIterable[T], +Sequential <: Iterable[T] 
       found = true
     })
 
-    val res = builder.result
+    val res = builder.result()
     forceExecute(res)
-    res.seqAndDelete.size > 0
+    res.seqAndDelete().size > 0
   }
 
   def exists(pred: (T) => Boolean) = {
     var found = false
     val counter = DistCounter()
 
-    foreach(el => if (!found && pred(el)) counter += 1)
+    foreach(el => if (!found && pred(el)) {
+      found = true
+      counter += 1
+    })
 
     forceExecute()
     counter() > 0
@@ -205,7 +216,9 @@ trait DistIterableLike[+T, +Repr <: DistIterable[T], +Sequential <: Iterable[T] 
 
   def toArray[A1 >: T](implicit evidence$1: ClassManifest[A1]) = seq.toArray(evidence$1)
 
-  def foreach[U](f: (T) => U) = distForeach(f, DistIterableBuilder.extractBuilders(f))
+  def foreach[U](f: (T) => U) {
+    distForeach(f, DistIterableBuilder.extractBuilders(f))
+  }
 
   def iterator = seq.toIterable.iterator
 
@@ -227,11 +240,17 @@ trait DistIterableLike[+T, +Repr <: DistIterable[T], +Sequential <: Iterable[T] 
 
   def sum[A1 >: T](implicit num: Numeric[A1]) = combineValues((it: Iterable[A1]) => it.sum(num))
 
-  def copyToArray[B >: T](xs: Array[B]) = copyToArray(xs, 0)
+  def copyToArray[B >: T](xs: Array[B]) {
+    copyToArray(xs, 0)
+  }
 
-  def copyToArray[B >: T](xs: Array[B], start: Int) = copyToArray(xs, start, xs.length - start)
+  def copyToArray[B >: T](xs: Array[B], start: Int) {
+    copyToArray(xs, start, xs.length - start)
+  }
 
-  def copyToArray[B >: T](xs: Array[B], start: Int, len: Int) = seq.copyToArray(xs, start, len)
+  def copyToArray[B >: T](xs: Array[B], start: Int, len: Int) {
+    seq.copyToArray(xs, start, len)
+  }
 
   protected[this] def bf2seq[S, That](bf: CanBuildFrom[Repr, S, That]) = new CanBuildFrom[Sequential, S, That] {
     def apply(from: Sequential) = bf.apply(from.asInstanceOf[Repr])

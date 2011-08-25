@@ -25,11 +25,4 @@ object ReifiedDistCollection {
     override def elemType = manifest
   }
 
-  def copy(coll: ReifiedDistCollection) =
-    new ReifiedDistCollection {
-      def location = coll.location
-
-      override def elemType = coll.elemType
-    }
-
 }

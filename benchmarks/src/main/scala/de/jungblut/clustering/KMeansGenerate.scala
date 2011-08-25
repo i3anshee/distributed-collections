@@ -19,6 +19,8 @@ import io.{KryoRegistrator, KryoSerializer}
 
 object KMeansGenerate {
   def main(args: Array[String]) {
+    val size = 50000
+    println("Generating the data set for KMeans of size " + size)
     var iteration: Int = 1
     System.setProperty("spark.kryo.registrator", "de.jungblut.clustering.collections.KryoRegistratorKMeans")
     val kryoSerializer = new KryoSerializer().newInstance
@@ -68,18 +70,18 @@ object KMeansGenerate {
     // write the data
     val dataWriter: SequenceFile.Writer = SequenceFile.createWriter(fs, conf, in, classOf[ClusterCenter], classOf[Vector])
     var buffer = new ArrayBuffer[(ClusterCenter, Vector)]
-    (0 to 50000).foreach (v => {
+
+    (0 to size).foreach(v => {
       val center: ClusterCenter = new ClusterCenter(new Vector(100, 100))
       val vector: Vector = new Vector(Random.nextInt(1000), Random.nextInt(1000))
 
       buffer += ((center, vector));
+      if ((v % (size / 100)) == 0) println(size / v + "%")
       dataWriter.append(center, vector)
     })
     dataWriter.close
 
     FSAdapter.createDistCollection(buffer, inKryo.toUri, kryoSerializer)
-
-
   }
 
 }

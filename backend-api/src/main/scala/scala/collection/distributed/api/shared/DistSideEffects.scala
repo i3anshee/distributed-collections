@@ -11,8 +11,10 @@ import collection.distributed.api.{RecordNumber, ReifiedDistCollection}
  * @author Vojin Jovanovic
  */
 
-abstract class DistSideEffects(val varType: DSEType) extends Serializable {
-  protected val id = DistSideEffects.newId
+abstract class DistSideEffects(val varType: DSEType, newId: Long) extends Serializable {
+  def this(varType: DSEType) = this (varType, DistSideEffects.newId)
+
+  protected val id = newId
 
   def uid: Long = id
 
@@ -32,8 +34,9 @@ object DistSideEffects {
 
   def add(v: DistSideEffects with DSEProxy[_ <: DistSideEffects]) = sideEffectsData += (v -> v.computationData)
 
-  def findImpl(id: Long): DistSideEffects = sideEffectsData.keys.find(_.uid == id).get.impl
-
+  def findImpl(id: Long): DistSideEffects = {
+    sideEffectsData.keys.find(_.uid == id).get.impl
+  }
 }
 
 trait DSEProxy[T] {
@@ -62,15 +65,17 @@ trait DistCounterLike {
 
 trait DistBuilderLike[-Elem, +To] extends Builder[Elem, To] with ReifiedDistCollection {
 
-  def uniqueElementsBuilder: DistBuilderLike[Elem, To] with DistSideEffects
+  def uniqueElementsBuilder: DistSideEffects with DistBuilderLike[Elem, To]
 
   def result(uri: URI): To
 
   def result(): To
 
-  def clear() = throw new UnsupportedOperationException("Remote builders can not be cleared as the element addition is part of the framework!!!")
+  def clear() {
+    throw new UnsupportedOperationException("Remote builders can not be cleared as the element addition is part of the framework!!!")
+  }
 
-  def applyConstraints: Unit
+  def applyConstraints()
 
   def computationData = location.toString.getBytes()
 
@@ -118,13 +123,15 @@ class DistCounterProxy(proxyImpl: DistSideEffects with DistCounterLike)
     impl
   }
 
-  def +=(n: Long) = findImpl += n
+  def +=(n: Long) {
+    findImpl += n
+  }
 
   def apply() = findImpl.apply()
 }
 
 class DistBuilderProxy[T, Repr](@transient override var impl: DistSideEffects with DistBuilderLike[T, Repr] = null)
-  extends DistSideEffects(CollectionType)
+  extends DistSideEffects(CollectionType, impl.uid)
   with DistBuilderLike[T, Repr]
   with DSEProxy[DistSideEffects with DistBuilderLike[T, Repr]] {
 
@@ -140,7 +147,7 @@ class DistBuilderProxy[T, Repr](@transient override var impl: DistSideEffects wi
 
   def location = findImpl.location
 
-  def result() = findImpl.result
+  def result() = findImpl.result()
 
   def result(uri: URI) = findImpl.result(uri)
 
@@ -151,7 +158,13 @@ class DistBuilderProxy[T, Repr](@transient override var impl: DistSideEffects wi
 
   def uniqueElements = findImpl.uniqueElements
 
-  def uniqueElementsBuilder = new DistBuilderProxy[T, Repr](impl.uniqueElementsBuilder)
+  def uniqueElementsBuilder = {
+    val proxy = new DistBuilderProxy[T, Repr](impl.uniqueElementsBuilder)
+    DistSideEffects.add(proxy)
+    proxy
+  }
 
-  def applyConstraints = findImpl.applyConstraints
+  def applyConstraints() {
+    findImpl.applyConstraints()
+  }
 }

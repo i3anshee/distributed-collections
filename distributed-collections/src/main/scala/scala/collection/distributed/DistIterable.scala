@@ -37,13 +37,18 @@ trait DistIterable[+T]
 
   def isView = false
 
+  /**
+   * Adds a flatten PlanNode to the current execution plan.
+   */
   protected[this] def flatten[B >: T](collections: GenTraversable[DistIterable[B]]): DistIterable[T] = {
     val outDistColl = new DistCollection[T](DCUtil.generateNewCollectionURI)
-    val allCollections = (List(this) ++ collections).map(v => ReifiedDistCollection(v))
-    ExecutionPlan.addPlanNode(allCollections, new FlattenPlanNode(allCollections, elemType), List(ReifiedDistCollection(outDistColl)))
+    ExecutionPlan.addPlanNode(List(this) ++ collections, new FlattenPlanNode(elemType), List(outDistColl))
     outDistColl
   }
 
+  /**
+   * Adds a groupByKey PlanNode to the current execution plan.
+   */
   protected[this] def groupByKey[K, V](kvOp: (T) => (K, V)): DistMap[K, GenIterable[V]] = {
     val kvp = manifest[Any]
     val output = ReifiedDistCollection(DCUtil.generateNewCollectionURI, kvp)
@@ -51,18 +56,25 @@ trait DistIterable[+T]
     new DistHashMap[K, GenIterable[V]](output.location)
   }
 
+  /**
+   * Adds a combine PlanNode to the current execution plan.
+   */
   protected[this] def combine[K, V, V1](combine: (Iterable[V]) => V1)(implicit ev: <:<[T, (K, V)]): DistIterable[(K, V1)] = {
     val valRes = manifest[Any]
     val output = ReifiedDistCollection(DCUtil.generateNewCollectionURI, valRes)
-    ExecutionPlan.addPlanNode(ReifiedDistCollection(this), CombinePlanNode(combine), output)
+    ExecutionPlan.addPlanNode(this, CombinePlanNode(combine), output)
     new DistCollection[(K, V1)](output.location)
   }
 
-  protected def distForeach[U](distOp: T => U, builders: scala.Seq[DistBuilderLike[_, _]]) = {
+  /**
+   * Adds a foreach PlanNode to the current execution plan.
+   */
+  protected def distForeach[U](distOp: T => U, builders: scala.Seq[DistBuilderLike[_, _]]) {
     // extract dist iterable
-    val node = ExecutionPlan.addPlanNode(
-      List(ReifiedDistCollection(this)), new DistForeachPlanNode[T, U](distOp), builders.map(v => ReifiedDistCollection(v)))
-    builders.foreach(_.applyConstraints)
+    val node = ExecutionPlan.addPlanNode(List(this), new DistForeachPlanNode[T, U](distOp), builders)
+
+    // apply additional constraints to builders (Set, Map etc.)
+    builders.foreach(_.applyConstraints())
   }
 
   //TODO (VJ) investigate how to convert to parallel
@@ -74,7 +86,7 @@ trait DistIterable[+T]
 object DistIterable extends DistFactory[DistIterable] {
   implicit def canBuildFrom[T]: CanDistBuildFrom[Coll, T, DistIterable[T]] = new GenericCanDistBuildFrom[T]
 
-  def newDistBuilder[T] = DistIterableBuilder[T]()
+  def newDistBuilder[T] = DistIterableBuilder()
 
-  def newBuilder[T] = DistIterableBuilder[T]()
+  def newBuilder[T] = DistIterableBuilder()
 }

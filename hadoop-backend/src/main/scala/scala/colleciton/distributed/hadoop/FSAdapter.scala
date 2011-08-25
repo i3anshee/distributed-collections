@@ -36,7 +36,7 @@ object FSAdapter {
     val result = new scala.collection.mutable.ArrayBuffer[A]()
 
     // go through files in order and collect elements
-    val files: Seq[Path] = fs.listStatus(new Path(file.toString), new MetaPathFilter).toSeq.map(_.getPath())
+    val files: Seq[Path] = fs.listStatus(new Path(file.toString), new CollectionsMetaDataPathFilter).toSeq.map(_.getPath())
     files.sortWith((v1, v2) => v1.getName.split("-").last < v1.getName.split("-").last).foreach(filePart => {
       val map = new Path(filePart.toString)
 

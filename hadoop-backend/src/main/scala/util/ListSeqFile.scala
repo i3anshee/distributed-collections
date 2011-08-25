@@ -20,11 +20,8 @@ object ListSeqFile {
     val map = new Path(args(0))
 
     val reader = new SequenceFile.Reader(fs, map, conf)
-    val keyClass = reader.getKeyClass()
-    val valueClass = reader.getValueClass()
-
-    println(keyClass)
-    println(valueClass)
+    val keyClass = reader.getKeyClass
+    val valueClass = reader.getValueClass
 
     val key = new LongWritable();
     val value = new BytesWritable();

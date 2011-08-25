@@ -20,7 +20,7 @@ import org.apache.hadoop.mapred.SequenceFileInputFormat;
 import org.apache.hadoop.util.Tool;
 import org.apache.hadoop.util.ToolRunner;
 import scala.Tuple2;
-import scala.colleciton.distributed.hadoop.MetaPathFilter;
+import scala.colleciton.distributed.hadoop.CollectionsMetaDataPathFilter;
 
 /**
  * This is an example Hadoop Map/Reduce application.
@@ -132,7 +132,7 @@ public class WordCountFullSerialize extends Configured implements Tool {
 
 
         FileInputFormat.setInputPaths(conf, other_args.get(0));
-        FileInputFormat.setInputPathFilter(conf, MetaPathFilter.class);
+        FileInputFormat.setInputPathFilter(conf, CollectionsMetaDataPathFilter.class);
         FileOutputFormat.setOutputPath(conf, new Path(other_args.get(1)));
 
         JobClient.runJob(conf);
