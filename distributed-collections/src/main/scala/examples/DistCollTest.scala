@@ -13,7 +13,7 @@ import io.KryoSerializer
 object DistCollTest {
 
   val examples: Map[String, (Array[String]) => Int] = Map(
-    ("Demo" -> demo)
+    ("Demo" -> demo),("Wc" -> wc)
   )
 
   def demo(args: Array[String]) = {
@@ -26,12 +26,13 @@ object DistCollTest {
     0
   }
 
-  def wc(args: Array[String]) {
+  def wc(args: Array[String]) = {
     val text = DistCollection[String]("collections/text")
     val wordCount = text.flatMap(_.split("\\s"))
+    0
   }
 
-  def main(args: Array[String]) = {
+  def main(args: Array[String])  {
     examples(args(0))(args.tail.toArray)
     0
   }

@@ -2,7 +2,7 @@ package execution
 
 import scala.collection.distributed.api.dag.ExPlanDAG
 import scala.collection.distributed.api.AbstractJobStrategy
-import scala.colleciton.distributed.hadoop.HadoopJob
+import scala.collection.distributed.hadoop.HadoopJob
 
 /**
  * User: vjovanovic

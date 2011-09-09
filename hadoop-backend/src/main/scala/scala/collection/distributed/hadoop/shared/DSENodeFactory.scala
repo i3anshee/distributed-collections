@@ -1,4 +1,4 @@
-package scala.colleciton.distributed.hadoop.shared
+package scala.collection.distributed.hadoop.shared
 
 import collection.distributed.api.shared._
 import java.nio.ByteBuffer

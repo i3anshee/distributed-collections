@@ -1,4 +1,4 @@
-package scala.colleciton.distributed.hadoop.shared
+package scala.collection.distributed.hadoop.shared
 
 import java.net.URI
 import collection.distributed.api.shared.{CollectionType, DistBuilderLike, DistSideEffects}

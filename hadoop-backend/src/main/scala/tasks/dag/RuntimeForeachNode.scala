@@ -2,7 +2,7 @@ package tasks.dag
 
 import collection.distributed.api.dag.PlanNode
 import collection.distributed.api.shared.{CollectionType, DistSideEffects}
-import colleciton.distributed.hadoop.shared.DistBuilderNode
+import collection.distributed.hadoop.shared.DistBuilderNode
 import collection.mutable.Buffer
 import collection.distributed.api.ReifiedDistCollection
 

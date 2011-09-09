@@ -12,7 +12,7 @@ import org.apache.hadoop.fs.Path
 import collection.distributed.api.{ReifiedDistCollection, DistContext}
 import java.io.{ByteArrayInputStream, ObjectInputStream}
 import collection.distributed.api.shared.{DSEProxy, DistSideEffects}
-import colleciton.distributed.hadoop.shared.DSENodeFactory
+import collection.distributed.hadoop.shared.DSENodeFactory
 import collection.distributed.api.io.{SerializerInstance, JavaSerializerInstance}
 import io.KryoSerializer
 

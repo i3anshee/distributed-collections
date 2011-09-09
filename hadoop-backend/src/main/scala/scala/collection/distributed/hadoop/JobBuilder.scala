@@ -1,4 +1,4 @@
-package scala.colleciton.distributed.hadoop
+package scala.collection.distributed.hadoop
 
 import collection.distributed.api.dag.{OutputPlanNode, ExPlanDAG}
 import collection.distributed.api.ReifiedDistCollection
