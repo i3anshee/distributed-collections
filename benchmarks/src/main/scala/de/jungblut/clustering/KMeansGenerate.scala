@@ -8,7 +8,7 @@ import org.apache.hadoop.fs.Path
 import model.ClusterCenter
 import org.apache.hadoop.io.{SequenceFile, IntWritable}
 import scala.util.Random
-import colleciton.distributed.hadoop.FSAdapter
+import collection.distributed.hadoop.FSAdapter
 import collection.mutable.ArrayBuffer
 import org.apache.hadoop.mapreduce.Job
 import io.{KryoRegistrator, KryoSerializer}
@@ -76,7 +76,7 @@ object KMeansGenerate {
       val vector: Vector = new Vector(Random.nextInt(1000), Random.nextInt(1000))
 
       buffer += ((center, vector));
-      if ((v % (size / 100)) == 0) println(size / v + "%")
+      if ((v % (size / 100)) == 0) println(size / (v+1) + "%")
       dataWriter.append(center, vector)
     })
     dataWriter.close

@@ -1,4 +1,4 @@
-package scala.colleciton.distributed.hadoop
+package scala.collection.distributed.hadoop
 
 import java.net.URI
 import org.apache.hadoop.filecache.DistributedCache

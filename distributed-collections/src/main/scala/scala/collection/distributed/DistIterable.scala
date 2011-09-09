@@ -4,7 +4,7 @@ import api._
 import api.dag._
 import api.shared.DistBuilderLike
 import collection.generic.GenericCompanion
-import scala.colleciton.distributed.hadoop.FSAdapter
+import scala.collection.distributed.hadoop.FSAdapter
 import execution.{DCUtil, ExecutionPlan}
 import _root_.io.CollectionsIO
 import shared.DistIterableBuilder

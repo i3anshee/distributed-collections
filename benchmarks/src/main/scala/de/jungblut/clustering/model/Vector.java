@@ -37,14 +37,14 @@ public class Vector implements WritableComparable<Vector>, Serializable {
 		this.vector = new double[] { x, y };
 	}
 
-	@Override
+	//@Override
 	public void write(DataOutput out) throws IOException {
 		out.writeInt(vector.length);
 		for (int i = 0; i < vector.length; i++)
 			out.writeDouble(vector[i]);
 	}
 
-	@Override
+	//@Override
 	public void readFields(DataInput in) throws IOException {
 		int size = in.readInt();
 		vector = new double[size];
@@ -52,7 +52,7 @@ public class Vector implements WritableComparable<Vector>, Serializable {
 			vector[i] = in.readDouble();
 	}
 
-	@Override
+	//@Override
 	public int compareTo(Vector o) {
 
 		boolean equals = true;

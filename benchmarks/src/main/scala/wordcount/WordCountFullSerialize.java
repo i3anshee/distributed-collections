@@ -15,12 +15,10 @@ import org.apache.hadoop.conf.Configured;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.*;
 import org.apache.hadoop.mapred.*;
-import org.apache.hadoop.mapred.FileInputFormat;
-import org.apache.hadoop.mapred.SequenceFileInputFormat;
 import org.apache.hadoop.util.Tool;
 import org.apache.hadoop.util.ToolRunner;
 import scala.Tuple2;
-import scala.colleciton.distributed.hadoop.CollectionsMetaDataPathFilter;
+import scala.collection.distributed.hadoop.CollectionsMetaDataPathFilter;
 
 /**
  * This is an example Hadoop Map/Reduce application.

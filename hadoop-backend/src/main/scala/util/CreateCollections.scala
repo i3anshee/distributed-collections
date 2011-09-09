@@ -1,6 +1,6 @@
 package util
 
-import scala.colleciton.distributed.hadoop.FSAdapter
+import scala.collection.distributed.hadoop.FSAdapter
 import java.net.URI
 import scala.util.Random
 import io.KryoSerializer

@@ -1,4 +1,4 @@
-package scala.colleciton.distributed.hadoop.shared
+package scala.collection.distributed.hadoop.shared
 
 import collection.distributed.api.RecordNumber
 import collection.distributed.api.shared.{DistSideEffects, RecordType, RecordCounterLike}

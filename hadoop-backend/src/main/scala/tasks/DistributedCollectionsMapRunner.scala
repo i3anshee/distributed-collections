@@ -9,7 +9,7 @@ import org.apache.hadoop.fs.Path
 import org.apache.hadoop.io.{Writable, NullWritable, BytesWritable}
 import collection.mutable
 import collection.distributed.api.shared.{DSEProxy, DistSideEffects}
-import colleciton.distributed.hadoop.shared.DSENodeFactory
+import collection.distributed.hadoop.shared.DSENodeFactory
 import collection.distributed.api.dag.{DistForeachPlanNode, OutputPlanNode, InputPlanNode, ExPlanDAG}
 import io.KryoSerializer
 

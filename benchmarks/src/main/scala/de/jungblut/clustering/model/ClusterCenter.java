@@ -35,18 +35,18 @@ public class ClusterCenter implements WritableComparable<ClusterCenter>, Seriali
 		return compareTo(c) == 0 ? false : true;
 	}
 
-	@Override
+	//@Override
 	public void write(DataOutput out) throws IOException {
 		center.write(out);
 	}
 
-	@Override
+	//@Override
 	public void readFields(DataInput in) throws IOException {
 		this.center = new Vector();
 		center.readFields(in);
 	}
 
-	@Override
+	//@Override
 	public int compareTo(ClusterCenter o) {
 		return center.compareTo(o.getCenter());
 	}
