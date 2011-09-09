@@ -73,7 +73,7 @@ object FSAdapter {
     val dir = new Path(uri.toString)
     val file = new Path(uri.toString + "/part-r-00000")
     val meta = new Path(uri.toString + "/META")
-    FileSystem.mkdirs(fs, dir, new FsPermission(FsAction.WRITE_EXECUTE, FsAction.READ, FsAction.READ))
+    FileSystem.mkdirs(fs, dir, new FsPermission(FsAction.WRITE_EXECUTE, FsAction.READ_EXECUTE, FsAction.READ_EXECUTE))
 
     // write elements to file
     var writer: Option[SequenceFile.Writer] = None
